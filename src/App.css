@@ -1,13 +1,17 @@
-button {
-  background-color: transparent;
-  border-radius: 5px;
-  border-width: 1px;
-  border-color: #00000080;
-  width: 40px;
-  user-select: none; /* Prevent text selection */
-  -webkit-user-select: none; /* For Safari */
-  -moz-user-select: none; /* For Firefox */
-  -ms-user-select: none; /* For Internet Explorer/Edge */
+.title {
+  font-size: 20px !important;
+  margin: 0px !important;
+  margin-top: 4px !important;
+}
+
+.tip-button {
+  height: unset;
+  color: white;
+}
+
+.inactive-button {
+  background-color: #9c9fa4 !important;
+  border-width: 2px;
 }
 
 .unselectable {
