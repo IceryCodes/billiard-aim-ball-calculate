@@ -1,10 +1,11 @@
-export interface ButtonProps {
+export interface ButtonItemProps {
   value: number;
+  currentValue: number;
   angle: string;
   setAngle: (value: number) => void;
 }
 
-export interface SliderProps {
+export interface SliderItemProps {
   min: number;
   max: number;
   step: number;
@@ -12,4 +13,10 @@ export interface SliderProps {
   defaultValue?: number;
   onChange: (value: number) => void;
   style?: React.CSSProperties;
+}
+
+export interface CheckboxItemProps {
+  label: string;
+  checked: boolean;
+  setChecked: (value: boolean) => void;
 }

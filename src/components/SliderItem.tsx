@@ -1,8 +1,8 @@
 import { Slider } from "antd";
 import type { ReactElement } from "react";
-import type { SliderProps } from "./Interface";
+import type { SliderItemProps } from "./Interface";
 
-export const SliderBar = ({
+export const SliderItem = ({
   min,
   max,
   step,
@@ -10,7 +10,7 @@ export const SliderBar = ({
   defaultValue,
   onChange,
   style,
-}: SliderProps): ReactElement => (
+}: SliderItemProps): ReactElement => (
   <Slider
     min={min}
     max={max}
