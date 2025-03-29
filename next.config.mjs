@@ -2,7 +2,9 @@
 
 const nextConfig = {
   reactStrictMode: true,
-  env: {},
+  env: {
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID,
+  },
   webpack: (config, { isServer }) => {
     // Fixes npm packages that depend on `net` module
     if (!isServer) {

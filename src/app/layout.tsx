@@ -1,6 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Analytics } from '@vercel/analytics/next';
 import Script from 'next/script';
 
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -30,7 +31,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-TL8KGLVFKB');
+            gtag('config', ${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID});
           `}
         </Script>
       </head>
@@ -38,6 +39,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <QueryClientProvider client={queryClient}>
             <ToastProvider>{children}</ToastProvider>
+            <Analytics />
           </QueryClientProvider>
         </ThemeProvider>
         <GoogleAnalytics />
