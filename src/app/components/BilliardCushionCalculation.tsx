@@ -122,15 +122,27 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
 
   // Get ball positions from state
   const getCueBall = useCallback(() => {
-    return balls.find((ball) => ball.id === 'cueBall')!;
+    const ball = balls.find((ball) => ball.id === 'cueBall');
+    if (!ball) {
+      throw new Error('Cue ball not found');
+    }
+    return ball;
   }, [balls]);
 
   const getGhostBall = useCallback(() => {
-    return balls.find((ball) => ball.id === 'ghostBall')!;
+    const ball = balls.find((ball) => ball.id === 'ghostBall');
+    if (!ball) {
+      throw new Error('Ghost ball not found');
+    }
+    return ball;
   }, [balls]);
 
   const getTargetBall = useCallback(() => {
-    return balls.find((ball) => ball.id === 'targetBall')!;
+    const ball = balls.find((ball) => ball.id === 'targetBall');
+    if (!ball) {
+      throw new Error('Target ball not found');
+    }
+    return ball;
   }, [balls]);
 
   // Check for collision between a line and a ball

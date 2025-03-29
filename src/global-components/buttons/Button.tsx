@@ -18,7 +18,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   onClick?: MouseEventHandler<HTMLButtonElement>;
 }
 
-export const defaultButtonStyle: string = 'px-4 py-2 rounded-lg text-center';
+export const defaultButtonStyle = 'px-4 py-2 rounded-lg text-center';
 
 export const Button = ({
   text,

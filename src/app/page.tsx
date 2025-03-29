@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 
 import HomeContent from './components/HomeContent';
 
-const pageName: string = '撞球瞄準小工具';
-const pageExcerpt: string = '開會無聊想打撞球就做了個撞球瞄準相關的東西，意義不明。';
+const pageName = '撞球瞄準小工具';
+const pageExcerpt = '開會無聊想打撞球就做了個撞球瞄準相關的東西，意義不明。';
 
 export async function generateMetadata(): Promise<Metadata> {
   const NAME = 'Icery/阿瑋';
