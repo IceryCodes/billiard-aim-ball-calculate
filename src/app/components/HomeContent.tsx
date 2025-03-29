@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AiFillCopyrightCircle } from 'react-icons/ai';
 
@@ -53,6 +53,24 @@ const tabInfo = [
 const HomeContent = () => {
   const [tab, setTab] = useState<TabType>(TabType.AIM);
   const [displayModal, setDisplayModal] = useState<boolean>(false);
+  const [isDesktop, setIsDesktop] = useState<boolean>(true);
+
+  // 偵測視窗寬度，判斷是否為桌面版
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      // 使用與 Tailwind md 斷點相同的 768px
+      setIsDesktop(window.innerWidth >= 768);
+    };
+
+    // 初始檢查
+    checkIsDesktop();
+
+    // 監聽 resize 事件
+    window.addEventListener('resize', checkIsDesktop);
+
+    // 清除事件監聽
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
 
   return (
     <section className="flex flex-col items-center">
@@ -77,10 +95,13 @@ const HomeContent = () => {
 
         <label className="flex md:hidden">請用電腦以便流暢操作</label>
 
-        <section className="flex-col items-center gap-4 hidden md:flex">
-          {tab === TabType.AIM && <BilliardAimCalculation />}
-          {tab === TabType.CUSHION && <BilliardCushionCalculation />}
-        </section>
+        {/* 只在桌面版渲染繪圖元件 */}
+        {isDesktop && (
+          <section className="flex flex-col items-center gap-4">
+            {tab === TabType.AIM && <BilliardAimCalculation />}
+            {tab === TabType.CUSHION && <BilliardCushionCalculation />}
+          </section>
+        )}
       </section>
       <Popup title={`${tabInfo[tab].title}說明`} display={displayModal} onClose={() => setDisplayModal(false)}>
         {tabInfo[tab].content}
