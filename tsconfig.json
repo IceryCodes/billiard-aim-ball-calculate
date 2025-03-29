@@ -1,45 +1,41 @@
 {
   "compilerOptions": {
-    "extendedDiagnostics": true,
-    "baseUrl": ".",
-    "rootDir": ".",
-    "module": "esnext",
-    "target": "esnext",
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "useDefineForClassFields": true,
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "outDir": "build/ts-related",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "forceConsistentCasingInFileNames": true,
-    "removeComments": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
-    "alwaysStrict": true,
-    "resolveJsonModule": true,
-    "sourceMap": true,
-    "declaration": true,
-    "moduleResolution": "bundler",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
+    "skipLibCheck": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "types": ["bun-types", "vite/client"]
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "target": "ES2017"
   },
-  "include": ["src"],
-  "compileOnSave": false,
-  "references": [{ "path": "./tsconfig.vite.json" }]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

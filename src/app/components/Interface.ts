@@ -1,10 +1,3 @@
-export interface ButtonItemProps {
-  value: number;
-  currentValue: number;
-  angle: string;
-  setAngle: (value: number) => void;
-}
-
 export interface SliderItemProps {
   min: number;
   max: number;
