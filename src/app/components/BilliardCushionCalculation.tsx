@@ -17,6 +17,7 @@ interface TableDimensions {
   height: number;
   cushionWidth: number;
   pocketRadius: number;
+  innerPadding: number;
 }
 
 interface PathPoint {
@@ -56,6 +57,7 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
       height: height - 60, // Accounting for cushion
       cushionWidth: 30,
       pocketRadius: 28,
+      innerPadding: 10, // 內邊距（淺藍色區域邊距）
     }),
     [height, width]
   );
@@ -205,10 +207,20 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
 
       // If clicking on empty space and right mouse button, add an obstacle ball
       if (event.button === 2) {
+        // 確保新障礙球位於淺藍色區域內
+        const constrainedX = Math.max(
+          tableDimensions.cushionWidth + tableDimensions.innerPadding + BALL_RADIUS,
+          Math.min(width - tableDimensions.cushionWidth - tableDimensions.innerPadding - BALL_RADIUS, x)
+        );
+        const constrainedY = Math.max(
+          tableDimensions.cushionWidth + tableDimensions.innerPadding + BALL_RADIUS,
+          Math.min(height - tableDimensions.cushionWidth - tableDimensions.innerPadding - BALL_RADIUS, y)
+        );
+
         const newObstacleBall: Ball = {
           id: `obstacle${nextObstacleId}`,
-          x,
-          y,
+          x: constrainedX,
+          y: constrainedY,
           TABLE_RADIUS: BALL_RADIUS,
           color: '#101010',
           isDragging: true,
@@ -217,7 +229,7 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
         setNextObstacleId((prevId) => prevId + 1);
       }
     },
-    [balls, obstacleBalls, nextObstacleId]
+    [balls, obstacleBalls, nextObstacleId, tableDimensions, width, height, BALL_RADIUS]
   );
 
   // Check for collision between a line and any obstacle ball
@@ -436,12 +448,12 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
     while (cushionCount < selectedCushions && iterations < maxIterations) {
       iterations++;
 
-      // 獲取實際的碰撞邊界（確保完全匹配顯示的白點位置）
+      // 獲取淺藍色區域的碰撞邊界
       const tableBounds = {
-        left: tableDimensions.cushionWidth,
-        right: width - tableDimensions.cushionWidth,
-        top: tableDimensions.cushionWidth,
-        bottom: height - tableDimensions.cushionWidth,
+        left: tableDimensions.cushionWidth + tableDimensions.innerPadding,
+        right: width - tableDimensions.cushionWidth - tableDimensions.innerPadding,
+        top: tableDimensions.cushionWidth + tableDimensions.innerPadding,
+        bottom: height - tableDimensions.cushionWidth - tableDimensions.innerPadding,
       };
 
       // 使用改進的庫邊碰撞檢測函數
@@ -561,7 +573,7 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
     lineIntersectsBall,
     onPathCalculated,
     selectedCushions,
-    tableDimensions.cushionWidth,
+    tableDimensions,
     width,
   ]);
 
@@ -596,14 +608,14 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
       setBalls((prevBalls) => {
         const newBalls = prevBalls.map((ball) => {
           if (ball.isDragging) {
-            // 限制在桌面邊界內
+            // 限制在淺藍色區域邊界內
             const constrainedX = Math.max(
-              tableDimensions.cushionWidth + ball.TABLE_RADIUS,
-              Math.min(width - tableDimensions.cushionWidth - ball.TABLE_RADIUS, x)
+              tableDimensions.cushionWidth + tableDimensions.innerPadding + ball.TABLE_RADIUS,
+              Math.min(width - tableDimensions.cushionWidth - tableDimensions.innerPadding - ball.TABLE_RADIUS, x)
             );
             const constrainedY = Math.max(
-              tableDimensions.cushionWidth + ball.TABLE_RADIUS,
-              Math.min(height - tableDimensions.cushionWidth - ball.TABLE_RADIUS, y)
+              tableDimensions.cushionWidth + tableDimensions.innerPadding + ball.TABLE_RADIUS,
+              Math.min(height - tableDimensions.cushionWidth - tableDimensions.innerPadding - ball.TABLE_RADIUS, y)
             );
 
             return { ...ball, x: constrainedX, y: constrainedY };
@@ -621,14 +633,14 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
       setObstacleBalls((prevBalls) => {
         const newBalls = prevBalls.map((ball) => {
           if (ball.isDragging) {
-            // 限制在桌面邊界內
+            // 限制在淺藍色區域邊界內
             const constrainedX = Math.max(
-              tableDimensions.cushionWidth + ball.TABLE_RADIUS,
-              Math.min(width - tableDimensions.cushionWidth - ball.TABLE_RADIUS, x)
+              tableDimensions.cushionWidth + tableDimensions.innerPadding + ball.TABLE_RADIUS,
+              Math.min(width - tableDimensions.cushionWidth - tableDimensions.innerPadding - ball.TABLE_RADIUS, x)
             );
             const constrainedY = Math.max(
-              tableDimensions.cushionWidth + ball.TABLE_RADIUS,
-              Math.min(height - tableDimensions.cushionWidth - ball.TABLE_RADIUS, y)
+              tableDimensions.cushionWidth + tableDimensions.innerPadding + ball.TABLE_RADIUS,
+              Math.min(height - tableDimensions.cushionWidth - tableDimensions.innerPadding - ball.TABLE_RADIUS, y)
             );
 
             return { ...ball, x: constrainedX, y: constrainedY };
@@ -642,7 +654,7 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
         return newBalls;
       });
     },
-    [balls, obstacleBalls, calculatePath, tableDimensions.cushionWidth, width, height]
+    [balls, obstacleBalls, calculatePath, tableDimensions, width, height]
   ) as MouseMoveHandler;
 
   const handleMouseUp = useCallback(() => {
@@ -692,6 +704,26 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
         clearTimeout(timeoutIdRef.current);
       }
     };
+  }, []);
+
+  // 確保所有球的初始位置都在淺藍色區域內
+  useEffect(() => {
+    // 調整球的初始位置到淺藍色區域內
+    setBalls((prevBalls) =>
+      prevBalls.map((ball) => {
+        const constrainedX = Math.max(
+          tableDimensions.cushionWidth + tableDimensions.innerPadding + ball.TABLE_RADIUS,
+          Math.min(width - tableDimensions.cushionWidth - tableDimensions.innerPadding - ball.TABLE_RADIUS, ball.x)
+        );
+        const constrainedY = Math.max(
+          tableDimensions.cushionWidth + tableDimensions.innerPadding + ball.TABLE_RADIUS,
+          Math.min(height - tableDimensions.cushionWidth - tableDimensions.innerPadding - ball.TABLE_RADIUS, ball.y)
+        );
+        return { ...ball, x: constrainedX, y: constrainedY };
+      })
+    );
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Initialize path calculation on component mount only
@@ -744,12 +776,21 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
       ctx.fill();
 
       // Draw table surface
-      ctx.fillStyle = '#0093F3'; // Green color to match the reference image
+      ctx.fillStyle = '#0084D9';
       ctx.fillRect(
         tableDimensions.cushionWidth,
         tableDimensions.cushionWidth,
         width - 2 * tableDimensions.cushionWidth,
         height - 2 * tableDimensions.cushionWidth
+      );
+
+      // Draw table surface
+      ctx.fillStyle = '#0093F3';
+      ctx.fillRect(
+        tableDimensions.cushionWidth + tableDimensions.innerPadding,
+        tableDimensions.cushionWidth + tableDimensions.innerPadding,
+        width - 2 * tableDimensions.cushionWidth - 2 * tableDimensions.innerPadding,
+        height - 2 * tableDimensions.cushionWidth - 2 * tableDimensions.innerPadding
       );
 
       // Draw corner pockets with proper angle cuts
@@ -898,10 +939,11 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
     obstacleBalls,
     pathWidth,
     reverseMarkers,
-    tableDimensions.cushionWidth,
-    tableDimensions.pocketRadius,
+    tableDimensions,
     tableMarkers,
     width,
+    TABLE_RADIUS,
+    GHOST_BALL_STROKE_WIDTH,
   ]);
 
   return (
@@ -947,16 +989,15 @@ const BilliardCushionCalculation: React.FC<BilliardCushionCalculationProps> = ({
           <div className="flex items-center justify-center p-2 gap-2">
             <span className="text-background">瞄準線:</span>
             <Button
-              onClick={() => setPathWidth(pathWidth < 30 ? pathWidth + 2 : pathWidth)}
+              onClick={() => (pathWidth < 30 ? setPathWidth(pathWidth + 2) : alert('啊你是要多寬?'))}
               element={<>+</>}
               className="bg-link hover:scale-105 text-background px-4 py-2 rounded-lg text-center"
             />
             <Button
-              onClick={() => setPathWidth(pathWidth > 2 ? pathWidth - 2 : pathWidth)}
+              onClick={() => (pathWidth > 2 ? setPathWidth(pathWidth - 2) : alert('這麼細你瞄不到啦!'))}
               element={<>-</>}
               className="bg-link hover:scale-105 text-background px-3 py-1 rounded-lg text-center"
             />
-            {pathWidth}
           </div>
         </div>
         <div className="flex items-center justify-center p-2 gap-2">
