@@ -1,12 +1,11 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Button, Col, Row, Tooltip } from 'antd';
+import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
+import Slider from '@/global-components/sliders/Slider';
+import Tooltip from '@/global-components/tooltips/Tooltip';
 
-import { ButtonItem } from './components/ButtonItem';
-import { CheckboxItem } from './components/CheckboxItem';
-import { SliderItem } from './components/SliderItem';
-import type { TextSizeProps } from './Interface';
+import type { TextSizeProps } from '../Interface';
 
 const BilliardAimCalculation: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -96,7 +95,7 @@ const BilliardAimCalculation: React.FC = () => {
 
     ctx.clearRect(0, 0, width, height);
 
-    // 子球
+    // 目標球
     ctx.restore();
     ctx.save();
     ctx.beginPath();
@@ -106,12 +105,12 @@ const BilliardAimCalculation: React.FC = () => {
     ctx.stroke();
     ctx.font = labelFontStyle;
     ctx.fillStyle = 'black';
-    showLabel && ctx.fillText('子球', targetBallPos.x - r - paddingText, targetBallPos.y);
+    showLabel && ctx.fillText('目標球', targetBallPos.x - r - paddingText - 15, targetBallPos.y);
     ctx.beginPath();
     ctx.arc(targetBallPos.x, targetBallPos.y, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 子球目標點
+    // 目標球目標點
     ctx.restore();
     ctx.save();
     ctx.beginPath();
@@ -163,7 +162,7 @@ const BilliardAimCalculation: React.FC = () => {
     ctx.moveTo(cueBallPos.x, cueBallPos.y);
     ctx.lineTo(shadowBallPos.x, targetBallPos.y);
     ctx.stroke();
-    // 子球 -> 假想球
+    // 目標球 -> 假想球
     ctx.beginPath();
     ctx.strokeStyle = 'green';
     ctx.moveTo(targetBallPos.x, targetBallPos.y);
@@ -205,7 +204,7 @@ const BilliardAimCalculation: React.FC = () => {
     showDot && ctx.fill();
     showMark && ctx.fillText('C', shadowBallPos.x - r - paddingText, targetBallPos.y);
 
-    // 子球 -> 目標點
+    // 目標球 -> 目標點
     ctx.beginPath();
     ctx.strokeStyle = 'blue';
     ctx.moveTo(targetBallPos.x, targetBallPos.y);
@@ -215,7 +214,7 @@ const BilliardAimCalculation: React.FC = () => {
     // 正視圖
     ctx.restore();
     ctx.save();
-    // 子球
+    // 目標球
     ctx.beginPath();
     ctx.strokeStyle = 'green';
     ctx.arc(frontViewTargetBallPos.x, frontViewTargetBallPos.y, r, 0, Math.PI * 2);
@@ -276,8 +275,6 @@ const BilliardAimCalculation: React.FC = () => {
     ctx.textAlign = 'center';
     ctx.fillText('上帝視角', targetBallPos.x, cueBallPos.y - 12 * r);
     ctx.fillText('瞄球視角', frontViewTargetBallPos.x, cueBallPos.y - 12 * r);
-    ctx.fillText('撞球假想球瞄準', targetBallPos.x + 65, cueBallPos.y + 3 * r);
-    ctx.fillText('Icery side project', targetBallPos.x + 65, cueBallPos.y + 4 * r);
   }, [angleFontStyle, labelFontStyle, markFontStyle, positionRangeValue, showDot, showLabel, showMark]);
 
   const textSizeScale = (scaleUp: boolean) => {
@@ -296,6 +293,7 @@ const BilliardAimCalculation: React.FC = () => {
     }
   };
 
+  // Initialize canvas once on mount
   useEffect(() => {
     const init = () => {
       const canvas = canvasRef.current;
@@ -319,31 +317,38 @@ const BilliardAimCalculation: React.FC = () => {
     return () => window.removeEventListener('resize', init);
   }, [render]);
 
-  return (
-    <>
-      {/* Controller */}
-      <Row gutter={10} align="middle">
-        <Col>
-          <CheckboxItem checked={showLabel} setChecked={setShowLabel} label={'文字'} />
-        </Col>
+  // Separate effect to handle rendering when dependencies change
+  useEffect(() => {
+    render();
+  }, [render]);
 
-        <Col>
-          <Button className="tip-button" style={{ fontSize: 12 }} type="link" onClick={() => textSizeScale(true)}>
-            A
-          </Button>
-        </Col>
-        <Col>
-          <Button className="tip-button" style={{ fontSize: 10 }} type="link" onClick={() => textSizeScale(false)}>
-            A
-          </Button>
-        </Col>
-        <Col>
-          <CheckboxItem checked={showMark} setChecked={setShowMark} label={'記號'} />
-        </Col>
-        <Col>
-          <CheckboxItem checked={showDot} setChecked={setShowDot} label={'圓點'} />
-        </Col>
-      </Row>
+  // Handler for slider value changes
+  const handlePositionChange = useCallback((value: number) => {
+    setPositionRangeValue(value);
+  }, []);
+
+  return (
+    <section className="bg-foreground p-4 rounded-2xl flex flex-col items-center gap-y-2">
+      <canvas ref={canvasRef} className="border-4 border-background rounded-2xl" />
+      {/* Controller */}
+      <div className="flex flex-row gap-x-4 items-center mt-4">
+        <Button
+          onClick={() => textSizeScale(true)}
+          element={<>A</>}
+          className="bg-link hover:scale-105 text-background px-4 py-2 rounded-lg text-center"
+        />
+        <Button
+          onClick={() => textSizeScale(false)}
+          element={<>A</>}
+          className="bg-link hover:scale-105 text-background px-3 py-1 rounded-lg text-center"
+        />
+        <input type="checkbox" checked={showLabel} onChange={() => setShowLabel(!showLabel)} />
+        <span className="text-background">文字</span>
+        <input type="checkbox" checked={showMark} onChange={() => setShowMark(!showMark)} />
+        <span className="text-background">記號</span>
+        <input type="checkbox" checked={showDot} onChange={() => setShowDot(!showDot)} />
+        <span className="text-background">圓點</span>
+      </div>
 
       {/* Angle */}
       <>
@@ -356,50 +361,56 @@ const BilliardAimCalculation: React.FC = () => {
             alignItems: 'center',
           }}
         >
-          <SliderItem
+          <Slider
             min={0}
             max={1}
             step={0.01}
-            defaultValue={0.5}
-            style={{ width: 280 }}
             value={positionRangeValue}
-            onChange={setPositionRangeValue}
+            defaultValue={0.5}
+            onChange={handlePositionChange}
+            style={{ width: 330 }}
           />
         </section>
 
-        <Row gutter={10}>
+        <div className="flex flex-row gap-4">
           <Tooltip placement="bottom" title="直球">
-            <Col>
-              <ButtonItem currentValue={positionRangeValue} value={0} angle="0°" setAngle={setPositionRangeValue} />
-            </Col>
+            <Button
+              buttonStyle={positionRangeValue === 0 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+              onClick={() => setPositionRangeValue(0)}
+              text="0°"
+            />
           </Tooltip>
           <Tooltip placement="bottom" title="半顆">
-            <Col>
-              <ButtonItem currentValue={positionRangeValue} value={0.5} angle="30°" setAngle={setPositionRangeValue} />
-            </Col>
+            <Button
+              buttonStyle={positionRangeValue === 0.5 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+              onClick={() => setPositionRangeValue(0.5)}
+              text="30°"
+            />
           </Tooltip>
           <Tooltip placement="bottom" title="好打">
-            <Col>
-              <ButtonItem currentValue={positionRangeValue} value={0.71} angle="45°" setAngle={setPositionRangeValue} />
-            </Col>
+            <Button
+              buttonStyle={positionRangeValue === 0.71 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+              onClick={() => setPositionRangeValue(0.71)}
+              text="45°"
+            />
           </Tooltip>
           <Tooltip placement="bottom" title="難打">
-            <Col>
-              <ButtonItem currentValue={positionRangeValue} value={0.87} angle="60°" setAngle={setPositionRangeValue} />
-            </Col>
+            <Button
+              buttonStyle={positionRangeValue === 0.87 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+              onClick={() => setPositionRangeValue(0.87)}
+              text="60°"
+            />
           </Tooltip>
           <Tooltip placement="bottom" title="倚天切">
-            <Col>
-              <ButtonItem currentValue={positionRangeValue} value={1} angle="90°" setAngle={setPositionRangeValue} />
-            </Col>
+            <Button
+              buttonStyle={positionRangeValue === 1 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+              onClick={() => setPositionRangeValue(1)}
+              text="90°"
+            />
           </Tooltip>
-        </Row>
+        </div>
       </>
-
-      <section style={{ backgroundColor: 'white', borderRadius: 50 }}>
-        <canvas ref={canvasRef} />
-      </section>
-    </>
+    </section>
   );
 };
 

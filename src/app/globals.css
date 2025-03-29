@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #F5F5F5;
+    --backgroundLight: #d4d4d4;
+    --foreground: #171717;
+    --link: #cf4f2c;
+  }
+
+  .dark {
+    --background: #262626;
+    --backgroundLight: #363636;
+    --foreground: #ffffff;
+    --link: #F4A667;
+  }
+
+  h1, h2, h3, h4, h5, h6, span, label, p, li {
+    color: var(--foreground);
+    font-family: 'Noto Sans TC', Arial, Helvetica, sans-serif;
+    font-weight: 200;
+    letter-spacing: 0.05em;
+    line-height: 1.5;
+    font-size: 1rem;
+  }
+
+  b {
+    font-weight: 500;
+  }
+
+  header, div, input, select, textarea {
+    transition: background-color 1000ms ease-in-out;
+    scrollbar-width: thin; /* For Firefox */
+
+    /* WebKit-based browsers (Chrome and Safari) */
+    &::-webkit-scrollbar {
+      width: 0px; /* Set the width of the scrollbar */
+    }
+  }
+
+  body {
+    color: var(--foreground);
+    background-color: var(--background);
+    transition: background-color 1000ms ease-in-out;
+    font-family: 'Noto Sans TC', Arial, Helvetica, sans-serif;
+
+    a:hover {
+      color: var(--link)
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
