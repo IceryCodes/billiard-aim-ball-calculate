@@ -3,6 +3,9 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
+    NEXT_PUBLIC_ICERY: process.env.ICERY,
+    NEXT_PUBLIC_SITENAME: process.env.SITENAME,
+    NEXT_PUBLIC_SITEURL: process.env.SITEURL,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID,
   },
   webpack: (config, { isServer }) => {
