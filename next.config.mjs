@@ -17,6 +17,8 @@ const nextConfig = {
         dns: false,
         tls: false,
       };
+
+      config.externals = [...config.externals, { canvas: 'canvas' }];
     }
     return config;
   },

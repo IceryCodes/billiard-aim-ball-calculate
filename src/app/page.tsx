@@ -38,11 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 const Home = () => {
-  return (
-    <main className="Home-Page -z-10">
-      <HomeContent />
-    </main>
-  );
+  return <HomeContent />;
 };
 
 export default Home;
