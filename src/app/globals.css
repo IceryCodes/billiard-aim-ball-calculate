@@ -65,3 +65,22 @@
 .scrollbar-hidden::-webkit-scrollbar {
   display: none; /* Safari and Chrome */
 }
+
+.billiard-calculator {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+.billiard-table-container {
+  touch-action: none; /* 確保在移動設備上拖動不會造成頁面滾動 */
+  margin-bottom: 1rem;
+}
+
+/* 針對小螢幕的響應式樣式 */
+@media (max-width: 640px) {
+  .billiard-calculator .flex {
+    flex-direction: column;
+  }
+}

@@ -1,17 +1,13 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import dynamic from 'next/dynamic';
 import { AiFillCopyrightCircle } from 'react-icons/ai';
 
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Popup from '@/global-components/Popup';
 
-import useIsMobileVertical from '../hooks/useIsMobileVertical';
-
 import BilliardAimCalculation from './BilliardAimCalculation';
-
-const BilliardCalculator = dynamic(() => import('./cushion/BilliardCalculator'), { ssr: false });
+import BilliardCushionCalculation from './BilliardCushionCalculation';
 
 enum TabType {
   AIM = 0,
@@ -56,45 +52,26 @@ const tabInfo = [
 ];
 
 const HomeContent = () => {
-  const isMobileVertical = useIsMobileVertical();
-
-  const [tab, setTab] = useState<TabType>(TabType.CUSHION);
+  const [tab, setTab] = useState<TabType>(TabType.AIM);
   const [displayModal, setDisplayModal] = useState<boolean>(false);
-  const [isContainerBadWidth, setIsContainerBadWidth] = useState<boolean>(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [calculatorDimensions, setCalculatorDimensions] = useState({ width: 800, height: 400 });
+  const [isDesktop, setIsDesktop] = useState<boolean>(true);
 
-  // 更準確的響應式尺寸計算
+  // 偵測視窗寬度，判斷是否為桌面版
   useEffect(() => {
-    const updateDimensions = () => {
-      const isDesktopView = window.innerWidth >= 768;
-      setIsContainerBadWidth(!isDesktopView && isMobileVertical);
-
-      // 取得容器的實際寬度
-      if (containerRef.current) {
-        // 獲取容器寬度（考慮 padding）
-        const containerWidth = containerRef.current.clientWidth - 20; // 減去 padding
-
-        // 計算合適的高度，保持 2:1 的寬高比
-        const calculatedHeight = containerWidth / 2;
-
-        // 設定計算器尺寸，確保不小於最小值
-        setCalculatorDimensions({
-          width: Math.max(containerWidth, 320),
-          height: Math.max(calculatedHeight, 160),
-        });
-      }
+    const checkIsDesktop = () => {
+      // 使用與 Tailwind md 斷點相同的 768px
+      setIsDesktop(window.innerWidth >= 768);
     };
 
     // 初始檢查
-    updateDimensions();
+    checkIsDesktop();
 
     // 監聽 resize 事件
-    window.addEventListener('resize', updateDimensions);
+    window.addEventListener('resize', checkIsDesktop);
 
     // 清除事件監聽
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, [isMobileVertical]);
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
 
   return (
     <section className="flex flex-col items-center">
@@ -117,17 +94,14 @@ const HomeContent = () => {
           />
         </div>
 
-        {isContainerBadWidth && <label>請將手機選轉成橫向已顯示球桌</label>}
+        {tab === TabType.CUSHION && isDesktop && <label className="flex md:hidden">請用電腦以便流暢操作</label>}
 
-        {/* 用 ref 取得實際容器寬度，並使用計算後的尺寸 */}
-        <section ref={containerRef} className="flex flex-col items-center gap-4 w-[300px] md:w-[800px] px-2.5">
+        {/* 只在桌面版渲染繪圖元件 */}
+        <section className="flex flex-col items-center gap-4">
           {tab === TabType.AIM && <BilliardAimCalculation />}
-          {tab === TabType.CUSHION && !isContainerBadWidth && (
-            <BilliardCalculator width={calculatorDimensions.width} height={calculatorDimensions.height} />
-          )}
+          {tab === TabType.CUSHION && isDesktop && <BilliardCushionCalculation />}
         </section>
       </section>
-
       <Popup title={`${tabInfo[tab].title}說明`} display={displayModal} onClose={() => setDisplayModal(false)}>
         {tabInfo[tab].content}
       </Popup>
