@@ -7,8 +7,6 @@ import { AiFillCopyrightCircle } from 'react-icons/ai';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Popup from '@/global-components/Popup';
 
-import useIsMobileVertical from '../hooks/useIsMobileVertical';
-
 import BilliardAimCalculation from './BilliardAimCalculation';
 
 const BilliardCalculator = dynamic(() => import('./cushion/BilliardCalculator'), { ssr: false });
@@ -56,29 +54,22 @@ const tabInfo = [
 ];
 
 const HomeContent = () => {
-  const isMobileVertical = useIsMobileVertical();
-
   const [tab, setTab] = useState<TabType>(TabType.CUSHION);
   const [displayModal, setDisplayModal] = useState<boolean>(false);
-  const [isContainerBadWidth, setIsContainerBadWidth] = useState<boolean>(false);
+  const [isMobileVertical, setIsMobileVertical] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [calculatorDimensions, setCalculatorDimensions] = useState({ width: 800, height: 400 });
 
-  // 更準確的響應式尺寸計算
   useEffect(() => {
     const updateDimensions = () => {
-      const isDesktopView = window.innerWidth >= 768;
-      setIsContainerBadWidth(!isDesktopView && isMobileVertical);
+      const isVertical = window.innerWidth < window.innerHeight;
+      setIsMobileVertical(isVertical);
 
-      // 取得容器的實際寬度
+      // 確保容器尺寸正確
       if (containerRef.current) {
-        // 獲取容器寬度（考慮 padding）
-        const containerWidth = containerRef.current.clientWidth - 20; // 減去 padding
-
-        // 計算合適的高度，保持 2:1 的寬高比
+        const containerWidth = containerRef.current.clientWidth - 20;
         const calculatedHeight = containerWidth / 2;
 
-        // 設定計算器尺寸，確保不小於最小值
         setCalculatorDimensions({
           width: Math.max(containerWidth, 320),
           height: Math.max(calculatedHeight, 160),
@@ -86,15 +77,15 @@ const HomeContent = () => {
       }
     };
 
-    // 初始檢查
     updateDimensions();
-
-    // 監聽 resize 事件
     window.addEventListener('resize', updateDimensions);
+    window.addEventListener('orientationchange', updateDimensions);
 
-    // 清除事件監聽
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, [isMobileVertical]);
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      window.removeEventListener('orientationchange', updateDimensions);
+    };
+  }, []);
 
   return (
     <section className="flex flex-col items-center">
@@ -117,12 +108,12 @@ const HomeContent = () => {
           />
         </div>
 
-        {isContainerBadWidth && <label>請將手機選轉成橫向已顯示球桌</label>}
+        {isMobileVertical && <label>請將手機選轉成橫向已顯示球桌</label>}
 
         {/* 用 ref 取得實際容器寬度，並使用計算後的尺寸 */}
         <section ref={containerRef} className="flex flex-col items-center gap-4 w-[300px] md:w-[800px] px-2.5">
           {tab === TabType.AIM && <BilliardAimCalculation />}
-          {tab === TabType.CUSHION && !isContainerBadWidth && (
+          {tab === TabType.CUSHION && !isMobileVertical && (
             <BilliardCalculator width={calculatorDimensions.width} height={calculatorDimensions.height} />
           )}
         </section>
