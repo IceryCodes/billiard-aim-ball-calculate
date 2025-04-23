@@ -889,25 +889,34 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
   }, []);
 
   // 處理撞球桌尺寸變化的RWD
+  // 在 BilliardCalculator 中添加自適應代碼
   useEffect(() => {
     const handleResize = () => {
+      // 更新 scale 確保完整顯示
       if (stageRef.current && stageRef.current.container) {
         const containerWidth = stageRef.current.container().clientWidth;
-        const newScale = containerWidth / width;
+        const containerHeight = stageRef.current.container().clientHeight;
+
+        // 計算最佳縮放比例
+        const scaleX = containerWidth / width;
+        const scaleY = containerHeight / height;
+        const newScale = Math.min(scaleX, scaleY);
+
         setScale(newScale);
       }
     };
 
-    // 初始化時和視窗大小改變時調整比例
     if (typeof window !== 'undefined') {
       handleResize();
       window.addEventListener('resize', handleResize);
+      window.addEventListener('orientationchange', handleResize);
 
       return () => {
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('orientationchange', handleResize);
       };
     }
-  }, [width]);
+  }, [width, height]);
 
   // 防止右鍵選單
   useEffect(() => {
