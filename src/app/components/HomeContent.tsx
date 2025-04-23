@@ -111,7 +111,7 @@ const HomeContent = () => {
         {isMobileVertical && <label>請將手機選轉成橫向已顯示球桌</label>}
 
         {/* 用 ref 取得實際容器寬度，並使用計算後的尺寸 */}
-        <section ref={containerRef} className="flex flex-col items-center gap-4 w-[300px] md:w-[800px] px-2.5">
+        <section ref={containerRef} className="flex flex-col items-center gap-4 w-[80vw] max-w-[800px] px-2.5">
           {tab === TabType.AIM && <BilliardAimCalculation />}
           {tab === TabType.CUSHION && !isMobileVertical && (
             <BilliardCalculator width={calculatorDimensions.width} height={calculatorDimensions.height} />
