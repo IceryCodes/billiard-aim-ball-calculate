@@ -57,22 +57,28 @@ interface KonvaMouseEvent {
 
 const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, height = 400, onPathCalculated }) => {
   // 參數和常數
-  const BALL_RADIUS = 15;
+  const calculateBallRadius = useCallback(() => {
+    const tableWidth = width - 60;
+    return Math.max(tableWidth / 70, 8);
+  }, [width]);
+
+  const BALL_RADIUS = calculateBallRadius();
   const stageRef = useRef<Konva.Stage | null>(null);
   const timeoutIdRef = useRef<number | null>(null);
 
   // 撞球桌尺寸
   const tableDimensions = useMemo((): TableDimensions => {
+    const cushionWidth = Math.max(width / 20, 20);
     return {
-      width: width - 60,
-      height: height - 60,
-      cushionWidth: 30,
-      pocketRadius: 28,
-      innerPadding: 10,
+      width: width - cushionWidth * 2,
+      height: height - cushionWidth * 2,
+      cushionWidth,
+      pocketRadius: Math.max(cushionWidth * 0.85, 18),
+      innerPadding: Math.max(cushionWidth / 6, 3),
     };
   }, [height, width]);
 
-  // 狀態
+  // 其餘狀態保持不變
   const [selectedCushions, setSelectedCushions] = useState<number>(0);
   const [balls, setBalls] = useState<BallType[]>([
     { id: 'cueBall', x: width / 4, y: height / 2, radius: BALL_RADIUS, color: 'white', draggable: true },
@@ -90,7 +96,7 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
   const [obstacleBalls, setObstacleBalls] = useState<BallType[]>([]);
   const [calculatedPath, setCalculatedPath] = useState<PathPoint[]>([]);
   const [nextObstacleId, setNextObstacleId] = useState<number>(1);
-  const [pathWidth, setPathWidth] = useState<number>(4);
+  const [pathWidth, setPathWidth] = useState<number>(3);
   const [displayMarkers, setDisplayMarkers] = useState<boolean>(false);
   const [reverseMarkers, setReverseMarkers] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
@@ -586,182 +592,8 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     calculateIntersectionPoint,
   ]);
 
-  const calculatePathOptimized = useCallback(() => {
-    const cueBall = getCueBall();
-    const ghostBall = getGhostBall();
-    const targetBall = getTargetBall();
+  // 其餘函數與原來相同...
 
-    if (!cueBall || !ghostBall || !targetBall) return;
-
-    // 預先創建所有可能需要的變數，避免在函數執行過程中分配新的記憶體
-    const path: PathPoint[] = [];
-    path.push({ x: cueBall.x, y: cueBall.y });
-
-    // 使用數學操作而不是創建臨時物件，減少垃圾收集
-    const dirX = ghostBall.x - cueBall.x;
-    const dirY = ghostBall.y - cueBall.y;
-    const dirLength = Math.sqrt(dirX * dirX + dirY * dirY);
-
-    // 檢查是否有障礙物擋在母球和瞄準球之間
-    const obstacleBetwn = checkPathObstruction(cueBall.x, cueBall.y, ghostBall.x, ghostBall.y);
-    if (obstacleBetwn) {
-      const isect = calculateIntersectionPoint(cueBall.x, cueBall.y, ghostBall.x, ghostBall.y, obstacleBetwn);
-      path.push(isect);
-      setCalculatedPath(path);
-      if (onPathCalculated) onPathCalculated(path);
-      return;
-    }
-
-    // 瞄準球
-    path.push({ x: ghostBall.x, y: ghostBall.y });
-
-    // 單位方向向量
-    const unitDirX = dirX / dirLength;
-    const unitDirY = dirY / dirLength;
-
-    // 零顆星情況處理
-    if (selectedCushions === 0) {
-      // 延伸方向
-      const extX = ghostBall.x + unitDirX * 1000;
-      const extY = ghostBall.y + unitDirY * 1000;
-
-      // 檢查障礙物
-      const obs = checkPathObstruction(ghostBall.x, ghostBall.y, extX, extY);
-      if (obs) {
-        const isect = calculateIntersectionPoint(ghostBall.x, ghostBall.y, extX, extY, obs);
-        path.push(isect);
-        setCalculatedPath(path);
-        if (onPathCalculated) onPathCalculated(path);
-        return;
-      }
-
-      // 檢查目標球
-      if (lineIntersectsBall(ghostBall.x, ghostBall.y, extX, extY, targetBall)) {
-        const isect = calculateIntersectionPoint(ghostBall.x, ghostBall.y, extX, extY, targetBall);
-        path.push(isect);
-      } else {
-        path.push({ x: extX, y: extY });
-      }
-
-      setCalculatedPath(path);
-      if (onPathCalculated) onPathCalculated(path);
-      return;
-    }
-
-    // 多顆星情況
-    let posX = ghostBall.x;
-    let posY = ghostBall.y;
-    let velocX = unitDirX;
-    let velocY = unitDirY;
-    let cushionCount = 0;
-    const maxIter = 20;
-    let iter = 0;
-
-    // 計算顆星的碰撞點 - 提前創建一次表格邊界
-    const tableBounds = {
-      left: tableDimensions.cushionWidth + tableDimensions.innerPadding,
-      right: width - tableDimensions.cushionWidth - tableDimensions.innerPadding,
-      top: tableDimensions.cushionWidth + tableDimensions.innerPadding,
-      bottom: height - tableDimensions.cushionWidth - tableDimensions.innerPadding,
-    };
-
-    while (cushionCount < selectedCushions && iter < maxIter) {
-      iter++;
-
-      // 檢查沿當前方向是否會碰到任何球
-      const extX = posX + velocX * 1000;
-      const extY = posY + velocY * 1000;
-      const obs = checkPathObstruction(posX, posY, extX, extY);
-      if (obs) {
-        const isect = calculateIntersectionPoint(posX, posY, extX, extY, obs);
-        path.push(isect);
-        setCalculatedPath(path);
-        if (onPathCalculated) onPathCalculated(path);
-        return;
-      }
-
-      // 檢查顆星邊碰撞
-      const intersection = findCushionIntersection(posX, posY, velocX, velocY, tableBounds);
-      if (!intersection) break;
-
-      const { hitPoint, hitNormal } = intersection;
-
-      // 檢查碰撞前是否有球體
-      const ballObs = checkPathObstruction(posX, posY, hitPoint.x, hitPoint.y);
-      if (ballObs) {
-        const ballIsect = calculateIntersectionPoint(posX, posY, hitPoint.x, hitPoint.y, ballObs);
-        path.push(ballIsect);
-        setCalculatedPath(path);
-        if (onPathCalculated) onPathCalculated(path);
-        return;
-      }
-
-      // 添加碰撞點
-      path.push({
-        x: Number(hitPoint.x.toFixed(10)),
-        y: Number(hitPoint.y.toFixed(10)),
-      });
-
-      // 計算反射 - 使用更快的數學操作
-      const incidentLen = Math.sqrt(velocX * velocX + velocY * velocY);
-      const unitIncX = velocX / incidentLen;
-      const unitIncY = velocY / incidentLen;
-
-      const normalLen = Math.sqrt(hitNormal.x * hitNormal.x + hitNormal.y * hitNormal.y);
-      const unitNormX = hitNormal.x / normalLen;
-      const unitNormY = hitNormal.y / normalLen;
-
-      const dotProd = unitIncX * unitNormX + unitIncY * unitNormY;
-
-      const reflectX = unitIncX - 2 * dotProd * unitNormX;
-      const reflectY = unitIncY - 2 * dotProd * unitNormY;
-
-      const reflectLen = Math.sqrt(reflectX * reflectX + reflectY * reflectY);
-
-      // 更新位置和方向
-      posX = hitPoint.x;
-      posY = hitPoint.y;
-      velocX = reflectX / reflectLen;
-      velocY = reflectY / reflectLen;
-
-      cushionCount++;
-    }
-
-    // 達到所需顆星數後繼續
-    if (cushionCount === selectedCushions) {
-      const extX = posX + velocX * 1000;
-      const extY = posY + velocY * 1000;
-
-      const obs = checkPathObstruction(posX, posY, extX, extY);
-      if (obs) {
-        const isect = calculateIntersectionPoint(posX, posY, extX, extY, obs);
-        path.push(isect);
-      } else if (lineIntersectsBall(posX, posY, extX, extY, targetBall)) {
-        const isect = calculateIntersectionPoint(posX, posY, extX, extY, targetBall);
-        path.push(isect);
-      } else {
-        path.push({ x: extX, y: extY });
-      }
-    }
-
-    setCalculatedPath(path);
-    if (onPathCalculated) onPathCalculated(path);
-  }, [
-    checkPathObstruction,
-    findCushionIntersection,
-    getCueBall,
-    getGhostBall,
-    getTargetBall,
-    height,
-    lineIntersectsBall,
-    onPathCalculated,
-    selectedCushions,
-    tableDimensions,
-    width,
-    calculateIntersectionPoint,
-  ]);
-
-  // 處理球的拖曳結束
   const handleBallDragEnd = useCallback(
     (ballId: string, newX: number, newY: number) => {
       const { x: constrainedX, y: constrainedY } = constrainBallPosition(newX, newY);
@@ -783,7 +615,6 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     [balls, calculatePath, constrainBallPosition]
   );
 
-  // 處理球的拖曳中
   const handleBallDrag = useCallback(
     (ballId: string, newX: number, newY: number) => {
       const { x: constrainedX, y: constrainedY } = constrainBallPosition(newX, newY);
@@ -804,14 +635,13 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
       }
 
       timeoutIdRef.current = requestAnimationFrame(() => {
-        calculatePathOptimized();
+        calculatePath();
         timeoutIdRef.current = null;
       });
     },
-    [balls, calculatePathOptimized, constrainBallPosition]
+    [balls, calculatePath, constrainBallPosition]
   );
 
-  // 處理點擊添加障礙球
   const handleStageClick = useCallback(
     (e: KonvaMouseEvent) => {
       // 右鍵點擊即可新增障礙球
@@ -880,7 +710,7 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     window.requestAnimationFrame(() => {
       calculatePath();
     });
-  }, [width, height, constrainBallPosition, calculatePath]);
+  }, [width, height, constrainBallPosition, calculatePath, BALL_RADIUS]);
 
   const initializeBalls = useCallback(() => {
     if (initializeBallsRef.current) {
@@ -889,7 +719,6 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
   }, []);
 
   // 處理撞球桌尺寸變化的RWD
-  // 在 BilliardCalculator 中添加自適應代碼
   useEffect(() => {
     const handleResize = () => {
       // 更新 scale 確保完整顯示
@@ -918,7 +747,8 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     }
   }, [width, height]);
 
-  // 防止右鍵選單
+  // 其他useEffect保持不變...
+
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -934,22 +764,16 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
   }, []);
 
   useEffect(() => {
-    calculatePathOptimized(); // 使用優化版本的路徑計算
-  }, [selectedCushions, displayMarkers, reverseMarkers, pathWidth, calculatePathOptimized]);
+    calculatePath();
+  }, [selectedCushions, displayMarkers, reverseMarkers, pathWidth, calculatePath]);
 
   useEffect(() => {
-    calculatePathOptimized();
-  }, [balls, obstacleBalls, calculatePathOptimized]);
+    calculatePath();
+  }, [balls, obstacleBalls, calculatePath]);
 
-  // 初始化計算路徑
   useEffect(() => {
     initializeBalls();
   }, [initializeBalls]);
-
-  useEffect(() => {
-    // 當顆星次數改變時，立即更新路徑
-    calculatePath();
-  }, [selectedCushions, calculatePath]);
 
   return (
     <div className="bg-foreground p-1 md:p-4 rounded-2xl">
@@ -970,7 +794,7 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
               <PathLine
                 points={calculatedPath.flatMap((point) => [point.x, point.y])}
                 strokeWidth={pathWidth}
-                stroke="yellow"
+                stroke="#FFFF00" // 純黃色路徑線
               />
 
               {/* 球 */}
