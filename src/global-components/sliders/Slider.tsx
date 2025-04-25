@@ -39,11 +39,20 @@ const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultVa
 
   // Calculate value from mouse/touch position
   const updateValueFromEvent = useCallback(
-    (e: MouseEvent | React.MouseEvent) => {
+    (e: MouseEvent | React.MouseEvent | TouchEvent | React.TouchEvent) => {
       if (!sliderRef.current) return;
 
       const rect = sliderRef.current.getBoundingClientRect();
-      const offsetX = e.clientX - rect.left;
+      let clientX: number;
+
+      // Handle both mouse and touch events
+      if ('touches' in e) {
+        clientX = e.touches[0].clientX;
+      } else {
+        clientX = e.clientX;
+      }
+
+      const offsetX = clientX - rect.left;
       const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
       const newValue = min + percentage * (max - min);
 
@@ -52,13 +61,11 @@ const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultVa
     [handleValueChange, max, min]
   );
 
-  // Handle mouse/touch events
+  // Handle mouse events
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       setIsDragging(true);
       updateValueFromEvent(e);
-
-      // Prevent text selection during drag
       e.preventDefault();
     },
     [updateValueFromEvent]
@@ -77,18 +84,50 @@ const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultVa
     setIsDragging(false);
   }, []);
 
+  // Handle touch events
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      setIsDragging(true);
+      updateValueFromEvent(e);
+      e.preventDefault();
+    },
+    [updateValueFromEvent]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (isDragging) {
+        updateValueFromEvent(e);
+        // Prevent scrolling while dragging
+        e.preventDefault();
+      }
+    },
+    [isDragging, updateValueFromEvent]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
   // Register global mouse/touch events
   useEffect(() => {
     if (isDragging) {
+      // Mouse events
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+
+      // Touch events
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd);
 
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [handleMouseMove, handleMouseUp, isDragging]);
+  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd, isDragging]);
 
   // Update internal state when value prop changes
   useEffect(() => {
@@ -106,6 +145,7 @@ const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultVa
       className="relative w-full h-6 flex items-center cursor-pointer"
       style={style}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       {/* Track background */}
       <div className="absolute w-full h-2 bg-gray-200 rounded-full"></div>

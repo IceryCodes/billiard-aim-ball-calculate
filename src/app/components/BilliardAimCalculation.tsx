@@ -1,14 +1,91 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { Circle, Group, Layer, Line, Stage, Text } from 'react-konva';
+
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Slider from '@/global-components/sliders/Slider';
 import Tooltip from '@/global-components/tooltips/Tooltip';
 
 import type { TextSizeProps } from '../Interface';
 
+interface BallProps {
+  x: number;
+  y: number;
+  radius: number;
+  label: string;
+  showLabel: boolean;
+  textSize: number;
+  strokeColor: string;
+  isDashed?: boolean;
+  labelOffset?: number;
+}
+
+const Ball: React.FC<BallProps> = ({
+  x,
+  y,
+  radius,
+  label,
+  showLabel,
+  textSize,
+  strokeColor,
+  isDashed = false,
+  labelOffset = 15,
+}) => {
+  return (
+    <Group>
+      <Circle x={x} y={y} radius={radius} stroke={strokeColor} strokeWidth={1} dash={isDashed ? [2, 3] : undefined} />
+      <Circle x={x} y={y} radius={2} fill="black" />
+      {showLabel && (
+        <Text
+          x={x - radius - labelOffset - 15}
+          y={y - textSize / 2}
+          text={label}
+          fontSize={textSize}
+          fontFamily="Noto Sans TC"
+          fontStyle="200"
+          fill="black"
+        />
+      )}
+    </Group>
+  );
+};
+
+// 標記點組件
+interface MarkPointProps {
+  x: number;
+  y: number;
+  label: string;
+  showMark: boolean;
+  showDot: boolean;
+  textSize: number;
+  color: string;
+  offsetX?: number;
+}
+
+const MarkPoint: React.FC<MarkPointProps> = ({ x, y, label, showMark, showDot, textSize, color, offsetX = 10 }) => {
+  return (
+    <Group>
+      {showDot && <Circle x={x} y={y} radius={4} fill={color} />}
+      {showMark && (
+        <Text
+          x={x + offsetX}
+          y={y - textSize / 2}
+          text={label}
+          fontSize={textSize}
+          fontFamily="Noto Sans TC"
+          fontStyle="200"
+          fill={color}
+        />
+      )}
+    </Group>
+  );
+};
+
 const BilliardAimCalculation: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [dimensions, setDimensions] = useState({ width: 720, height: 480 });
   const [positionRangeValue, setPositionRangeValue] = useState<number>(0.5);
   const [showLabel, setShowLabel] = useState<boolean>(true);
   const [showMark, setShowMark] = useState<boolean>(true);
@@ -19,263 +96,97 @@ const BilliardAimCalculation: React.FC = () => {
     mark: 16,
   });
 
-  const labelFontStyle = `200 ${textSize.label}px 'Noto Sans TC'`;
-  const angleFontStyle = `200 ${textSize.angle}px 'Noto Sans TC'`;
-  const markFontStyle = `200 ${textSize.mark}px 'Noto Sans TC'`;
+  // 處理響應式尺寸
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        // 確保有足夠寬度顯示兩個視角
+        const width = Math.max(containerWidth * 0.95, 300); // 設定最小寬度
+        const height = Math.max((width * 2) / 3, 350); // 調整比例，並設定最小高度
+        setDimensions({ width, height });
+      }
+    };
 
-  const render = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    const width = rect.width - 135;
-    const height = rect.height - 80;
-    const r = Math.min(width, height) / 9 / 2;
+  const calculatePositions = useCallback(() => {
+    // 增加邊距來防止裁切
+    const margin = 40;
+    const width = dimensions.width - margin * 2;
+    const height = dimensions.height - margin * 2;
+    // 調整計算方式來確保兩個視角都能完整顯示
+    const r = Math.min(width / 8, height / 6) / 2;
     const paddingText = 10;
 
+    // 調整位置計算，給左右兩側留出更多空間
+    const centerX = width / 2.5; // 將中心點稍微往左移
+    const spacing = width / 3; // 兩個視角之間的間距
+
     const cueBallPos = {
-      x: width / 2,
+      x: centerX,
       y: height / 2 + 3 * 2 * r,
     };
 
     const targetBallPos = {
-      x: width / 2,
+      x: centerX,
       y: height / 2,
     };
 
     const shadowBallPos = {
-      x: width / 2,
+      x: centerX,
       y: targetBallPos.y + 2 * r,
-    };
-
-    const predictTargetBallPos = {
-      x: width / 2,
-      y: targetBallPos.y - 2 * 2 * r,
-    };
-
-    const angleDisplayPos = {
-      x: shadowBallPos.x,
-      y: shadowBallPos.y,
-      text: 0,
-    };
-
-    const frontViewTargetBallPos = {
-      x: width / 2 + 3 * 2 * r,
-      y: height / 2,
-    };
-
-    const frontViewShadowBallPos = {
-      x: width / 2 + 3 * 2 * r,
-      y: height / 2,
     };
 
     const shandowBallY = Math.sqrt((2 * r) ** 2 - (positionRangeValue * 2 * r) ** 2);
     const sinAngle = shandowBallY / (2 * r);
     const cosAngle = (positionRangeValue * 2 * r) / (2 * r);
 
-    shadowBallPos.x = cueBallPos.x = width / 2 + positionRangeValue * 2 * r;
+    shadowBallPos.x = centerX + positionRangeValue * 2 * r;
     shadowBallPos.y = targetBallPos.y + shandowBallY;
 
-    angleDisplayPos.x = shadowBallPos.x + r * cosAngle;
-    angleDisplayPos.y = shadowBallPos.y + r * sinAngle;
-    angleDisplayPos.text = ~~((Math.asin(cosAngle) * 180) / Math.PI);
+    const angleDisplayPos = {
+      x: shadowBallPos.x + r * cosAngle,
+      y: shadowBallPos.y + r * sinAngle,
+      text: ~~((Math.asin(cosAngle) * 180) / Math.PI),
+    };
 
-    predictTargetBallPos.y = targetBallPos.y - 2 * 2 * r * sinAngle;
-    predictTargetBallPos.x = targetBallPos.x - 2 * 2 * r * cosAngle;
+    const predictTargetBallPos = {
+      y: targetBallPos.y - 2 * 2 * r * sinAngle,
+      x: targetBallPos.x - 2 * 2 * r * cosAngle,
+    };
 
-    frontViewShadowBallPos.x = width / 2 + 3 * 2 * r + positionRangeValue * 2 * r;
+    const frontViewTargetBallPos = {
+      x: centerX + spacing, // 使用固定間距而不是相對於球的大小
+      y: height / 2,
+    };
 
-    ctx.clearRect(0, 0, width, height);
+    const frontViewShadowBallPos = {
+      x: centerX + spacing + positionRangeValue * 2 * r,
+      y: height / 2,
+    };
 
-    // 目標球
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath();
-    ctx.strokeStyle = 'black';
-    ctx.arc(targetBallPos.x, targetBallPos.y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'green';
-    ctx.stroke();
-    ctx.font = labelFontStyle;
-    ctx.fillStyle = 'black';
-    showLabel && ctx.fillText('目標球', targetBallPos.x - r - paddingText - 15, targetBallPos.y);
-    ctx.beginPath();
-    ctx.arc(targetBallPos.x, targetBallPos.y, 2, 0, Math.PI * 2);
-    ctx.fill();
+    cueBallPos.x = centerX + positionRangeValue * 2 * r;
 
-    // 目標球目標點
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath();
-    ctx.strokeStyle = 'blue';
-    ctx.arc(predictTargetBallPos.x, predictTargetBallPos.y, r, 0, Math.PI * 2);
-    ctx.font = labelFontStyle;
-    ctx.fillStyle = 'black';
-    ctx.stroke();
-    showLabel && ctx.fillText('目標點', predictTargetBallPos.x - r - paddingText, predictTargetBallPos.y);
-    ctx.beginPath();
-    ctx.arc(predictTargetBallPos.x, predictTargetBallPos.y, 2, 0, Math.PI * 2);
-    ctx.fill();
+    return {
+      r,
+      width,
+      height,
+      paddingText,
+      cueBallPos,
+      targetBallPos,
+      shadowBallPos,
+      angleDisplayPos,
+      predictTargetBallPos,
+      frontViewTargetBallPos,
+      frontViewShadowBallPos,
+    };
+  }, [dimensions, positionRangeValue]);
 
-    // 母球
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath();
-    ctx.strokeStyle = 'black';
-    ctx.arc(cueBallPos.x, cueBallPos.y, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.font = labelFontStyle;
-    ctx.fillStyle = 'black';
-    showLabel && ctx.fillText('母球', cueBallPos.x - r - paddingText, cueBallPos.y);
-    ctx.beginPath();
-    ctx.arc(cueBallPos.x, cueBallPos.y, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 假想球
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath();
-    ctx.strokeStyle = 'black';
-    ctx.arc(shadowBallPos.x, shadowBallPos.y, r, 0, Math.PI * 2);
-    ctx.setLineDash([2, 3]);
-    ctx.stroke();
-    ctx.font = labelFontStyle;
-    ctx.fillStyle = 'black';
-    showLabel && ctx.fillText('假想球', shadowBallPos.x - r - paddingText, shadowBallPos.y);
-    ctx.beginPath();
-    ctx.arc(shadowBallPos.x, shadowBallPos.y, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 兩球連線
-    ctx.restore();
-    ctx.save();
-    // 母球 -> 假想球
-    ctx.beginPath();
-    ctx.strokeStyle = 'black';
-    ctx.moveTo(cueBallPos.x, cueBallPos.y);
-    ctx.lineTo(shadowBallPos.x, targetBallPos.y);
-    ctx.stroke();
-    // 目標球 -> 假想球
-    ctx.beginPath();
-    ctx.strokeStyle = 'green';
-    ctx.moveTo(targetBallPos.x, targetBallPos.y);
-    ctx.lineTo(angleDisplayPos.x, angleDisplayPos.y);
-    ctx.stroke();
-    ctx.textAlign = 'left';
-    // 角度
-    ctx.font = angleFontStyle;
-    ctx.fillStyle = 'black';
-    ctx.fillText(`${angleDisplayPos.text}°`, angleDisplayPos.x + paddingText, angleDisplayPos.y);
-    // A
-    ctx.beginPath();
-    ctx.arc(
-      targetBallPos.x + (shadowBallPos.x - targetBallPos.x) / 2,
-      targetBallPos.y + (shadowBallPos.y - targetBallPos.y) / 2,
-      4,
-      0,
-      Math.PI * 2
-    );
-    ctx.fillStyle = 'red';
-    showDot && ctx.fill();
-    ctx.font = markFontStyle;
-    showMark &&
-      ctx.fillText(
-        'A',
-        targetBallPos.x + (shadowBallPos.x - targetBallPos.x) / 2 + paddingText,
-        targetBallPos.y + (shadowBallPos.y - targetBallPos.y) / 2
-      );
-    // B
-    ctx.beginPath();
-    ctx.arc(targetBallPos.x + r, targetBallPos.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'green';
-    showDot && ctx.fill();
-    showMark && ctx.fillText('B', targetBallPos.x + r + paddingText, targetBallPos.y);
-    // C
-    ctx.beginPath();
-    ctx.arc(shadowBallPos.x - r, targetBallPos.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'blue';
-    showDot && ctx.fill();
-    showMark && ctx.fillText('C', shadowBallPos.x - r - paddingText, targetBallPos.y);
-
-    // 目標球 -> 目標點
-    ctx.beginPath();
-    ctx.strokeStyle = 'blue';
-    ctx.moveTo(targetBallPos.x, targetBallPos.y);
-    ctx.lineTo(predictTargetBallPos.x, predictTargetBallPos.y);
-    ctx.stroke();
-
-    // 正視圖
-    ctx.restore();
-    ctx.save();
-    // 目標球
-    ctx.beginPath();
-    ctx.strokeStyle = 'green';
-    ctx.arc(frontViewTargetBallPos.x, frontViewTargetBallPos.y, r, 0, Math.PI * 2);
-    ctx.stroke();
-    // 假想球
-    ctx.beginPath();
-    ctx.strokeStyle = 'black';
-    ctx.arc(frontViewShadowBallPos.x, frontViewShadowBallPos.y, r, 0, Math.PI * 2);
-    ctx.setLineDash([2, 3]);
-    ctx.stroke();
-    // A
-    ctx.beginPath();
-    ctx.arc(
-      frontViewTargetBallPos.x + (frontViewShadowBallPos.x - frontViewTargetBallPos.x) / 2,
-      frontViewTargetBallPos.y + (frontViewShadowBallPos.y - frontViewTargetBallPos.y) / 2,
-      4,
-      0,
-      Math.PI * 2
-    );
-    ctx.fillStyle = 'red';
-    showDot && ctx.fill();
-    ctx.font = markFontStyle;
-    showMark &&
-      ctx.fillText(
-        'A',
-        frontViewTargetBallPos.x + (frontViewShadowBallPos.x - frontViewTargetBallPos.x) / 2 + paddingText,
-        frontViewTargetBallPos.y + (frontViewShadowBallPos.y - frontViewTargetBallPos.y) / 2
-      );
-    // B
-    ctx.beginPath();
-    ctx.arc(frontViewTargetBallPos.x + r, frontViewTargetBallPos.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'green';
-    showDot && ctx.fill();
-    showMark && ctx.fillText('B', frontViewTargetBallPos.x + r + paddingText, frontViewTargetBallPos.y);
-    // C
-    ctx.beginPath();
-    ctx.arc(frontViewShadowBallPos.x - r, frontViewShadowBallPos.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'blue';
-    showDot && ctx.fill();
-    showMark && ctx.fillText('C', frontViewShadowBallPos.x - r - paddingText, frontViewShadowBallPos.y);
-
-    // 直線
-    ctx.beginPath();
-    ctx.moveTo(frontViewTargetBallPos.x, frontViewTargetBallPos.y - r - paddingText / 2);
-    ctx.lineTo(frontViewTargetBallPos.x, frontViewTargetBallPos.y + r + paddingText / 2);
-    ctx.strokeStyle = 'green';
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(frontViewShadowBallPos.x, frontViewTargetBallPos.y - r - paddingText / 2);
-    ctx.lineTo(frontViewShadowBallPos.x, frontViewTargetBallPos.y + r + paddingText / 2);
-    ctx.strokeStyle = 'black';
-    ctx.stroke();
-
-    // 文字
-    ctx.fillStyle = 'black';
-    ctx.fill();
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('上帝視角', targetBallPos.x, cueBallPos.y - 12 * r);
-    ctx.fillText('瞄球視角', frontViewTargetBallPos.x, cueBallPos.y - 12 * r);
-  }, [angleFontStyle, labelFontStyle, markFontStyle, positionRangeValue, showDot, showLabel, showMark]);
+  const positions = calculatePositions();
 
   const textSizeScale = (scaleUp: boolean) => {
     if (scaleUp) {
@@ -293,43 +204,251 @@ const BilliardAimCalculation: React.FC = () => {
     }
   };
 
-  // Initialize canvas once on mount
-  useEffect(() => {
-    const init = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const dpr = window.devicePixelRatio;
-      const width = Math.min(window.innerWidth * 0.95, 600); // Max width of 600px for larger screens
-      const height = (width * 3) / 4; // Maintain aspect ratio of 4:3
-
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-
-      render();
-    };
-
-    init();
-
-    window.addEventListener('resize', init);
-    return () => window.removeEventListener('resize', init);
-  }, [render]);
-
-  // Separate effect to handle rendering when dependencies change
-  useEffect(() => {
-    render();
-  }, [render]);
-
-  // Handler for slider value changes
   const handlePositionChange = useCallback((value: number) => {
     setPositionRangeValue(value);
   }, []);
 
   return (
-    <section className="bg-foreground p-4 rounded-2xl flex flex-col items-center gap-y-2">
-      <canvas ref={canvasRef} className="border-4 border-background rounded-2xl" />
+    <section className="bg-foreground p-4 rounded-2xl flex flex-col items-center gap-y-2" ref={containerRef}>
+      <Stage
+        width={dimensions.width}
+        height={dimensions.height}
+        className="border-4 border-background rounded-2xl max-w-[350px] md:max-w-[800px]"
+      >
+        <Layer>
+          {/* 上帝視角 Group */}
+          <Group>
+            {/* 標題 */}
+            <Text
+              x={positions.targetBallPos.x - 40}
+              y={10}
+              text="上帝視角"
+              fontSize={16}
+              fontStyle="bold"
+              fontFamily="sans-serif"
+              fill="black"
+              width={80}
+              align="center"
+            />
+
+            {/* 目標球 */}
+            <Ball
+              x={positions.targetBallPos.x}
+              y={positions.targetBallPos.y}
+              radius={positions.r}
+              label="目標球"
+              showLabel={showLabel}
+              textSize={textSize.label}
+              strokeColor="green"
+              labelOffset={positions.paddingText}
+            />
+
+            {/* 目標點 */}
+            <Ball
+              x={positions.predictTargetBallPos.x}
+              y={positions.predictTargetBallPos.y}
+              radius={positions.r}
+              label="目標點"
+              showLabel={showLabel}
+              textSize={textSize.label}
+              strokeColor="blue"
+              labelOffset={positions.paddingText}
+            />
+
+            {/* 母球 */}
+            <Ball
+              x={positions.cueBallPos.x}
+              y={positions.cueBallPos.y}
+              radius={positions.r}
+              label="母球"
+              showLabel={showLabel}
+              textSize={textSize.label}
+              strokeColor="black"
+              labelOffset={positions.paddingText}
+            />
+
+            {/* 假想球 */}
+            <Ball
+              x={positions.shadowBallPos.x}
+              y={positions.shadowBallPos.y}
+              radius={positions.r}
+              label="假想球"
+              showLabel={showLabel}
+              textSize={textSize.label}
+              strokeColor="black"
+              isDashed={true}
+              labelOffset={positions.paddingText}
+            />
+
+            {/* 連線 */}
+            <Line
+              points={[positions.cueBallPos.x, positions.cueBallPos.y, positions.shadowBallPos.x, positions.targetBallPos.y]}
+              stroke="black"
+              strokeWidth={1}
+            />
+            <Line
+              points={[
+                positions.targetBallPos.x,
+                positions.targetBallPos.y,
+                positions.angleDisplayPos.x,
+                positions.angleDisplayPos.y,
+              ]}
+              stroke="green"
+              strokeWidth={1}
+            />
+            <Line
+              points={[
+                positions.targetBallPos.x,
+                positions.targetBallPos.y,
+                positions.predictTargetBallPos.x,
+                positions.predictTargetBallPos.y,
+              ]}
+              stroke="blue"
+              strokeWidth={1}
+            />
+
+            {/* 角度文字 */}
+            <Text
+              x={positions.angleDisplayPos.x + positions.paddingText}
+              y={positions.angleDisplayPos.y - textSize.angle / 2}
+              text={`${positions.angleDisplayPos.text}°`}
+              fontSize={textSize.angle}
+              fontFamily="Noto Sans TC"
+              fontStyle="200"
+              fill="black"
+            />
+
+            {/* 標記點 A, B, C */}
+            <MarkPoint
+              x={positions.targetBallPos.x + (positions.shadowBallPos.x - positions.targetBallPos.x) / 2}
+              y={positions.targetBallPos.y + (positions.shadowBallPos.y - positions.targetBallPos.y) / 2}
+              label="A"
+              showMark={showMark}
+              showDot={showDot}
+              textSize={textSize.mark}
+              color="red"
+              offsetX={positions.paddingText}
+            />
+            <MarkPoint
+              x={positions.targetBallPos.x + positions.r}
+              y={positions.targetBallPos.y}
+              label="B"
+              showMark={showMark}
+              showDot={showDot}
+              textSize={textSize.mark}
+              color="green"
+              offsetX={positions.paddingText}
+            />
+            <MarkPoint
+              x={positions.shadowBallPos.x - positions.r}
+              y={positions.targetBallPos.y}
+              label="C"
+              showMark={showMark}
+              showDot={showDot}
+              textSize={textSize.mark}
+              color="blue"
+              offsetX={-positions.paddingText - 10}
+            />
+          </Group>
+
+          {/* 瞄球視角 Group */}
+          <Group>
+            {/* 標題 */}
+            <Text
+              x={positions.frontViewTargetBallPos.x - 35}
+              y={10}
+              text="瞄球視角"
+              fontSize={16}
+              fontStyle="bold"
+              fontFamily="sans-serif"
+              fill="black"
+              width={80}
+              align="center"
+            />
+
+            {/* 目標球 */}
+            <Ball
+              x={positions.frontViewTargetBallPos.x}
+              y={positions.frontViewTargetBallPos.y}
+              radius={positions.r}
+              label=""
+              showLabel={false}
+              textSize={textSize.label}
+              strokeColor="green"
+            />
+
+            {/* 假想球 */}
+            <Ball
+              x={positions.frontViewShadowBallPos.x}
+              y={positions.frontViewShadowBallPos.y}
+              radius={positions.r}
+              label=""
+              showLabel={false}
+              textSize={textSize.label}
+              strokeColor="black"
+              isDashed={true}
+            />
+
+            {/* 正視圖直線 */}
+            <Line
+              points={[
+                positions.frontViewTargetBallPos.x,
+                positions.frontViewTargetBallPos.y - positions.r - positions.paddingText / 2,
+                positions.frontViewTargetBallPos.x,
+                positions.frontViewTargetBallPos.y + positions.r + positions.paddingText / 2,
+              ]}
+              stroke="green"
+              strokeWidth={1}
+            />
+            <Line
+              points={[
+                positions.frontViewShadowBallPos.x,
+                positions.frontViewTargetBallPos.y - positions.r - positions.paddingText / 2,
+                positions.frontViewShadowBallPos.x,
+                positions.frontViewTargetBallPos.y + positions.r + positions.paddingText / 2,
+              ]}
+              stroke="black"
+              strokeWidth={1}
+            />
+
+            {/* 正視圖標記點 A, B, C */}
+            <MarkPoint
+              x={
+                positions.frontViewTargetBallPos.x +
+                (positions.frontViewShadowBallPos.x - positions.frontViewTargetBallPos.x) / 2
+              }
+              y={positions.frontViewTargetBallPos.y}
+              label="A"
+              showMark={showMark}
+              showDot={showDot}
+              textSize={textSize.mark}
+              color="red"
+              offsetX={positions.paddingText}
+            />
+            <MarkPoint
+              x={positions.frontViewTargetBallPos.x + positions.r}
+              y={positions.frontViewTargetBallPos.y}
+              label="B"
+              showMark={showMark}
+              showDot={showDot}
+              textSize={textSize.mark}
+              color="green"
+              offsetX={positions.paddingText}
+            />
+            <MarkPoint
+              x={positions.frontViewShadowBallPos.x - positions.r}
+              y={positions.frontViewShadowBallPos.y}
+              label="C"
+              showMark={showMark}
+              showDot={showDot}
+              textSize={textSize.mark}
+              color="blue"
+              offsetX={-positions.paddingText - 10}
+            />
+          </Group>
+        </Layer>
+      </Stage>
+
       {/* Controller */}
       <div className="flex flex-row gap-x-4 items-center mt-4">
         <Button
@@ -340,7 +459,7 @@ const BilliardAimCalculation: React.FC = () => {
         <Button
           onClick={() => textSizeScale(false)}
           element={<>A</>}
-          className="bg-link hover:scale-105 text-background px-3 py-1 rounded-lg text-center"
+          className="bg-link hover:scale-105 text-background px-3 py-1 rounded-lg text-center text-sm"
         />
         <input type="checkbox" checked={showLabel} onChange={() => setShowLabel(!showLabel)} />
         <span className="text-background">文字</span>
@@ -350,66 +469,65 @@ const BilliardAimCalculation: React.FC = () => {
         <span className="text-background">圓點</span>
       </div>
 
-      {/* Angle */}
-      <>
-        <section
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 5,
-            height: 20,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <Slider
-            min={0}
-            max={1}
-            step={0.01}
-            value={positionRangeValue}
-            defaultValue={0.5}
-            onChange={handlePositionChange}
-            style={{ width: 330 }}
-          />
-        </section>
+      {/* Angle Slider */}
+      <section
+        style={{
+          backgroundColor: 'white',
+          borderRadius: 5,
+          height: 20,
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <Slider
+          min={0}
+          max={1}
+          step={0.01}
+          value={positionRangeValue}
+          defaultValue={0.5}
+          onChange={handlePositionChange}
+          style={{ width: 330 }}
+        />
+      </section>
 
-        <div className="flex flex-row gap-4">
-          <Tooltip placement="bottom" title="直球">
-            <Button
-              buttonStyle={positionRangeValue === 0 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-              onClick={() => setPositionRangeValue(0)}
-              text="0°"
-            />
-          </Tooltip>
-          <Tooltip placement="bottom" title="半顆">
-            <Button
-              buttonStyle={positionRangeValue === 0.5 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-              onClick={() => setPositionRangeValue(0.5)}
-              text="30°"
-            />
-          </Tooltip>
-          <Tooltip placement="bottom" title="好打">
-            <Button
-              buttonStyle={positionRangeValue === 0.71 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-              onClick={() => setPositionRangeValue(0.71)}
-              text="45°"
-            />
-          </Tooltip>
-          <Tooltip placement="bottom" title="難打">
-            <Button
-              buttonStyle={positionRangeValue === 0.87 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-              onClick={() => setPositionRangeValue(0.87)}
-              text="60°"
-            />
-          </Tooltip>
-          <Tooltip placement="bottom" title="倚天切">
-            <Button
-              buttonStyle={positionRangeValue === 1 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-              onClick={() => setPositionRangeValue(1)}
-              text="90°"
-            />
-          </Tooltip>
-        </div>
-      </>
+      {/* Quick Select Buttons */}
+      <div className="flex flex-row gap-4">
+        <Tooltip placement="bottom" title="直球">
+          <Button
+            buttonStyle={positionRangeValue === 0 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+            onClick={() => setPositionRangeValue(0)}
+            text="0°"
+          />
+        </Tooltip>
+        <Tooltip placement="bottom" title="半顆">
+          <Button
+            buttonStyle={positionRangeValue === 0.5 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+            onClick={() => setPositionRangeValue(0.5)}
+            text="30°"
+          />
+        </Tooltip>
+        <Tooltip placement="bottom" title="好打">
+          <Button
+            buttonStyle={positionRangeValue === 0.71 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+            onClick={() => setPositionRangeValue(0.71)}
+            text="45°"
+          />
+        </Tooltip>
+        <Tooltip placement="bottom" title="難打">
+          <Button
+            buttonStyle={positionRangeValue === 0.87 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+            onClick={() => setPositionRangeValue(0.87)}
+            text="60°"
+          />
+        </Tooltip>
+        <Tooltip placement="bottom" title="倚天切">
+          <Button
+            buttonStyle={positionRangeValue === 1 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
+            onClick={() => setPositionRangeValue(1)}
+            text="90°"
+          />
+        </Tooltip>
+      </div>
     </section>
   );
 };
