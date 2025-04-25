@@ -74,7 +74,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               className={isMobile ? 'text-sm px-2 py-1 min-w-6' : ''}
             />
           ))}
-          {!isMobile && (
+          {isMobile && (
             <Button
               onClick={() => handleAddBlockBall()}
               text="新增障礙球"
