@@ -8,9 +8,10 @@ interface SliderProps {
   defaultValue?: number;
   onChange?: (value: number) => void;
   style?: React.CSSProperties;
+  disabled?: boolean;
 }
 
-const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultValue = 0.5, onChange, style }) => {
+const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultValue = 0.5, onChange, style, disabled }) => {
   const [currentValue, setCurrentValue] = useState<number>(value !== undefined ? value : defaultValue);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -18,6 +19,8 @@ const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultVa
   // Handle value change
   const handleValueChange = useCallback(
     (newValue: number) => {
+      if (disabled) return;
+
       // Constrain to min/max
       newValue = Math.max(min, Math.min(max, newValue));
 
@@ -34,7 +37,7 @@ const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultVa
         onChange(newValue);
       }
     },
-    [max, min, onChange, step]
+    [disabled, max, min, onChange, step]
   );
 
   // Calculate value from mouse/touch position
@@ -127,7 +130,7 @@ const Slider: React.FC<SliderProps> = ({ min, max, step = 0.01, value, defaultVa
         window.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd, isDragging]);
+  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd, isDragging, disabled]);
 
   // Update internal state when value prop changes
   useEffect(() => {
