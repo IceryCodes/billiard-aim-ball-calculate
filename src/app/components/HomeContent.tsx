@@ -46,7 +46,7 @@ const tabInfo = [
         <div>
           <p>※ 每張球檯的桌布以及顆星都有些許不同，演算不一定準確。</p>
           <p>※ 我自己對顆星都不熟，所以顆星公式僅供參考並歡迎指教。</p>
-          <p>※ 公式有很多種，這是我目前所知道不用加塞且中桿中力好記的公式。</p>
+          <p>※ 公式有很多種，這是我目前所知道順桿且不用加塞好記的公式。</p>
         </div>
       </section>
     ),
@@ -91,7 +91,7 @@ const HomeContent = () => {
     <section className="flex flex-col items-center">
       <section className="flex flex-col items-center mt-[20px] mb-[30px] gap-4">
         <div className="flex flex-row items-center gap-4">
-          <h1 className="text-2xl font-bold">{tabInfo[tab].title}</h1>
+          <h1 className="text-2xl font-bold">{process.env.NEXT_PUBLIC_SITENAME}</h1>
           <Button onClick={() => setDisplayModal(true)} text="說明" buttonStyle={ButtonStyleType.Active} />
         </div>
 

@@ -62,6 +62,9 @@ const RIGHT_RATIO = 0.06;
 const TOP_RATIO = 0.115;
 const BOTTOM_RATIO = 0.115;
 
+const SPIN_OFFSET = 0.26; // 旋轉值偏移量
+const STRENGTH_OFFSET = 0.1; // 擊球力度偏移量
+
 const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, height = 400, onPathCalculated }) => {
   // 參數和常數
   const calculateBallRadius = useCallback(() => {
@@ -107,6 +110,9 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
   const [displayMarkers, setDisplayMarkers] = useState<boolean>(false);
   const [reverseMarkers, setReverseMarkers] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
+  const [englishValue, setEnglishValue] = useState<number>(0);
+  const [spinValue, setSpinValue] = useState<number>(0);
+  const [strengthValue, setStrengthValue] = useState<number>(0);
 
   const renderBalls = useMemo((): BallType[] => [...balls, ...obstacleBalls], [balls, obstacleBalls]);
 
@@ -543,8 +549,26 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
 
         const dotProduct = unitIncidentX * unitNormalX + unitIncidentY * unitNormalY;
 
-        const reflectionX = unitIncidentX - 2 * dotProduct * unitNormalX;
-        const reflectionY = unitIncidentY - 2 * dotProduct * unitNormalY;
+        let reflectionX = unitIncidentX - 2 * dotProduct * unitNormalX;
+        let reflectionY = unitIncidentY - 2 * dotProduct * unitNormalY;
+
+        // 只在第一次反射時應用旋轉效果
+        if (cushionCount === 0) {
+          console.log('englishValueConvert', englishValue);
+          const spinAdjustment = spinValue * SPIN_OFFSET * englishValue;
+          console.log('spinAdjustment', spinAdjustment);
+
+          const strengthAdjustment = strengthValue * STRENGTH_OFFSET * englishValue;
+          console.log('strengthAdjustment', strengthAdjustment);
+
+          // 計算切線向量（垂直於法線）
+          const tangentX = -unitNormalY;
+          const tangentY = unitNormalX;
+
+          // 調整反射向量
+          reflectionX += tangentX * spinAdjustment + strengthAdjustment;
+          reflectionY += tangentY * spinAdjustment + strengthAdjustment;
+        }
 
         const reflectionLength = Math.sqrt(reflectionX * reflectionX + reflectionY * reflectionY);
 
@@ -585,17 +609,20 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     setCalculatedPath(path);
     if (onPathCalculated) onPathCalculated(path);
   }, [
-    checkPathObstruction,
-    findCushionIntersection,
     getCueBall,
     getGhostBall,
     getTargetBall,
-    height,
-    lineIntersectsBall,
-    onPathCalculated,
+    checkPathObstruction,
     selectedCushions,
-    width,
+    onPathCalculated,
     calculateIntersectionPoint,
+    lineIntersectsBall,
+    width,
+    height,
+    findCushionIntersection,
+    spinValue,
+    englishValue,
+    strengthValue,
   ]);
 
   const handleBallDragEnd = useCallback(
@@ -834,6 +861,12 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
           setReverseMarkers={setReverseMarkers}
           pathWidth={pathWidth}
           setPathWidth={setPathWidth}
+          englishValue={englishValue}
+          setEnglishValue={setEnglishValue}
+          spinValue={spinValue}
+          setSpinValue={setSpinValue}
+          strengthValue={strengthValue}
+          setStrengthValue={setStrengthValue}
           handleAddBlockBall={handleAddBlockBall}
           onClearObstacles={() => {
             setObstacleBalls([]);
