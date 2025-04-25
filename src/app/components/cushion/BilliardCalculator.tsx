@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Konva from 'konva';
+import { Vector2d } from 'konva/lib/types';
 import { Layer, Stage } from 'react-konva';
 
 import Ball from './Ball';
@@ -54,6 +55,12 @@ interface KonvaMouseEvent {
   type: string;
   cancelBubble: boolean;
 }
+
+// 根據實際圖片比例計算邊界
+const LEFT_RATIO = 0.068;
+const RIGHT_RATIO = 0.06;
+const TOP_RATIO = 0.115;
+const BOTTOM_RATIO = 0.115;
 
 const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, height = 400, onPathCalculated }) => {
   // 參數和常數
@@ -152,17 +159,17 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
 
   const constrainBallPosition = useCallback(
     (x: number, y: number): { x: number; y: number } => {
-      const minX = tableDimensions.cushionWidth + tableDimensions.innerPadding + BALL_RADIUS;
-      const maxX = width - tableDimensions.cushionWidth - tableDimensions.innerPadding - BALL_RADIUS;
-      const minY = tableDimensions.cushionWidth + tableDimensions.innerPadding + BALL_RADIUS;
-      const maxY = height - tableDimensions.cushionWidth - tableDimensions.innerPadding - BALL_RADIUS;
+      const minX = width * LEFT_RATIO + BALL_RADIUS;
+      const maxX = width * (1 - RIGHT_RATIO) - BALL_RADIUS;
+      const minY = height * TOP_RATIO + BALL_RADIUS;
+      const maxY = height * (1 - BOTTOM_RATIO) - BALL_RADIUS;
 
       return {
         x: Math.max(minX, Math.min(maxX, x)),
         y: Math.max(minY, Math.min(maxY, y)),
       };
     },
-    [BALL_RADIUS, height, tableDimensions, width]
+    [BALL_RADIUS, height, width]
   );
 
   // 障礙檢測
@@ -481,12 +488,12 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     while (cushionCount < selectedCushions && iterations < maxIterations) {
       iterations++;
 
-      // 獲取淺藍色區域(球檯內)的碰撞邊界
+      // 使用與 constrainBallPosition 相同的比例來計算碰撞邊界
       const tableBounds = {
-        left: tableDimensions.cushionWidth + tableDimensions.innerPadding,
-        right: width - tableDimensions.cushionWidth - tableDimensions.innerPadding,
-        top: tableDimensions.cushionWidth + tableDimensions.innerPadding,
-        bottom: height - tableDimensions.cushionWidth - tableDimensions.innerPadding,
+        left: width * LEFT_RATIO,
+        right: width * (1 - RIGHT_RATIO),
+        top: height * TOP_RATIO,
+        bottom: height * (1 - BOTTOM_RATIO),
       };
 
       // 檢查在到達邊界前是否會碰到任何球
@@ -587,12 +594,9 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     lineIntersectsBall,
     onPathCalculated,
     selectedCushions,
-    tableDimensions,
     width,
     calculateIntersectionPoint,
   ]);
-
-  // 其餘函數與原來相同...
 
   const handleBallDragEnd = useCallback(
     (ballId: string, newX: number, newY: number) => {
@@ -642,6 +646,43 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
     [balls, calculatePath, constrainBallPosition]
   );
 
+  const handleAddBlockBall = useCallback(
+    (pos?: Vector2d) => {
+      let usedPos: Vector2d = { x: width / 2, y: height / 2 };
+      if (pos) usedPos = pos;
+
+      // 確保新球的位置在合法範圍內（淺藍色球檯區域）
+      const { x: constrainedX, y: constrainedY } = constrainBallPosition(usedPos.x / scale, usedPos.y / scale);
+
+      // 添加新的障礙球
+      const newObstacleBall: BallType = {
+        id: `obstacle${nextObstacleId}`,
+        x: constrainedX,
+        y: constrainedY,
+        radius: BALL_RADIUS,
+        color: '#101010',
+        draggable: true,
+      };
+
+      // 檢查新球是否與現有球重疊
+      const isOverlapping = [...balls, ...obstacleBalls].some((ball) => {
+        const dx = ball.x - constrainedX;
+        const dy = ball.y - constrainedY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < ball.radius + BALL_RADIUS;
+      });
+
+      if (!isOverlapping) {
+        setObstacleBalls((prev) => [...prev, newObstacleBall]);
+        setNextObstacleId((prevId) => prevId + 1);
+      }
+
+      // 重新計算路徑
+      calculatePath();
+    },
+    [BALL_RADIUS, balls, calculatePath, constrainBallPosition, height, nextObstacleId, obstacleBalls, scale, width]
+  );
+
   const handleStageClick = useCallback(
     (e: KonvaMouseEvent) => {
       // 右鍵點擊即可新增障礙球
@@ -653,37 +694,10 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
         const pos = stage.getPointerPosition();
         if (!pos) return;
 
-        // 確保新球的位置在合法範圍內（淺藍色球檯區域）
-        const { x: constrainedX, y: constrainedY } = constrainBallPosition(pos.x / scale, pos.y / scale);
-
-        // 添加新的障礙球
-        const newObstacleBall: BallType = {
-          id: `obstacle${nextObstacleId}`,
-          x: constrainedX,
-          y: constrainedY,
-          radius: BALL_RADIUS,
-          color: '#101010',
-          draggable: true,
-        };
-
-        // 檢查新球是否與現有球重疊
-        const isOverlapping = [...balls, ...obstacleBalls].some((ball) => {
-          const dx = ball.x - constrainedX;
-          const dy = ball.y - constrainedY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          return distance < ball.radius + BALL_RADIUS;
-        });
-
-        if (!isOverlapping) {
-          setObstacleBalls((prev) => [...prev, newObstacleBall]);
-          setNextObstacleId((prevId) => prevId + 1);
-        }
-
-        // 重新計算路徑
-        calculatePath();
+        handleAddBlockBall(pos);
       }
     },
-    [balls, obstacleBalls, constrainBallPosition, nextObstacleId, calculatePath, scale, BALL_RADIUS]
+    [handleAddBlockBall]
   );
 
   const initializeBallsRef = useRef<(() => void) | null>(null);
@@ -820,6 +834,7 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
           setReverseMarkers={setReverseMarkers}
           pathWidth={pathWidth}
           setPathWidth={setPathWidth}
+          handleAddBlockBall={handleAddBlockBall}
           onClearObstacles={() => {
             setObstacleBalls([]);
             calculatePath();
