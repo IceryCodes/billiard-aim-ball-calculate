@@ -54,7 +54,7 @@ const tabInfo = [
 ];
 
 const HomeContent = () => {
-  const [tab, setTab] = useState<TabType>(TabType.CUSHION);
+  const [tab, setTab] = useState<TabType>(TabType.AIM);
   const [displayModal, setDisplayModal] = useState<boolean>(false);
   const [isMobileVertical, setIsMobileVertical] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -108,7 +108,7 @@ const HomeContent = () => {
           />
         </div>
 
-        {isMobileVertical && <label>請將手機選轉成橫向已顯示球桌</label>}
+        {tab === TabType.CUSHION && isMobileVertical && <label>請將手機旋轉成橫向以顯示撞球桌</label>}
 
         {/* 用 ref 取得實際容器寬度，並使用計算後的尺寸 */}
         <section ref={containerRef} className="flex flex-col items-center gap-4 w-[80vw] max-w-[800px] px-2.5">
