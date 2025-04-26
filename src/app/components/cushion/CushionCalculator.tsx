@@ -9,39 +9,10 @@ import { Layer, Stage } from 'react-konva';
 import Ball from './Ball';
 import BilliardTable from './BilliardTable';
 import ControlPanel from './ControlPanel';
+import { BallType, EnglishType, MarkerType, PathPoint, TableDimensions } from './interfaces';
 import PathLine from './PathLine';
 
-// 類型定義
-export interface BallType {
-  id: string;
-  x: number;
-  y: number;
-  radius: number;
-  color: string;
-  draggable: boolean;
-  isDashed?: boolean;
-}
-
-export interface PathPoint {
-  x: number;
-  y: number;
-}
-
-export interface TableDimensions {
-  width: number;
-  height: number;
-  cushionWidth: number;
-  pocketRadius: number;
-  innerPadding: number;
-}
-
-export interface TableMarker {
-  position: 'top' | 'bottom' | 'right' | 'rightReverse';
-  value: string;
-  offset: number;
-}
-
-interface BilliardCalculatorProps {
+interface CushionCalculatorProps {
   width?: number;
   height?: number;
   onPathCalculated?: (path: PathPoint[]) => void;
@@ -65,7 +36,7 @@ const BOTTOM_RATIO = 0.115;
 const SPIN_OFFSET = 0.26; // 旋轉值偏移量
 const STRENGTH_OFFSET = 0.1; // 擊球力度偏移量
 
-const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, height = 400, onPathCalculated }) => {
+const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, height = 400, onPathCalculated }) => {
   // 參數和常數
   const calculateBallRadius = useCallback(() => {
     const tableWidth = width - 60;
@@ -107,10 +78,10 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
   const [calculatedPath, setCalculatedPath] = useState<PathPoint[]>([]);
   const [nextObstacleId, setNextObstacleId] = useState<number>(1);
   const [pathWidth, setPathWidth] = useState<number>(3);
-  const [displayMarkers, setDisplayMarkers] = useState<boolean>(false);
+  const [displayMarkers, setDisplayMarkers] = useState<MarkerType>(MarkerType.NONE);
   const [reverseMarkers, setReverseMarkers] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(1);
-  const [englishValue, setEnglishValue] = useState<number>(0);
+  const [englishValue, setEnglishValue] = useState<EnglishType>(EnglishType.NONE);
   const [spinValue, setSpinValue] = useState<number>(0);
   const [strengthValue, setStrengthValue] = useState<number>(0);
 
@@ -552,14 +523,10 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
         let reflectionX = unitIncidentX - 2 * dotProduct * unitNormalX;
         let reflectionY = unitIncidentY - 2 * dotProduct * unitNormalY;
 
-        // 只在第一次反射時應用旋轉效果
-        if (cushionCount === 0) {
-          console.log('englishValueConvert', englishValue);
+        // 第一次反射時應用旋轉及擊球力度偏移效果
+        if (cushionCount === 0 && englishValue !== 0) {
           const spinAdjustment = spinValue * SPIN_OFFSET * englishValue;
-          console.log('spinAdjustment', spinAdjustment);
-
           const strengthAdjustment = strengthValue * STRENGTH_OFFSET * englishValue;
-          console.log('strengthAdjustment', strengthAdjustment);
 
           // 計算切線向量（垂直於法線）
           const tangentX = -unitNormalY;
@@ -568,6 +535,19 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
           // 調整反射向量
           reflectionX += tangentX * spinAdjustment + strengthAdjustment;
           reflectionY += tangentY * spinAdjustment + strengthAdjustment;
+        }
+
+        // 第二次反射時應用旋轉偏移效果
+        if (cushionCount === 1 && englishValue !== 0) {
+          const spinAdjustment = spinValue * (SPIN_OFFSET * 1.5 * englishValue);
+
+          // 計算切線向量（垂直於法線）
+          const tangentX = -unitNormalY;
+          const tangentY = unitNormalX;
+
+          // 調整反射向量
+          reflectionX += tangentX * spinAdjustment;
+          reflectionY += tangentY * spinAdjustment;
         }
 
         const reflectionLength = Math.sqrt(reflectionX * reflectionX + reflectionY * reflectionY);
@@ -879,4 +859,4 @@ const BilliardCalculator: React.FC<BilliardCalculatorProps> = ({ width = 800, he
   );
 };
 
-export default BilliardCalculator;
+export default CushionCalculator;

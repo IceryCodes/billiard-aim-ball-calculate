@@ -7,9 +7,9 @@ import { AiFillCopyrightCircle } from 'react-icons/ai';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Popup from '@/global-components/Popup';
 
-import BilliardAimCalculation from './BilliardAimCalculation';
+import AimCalculation from './aim/AimCalculation';
 
-const BilliardCalculator = dynamic(() => import('./cushion/BilliardCalculator'), { ssr: false });
+const CushionCalculator = dynamic(() => import('./cushion/CushionCalculator'), { ssr: false });
 
 enum TabType {
   AIM = 0,
@@ -44,9 +44,9 @@ const tabInfo = [
         <p>※ 所有球均可拖曳調整位置</p>
 
         <div>
-          <p>※ 每張球檯的桌布以及顆星都有些許不同，演算不一定準確。</p>
-          <p>※ 我自己對顆星都不熟，所以顆星公式僅供參考並歡迎指教。</p>
-          <p>※ 公式有很多種，這是我目前所知道順桿且不用加塞好記的公式。</p>
+          <p>※ 目前下塞旋轉值只有設定前兩顆星有偏移影響。</p>
+          <p>※ 每張球檯的桌布以及顆星都有些許不同，演算僅能參考路線。</p>
+          <p>※ 我自己對顆星都不熟，所以顆星公式有誤則歡迎指教。</p>
         </div>
       </section>
     ),
@@ -112,9 +112,9 @@ const HomeContent = () => {
 
         {/* 用 ref 取得實際容器寬度，並使用計算後的尺寸 */}
         <section ref={containerRef} className="flex flex-col items-center gap-4 w-[80vw] max-w-[800px] px-2.5">
-          {tab === TabType.AIM && <BilliardAimCalculation />}
+          {tab === TabType.AIM && <AimCalculation />}
           {tab === TabType.CUSHION && !isMobileVertical && (
-            <BilliardCalculator width={calculatorDimensions.width} height={calculatorDimensions.height} />
+            <CushionCalculator width={calculatorDimensions.width} height={calculatorDimensions.height} />
           )}
         </section>
       </section>

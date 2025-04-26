@@ -3,7 +3,7 @@ import React from 'react';
 import { Group, Image, Text } from 'react-konva';
 import useImage from 'use-image';
 
-import { TableMarker } from './interfaces';
+import { MarkerType, TableMarker } from './interfaces';
 
 interface BilliardTableProps {
   width: number;
@@ -13,11 +13,11 @@ interface BilliardTableProps {
     innerPadding: number;
     pocketRadius: number;
   };
-  displayMarkers: boolean;
+  displayMarkers: MarkerType;
   reverseMarkers: boolean;
 }
 
-// 兩顆星數字標記
+// 顆星數字標記
 const tableMarkers: TableMarker[] = [
   // 頂部標記
   { position: 'top', value: '0', offset: 0 },
@@ -49,6 +49,54 @@ const tableMarkers: TableMarker[] = [
   { position: 'rightReverse', value: '8', offset: 0.752 },
 ];
 
+const koTableMarkers: TableMarker[] = [
+  // 頂部標記
+  { position: 'top', value: '0', offset: 0 },
+  { position: 'top', value: '1', offset: 0.135 },
+  { position: 'top', value: '2', offset: 0.255 },
+  { position: 'top', value: '3', offset: 0.375 },
+  { position: 'top', value: '4', offset: 0.5 },
+  { position: 'top', value: '5', offset: 0.625 },
+  { position: 'top', value: '6', offset: 0.745 },
+  { position: 'top', value: '7', offset: 0.8665 },
+  { position: 'top', value: '8', offset: 1 },
+
+  // 底部標記
+  { position: 'bottom', value: '8', offset: 0 },
+  { position: 'bottom', value: '7', offset: 0.135 },
+  { position: 'bottom', value: '6', offset: 0.255 },
+  { position: 'bottom', value: '5', offset: 0.375 },
+  { position: 'bottom', value: '4', offset: 0.5 },
+  { position: 'bottom', value: '3', offset: 0.625 },
+  { position: 'bottom', value: '2', offset: 0.745 },
+  { position: 'bottom', value: '1', offset: 0.8665 },
+  { position: 'bottom', value: '0', offset: 1 },
+
+  // 右邊標記
+  { position: 'right', value: '2', offset: 0.13 },
+  { position: 'right', value: '3', offset: 0.26 },
+  { position: 'right', value: '4', offset: 0.39 },
+  { position: 'right', value: '5', offset: 0.51 },
+  { position: 'right', value: '6', offset: 0.635 },
+  { position: 'right', value: '7', offset: 0.752 },
+  { position: 'right', value: '8', offset: 0.88 },
+
+  // 顛倒右邊標記
+  { position: 'rightReverse', value: '8', offset: 0.13 },
+  { position: 'rightReverse', value: '7', offset: 0.26 },
+  { position: 'rightReverse', value: '6', offset: 0.39 },
+  { position: 'rightReverse', value: '5', offset: 0.51 },
+  { position: 'rightReverse', value: '4', offset: 0.635 },
+  { position: 'rightReverse', value: '3', offset: 0.752 },
+  { position: 'rightReverse', value: '2', offset: 0.88 },
+
+  // 左側標記
+  { position: 'left', value: '9', offset: 0.752 },
+
+  // 顛倒左邊標記
+  { position: 'leftReverse', value: '9', offset: 0.26 },
+];
+
 const BilliardTable: React.FC<BilliardTableProps> = (props) => {
   // 使用 useImage hook 來載入圖片
   const [image] = useImage('/images/horizontal-billiards-table.png');
@@ -63,7 +111,86 @@ const BilliardTable: React.FC<BilliardTableProps> = (props) => {
       <Image image={image} width={width} height={height} alt="horizontal billiards table" />
 
       {/* 顯示標記 */}
-      {displayMarkers && (
+      {displayMarkers === MarkerType.KO && (
+        <Group>
+          {/* 頂部標記 */}
+          {koTableMarkers
+            .filter((marker) => reverseMarkers && marker.position === 'top')
+            .map((marker, index) => (
+              <Text
+                key={`top-marker-${index}`}
+                x={tableDimensions.cushionWidth + (width - 2 * tableDimensions.cushionWidth) * marker.offset}
+                y={tableDimensions.cushionWidth / 2}
+                text={marker.value}
+                fill="red"
+                fontSize={16}
+                fontStyle="bold"
+                align="center"
+                verticalAlign="middle"
+                offsetX={5}
+                offsetY={15}
+              />
+            ))}
+
+          {/* 底部標記 */}
+          {koTableMarkers
+            .filter((marker) => !reverseMarkers && marker.position === 'bottom')
+            .map((marker, index) => (
+              <Text
+                key={`bottom-marker-${index}`}
+                x={tableDimensions.cushionWidth + (width - 2 * tableDimensions.cushionWidth) * marker.offset}
+                y={height - tableDimensions.cushionWidth / 2}
+                text={marker.value}
+                fill="red"
+                fontSize={16}
+                fontStyle="bold"
+                align="center"
+                verticalAlign="middle"
+                offsetX={5}
+                offsetY={-3}
+              />
+            ))}
+
+          {/* 右側標記 */}
+          {koTableMarkers
+            .filter((marker) => (!reverseMarkers ? marker.position === 'right' : marker.position === 'leftReverse'))
+            .map((marker, index) => (
+              <Text
+                key={`right-marker-${index}`}
+                x={width - tableDimensions.cushionWidth / 2}
+                y={tableDimensions.cushionWidth + (height - 2 * tableDimensions.cushionWidth) * marker.offset}
+                text={marker.value}
+                fill="red"
+                fontSize={16}
+                fontStyle="bold"
+                align="center"
+                verticalAlign="middle"
+                offsetX={-3}
+                offsetY={7}
+              />
+            ))}
+
+          {/* 左側標記 */}
+          {koTableMarkers
+            .filter((marker) => (!reverseMarkers ? marker.position === 'left' : marker.position === 'rightReverse'))
+            .map((marker, index) => (
+              <Text
+                key={`left-marker-${index}`}
+                x={tableDimensions.cushionWidth}
+                y={tableDimensions.cushionWidth + (height - 2 * tableDimensions.cushionWidth) * marker.offset}
+                text={marker.value}
+                fill="red"
+                fontSize={16}
+                fontStyle="bold"
+                align="center"
+                verticalAlign="middle"
+                offsetX={31}
+                offsetY={7}
+              />
+            ))}
+        </Group>
+      )}
+      {displayMarkers === MarkerType.OTHER && (
         <Group>
           {/* 頂部標記 */}
           {tableMarkers
