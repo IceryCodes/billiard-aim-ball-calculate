@@ -4,7 +4,7 @@ import React from 'react';
 
 import { Circle, Group } from 'react-konva';
 
-import { BallType } from './BilliardCalculator';
+import { BallType } from './interfaces';
 
 interface BallProps {
   ball: BallType;

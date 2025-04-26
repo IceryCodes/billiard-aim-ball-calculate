@@ -8,6 +8,12 @@ export interface BallType {
   isDashed?: boolean;
 }
 
+export interface TableMarker {
+  position: 'top' | 'bottom' | 'right' | 'rightReverse' | 'left' | 'leftReverse';
+  value: string;
+  offset: number;
+}
+
 export interface PathPoint {
   x: number;
   y: number;
@@ -21,8 +27,14 @@ export interface TableDimensions {
   innerPadding: number;
 }
 
-export interface TableMarker {
-  position: 'top' | 'bottom' | 'right' | 'rightReverse';
-  value: string;
-  offset: number;
+export enum MarkerType {
+  NONE = 0,
+  KO = 1,
+  OTHER = 2,
+}
+
+export enum EnglishType {
+  NONE = 0,
+  LEFT = 1,
+  RIGHT = -1,
 }
