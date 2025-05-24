@@ -55,7 +55,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     (value: EnglishType) => {
       setEnglishValue(value);
       if (!EnglishType.NONE) {
-        setSpinValue(0);
+        setSpinValue(2);
         setStrengthValue(0);
       } else {
         setSpinValue(1);
@@ -183,7 +183,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 ))}
               </div>
 
-              <Slider min={0.5} max={3} step={0.01} value={spinValue} onChange={handleSpinChange} style={{ width: 90 }} />
+              <Slider min={1} max={3} step={0.01} value={spinValue} onChange={handleSpinChange} style={{ width: 90 }} />
             </div>
           </div>
 
@@ -194,19 +194,19 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 <Button
                   onClick={() => handleStrengtChange(-1)}
                   buttonStyle={strengthValue === -1 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-                  text="小力"
+                  text="柔桿"
                   className="text-sm px-2 py-1 min-w-6"
                 />
                 <Button
                   onClick={() => handleStrengtChange(0)}
                   buttonStyle={strengthValue === 0 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-                  text="中等"
+                  text="順桿"
                   className="text-sm px-2 py-1 min-w-6"
                 />
                 <Button
                   onClick={() => handleStrengtChange(1)}
                   buttonStyle={strengthValue === 1 ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-                  text="大力"
+                  text="頓桿"
                   className="text-sm px-2 py-1 min-w-6"
                 />
               </div>
