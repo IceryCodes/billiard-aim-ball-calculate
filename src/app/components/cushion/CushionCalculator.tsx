@@ -33,7 +33,7 @@ const RIGHT_RATIO = 0.06;
 const TOP_RATIO = 0.115;
 const BOTTOM_RATIO = 0.115;
 
-const SPIN_OFFSET = 0.26; // 旋轉值偏移量
+const SPIN_OFFSET = 0.3; // 旋轉值偏移量
 const STRENGTH_OFFSET = 0.1; // 擊球力度偏移量
 
 const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, height = 400, onPathCalculated }) => {
@@ -84,6 +84,7 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
   const [englishValue, setEnglishValue] = useState<EnglishType>(EnglishType.NONE);
   const [spinValue, setSpinValue] = useState<number>(0);
   const [strengthValue, setStrengthValue] = useState<number>(0);
+  const [shouldRecalculate, setShouldRecalculate] = useState<boolean>(false);
 
   const renderBalls = useMemo((): BallType[] => [...balls, ...obstacleBalls], [balls, obstacleBalls]);
 
@@ -100,6 +101,61 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
     const targetBall: BallType | undefined = balls.find((ball) => ball.id === 'targetBall');
     return targetBall ? targetBall : { id: '', x: 0, y: 0, radius: 0, color: '', draggable: false };
   }, [balls]);
+
+  const determineSpinEffect = useCallback(
+    (englishValue: EnglishType, velocX: number, velocY: number, hitNormal: { x: number; y: number }): number => {
+      if (englishValue === EnglishType.NONE) return 0;
+
+      // 核心概念：
+      // 左塞 = 球逆時鐘旋轉
+      // 右塞 = 球順時鐘旋轉
+      // 順塞 = 旋轉有助於增加反彈角度
+      // 反塞 = 旋轉會減少反彈角度
+
+      // 計算球的移動方向向量（單位化）
+      const speed = Math.sqrt(velocX * velocX + velocY * velocY);
+      if (speed < 0.001) return 0;
+
+      const dirX = velocX / speed;
+      const dirY = velocY / speed;
+
+      // 計算切線向量（沿著撞擊面，垂直於法線）
+      // 法線 (nx, ny) 的切線是 (-ny, nx) 或 (ny, -nx)
+      // 我們選擇與球運動方向較一致的切線方向
+      const tangent1X = -hitNormal.y;
+      const tangent1Y = hitNormal.x;
+      const tangent2X = hitNormal.y;
+      const tangent2Y = -hitNormal.x;
+
+      // 選擇與球運動方向夾角較小的切線
+      const dot1 = dirX * tangent1X + dirY * tangent1Y;
+      const dot2 = dirX * tangent2X + dirY * tangent2Y;
+
+      const tangentX = Math.abs(dot1) > Math.abs(dot2) ? tangent1X : tangent2X;
+      const tangentY = Math.abs(dot1) > Math.abs(dot2) ? tangent1Y : tangent2Y;
+
+      // 計算球的旋轉方向對反彈的影響
+      // 左塞（逆時鐘）：如果切線方向與旋轉方向一致，則為順塞
+      // 右塞（順時鐘）：如果切線方向與旋轉方向一致，則為順塞
+
+      // 使用叉積判斷旋轉效果
+      // 球運動方向 × 切線方向 的結果可以告訴我們旋轉的影響
+      const crossProduct = dirX * tangentY - dirY * tangentX;
+
+      if (englishValue === EnglishType.LEFT) {
+        // 左塞（逆時鐘旋轉）
+        // 如果叉積為正，表示切線方向有利於左旋，所以是順塞
+        return crossProduct > 0 ? 1 : -1;
+      } else if (englishValue === EnglishType.RIGHT) {
+        // 右塞（順時鐘旋轉）
+        // 如果叉積為負，表示切線方向有利於右旋，所以是順塞
+        return crossProduct < 0 ? 1 : -1;
+      }
+
+      return 0;
+    },
+    []
+  );
 
   // 碰撞檢測函數
   const lineIntersectsBall = useCallback((x1: number, y1: number, x2: number, y2: number, ball: BallType): boolean => {
@@ -523,31 +579,42 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
         let reflectionX = unitIncidentX - 2 * dotProduct * unitNormalX;
         let reflectionY = unitIncidentY - 2 * dotProduct * unitNormalY;
 
-        // 第一次反射時應用旋轉及擊球力度偏移效果
-        if (cushionCount === 0 && englishValue !== 0) {
-          const spinAdjustment = spinValue * SPIN_OFFSET * englishValue;
-          const strengthAdjustment = strengthValue * STRENGTH_OFFSET * englishValue;
+        // 應用旋轉效果（根據反射次數調整強度）
+        if (englishValue !== EnglishType.NONE) {
+          const spinEffect = determineSpinEffect(englishValue, velocX, velocY, hitNormal);
+
+          // 根據反射次數調整旋轉效果的強度
+          let spinMultiplier = 1;
+          let strengthMultiplier = 1;
+
+          if (cushionCount === 0) {
+            // 第一次反射：最強的效果
+            spinMultiplier = 1;
+            strengthMultiplier = 1;
+          } else if (cushionCount === 1) {
+            // 第二次反射：中等效果
+            spinMultiplier = 1.5;
+            strengthMultiplier = 0; // 第二次反射不再受擊球力度影響
+          } else if (cushionCount === 2) {
+            // 第三次反射：較弱效果
+            spinMultiplier = 1.2;
+            strengthMultiplier = 0;
+          } else {
+            // 更多次反射：效果逐漸減弱
+            spinMultiplier = 1.0;
+            strengthMultiplier = 0;
+          }
+
+          const spinAdjustment = spinValue * SPIN_OFFSET * spinMultiplier * spinEffect;
+          const strengthAdjustment = strengthValue * STRENGTH_OFFSET * strengthMultiplier * spinEffect;
 
           // 計算切線向量（垂直於法線）
           const tangentX = -unitNormalY;
           const tangentY = unitNormalX;
 
           // 調整反射向量
-          reflectionX += tangentX * spinAdjustment + strengthAdjustment;
-          reflectionY += tangentY * spinAdjustment + strengthAdjustment;
-        }
-
-        // 第二次反射時應用旋轉偏移效果
-        if (cushionCount === 1 && englishValue !== 0) {
-          const spinAdjustment = spinValue * (SPIN_OFFSET * 1.5 * englishValue);
-
-          // 計算切線向量（垂直於法線）
-          const tangentX = -unitNormalY;
-          const tangentY = unitNormalX;
-
-          // 調整反射向量
-          reflectionX += tangentX * spinAdjustment;
-          reflectionY += tangentY * spinAdjustment;
+          reflectionX += tangentX * spinAdjustment + tangentX * strengthAdjustment;
+          reflectionY += tangentY * spinAdjustment + tangentY * strengthAdjustment;
         }
 
         const reflectionLength = Math.sqrt(reflectionX * reflectionX + reflectionY * reflectionY);
@@ -592,17 +659,18 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
     getCueBall,
     getGhostBall,
     getTargetBall,
-    checkPathObstruction,
     selectedCushions,
-    onPathCalculated,
-    calculateIntersectionPoint,
-    lineIntersectsBall,
     width,
     height,
-    findCushionIntersection,
-    spinValue,
     englishValue,
+    spinValue,
     strengthValue,
+    checkPathObstruction,
+    calculateIntersectionPoint,
+    lineIntersectsBall,
+    findCushionIntersection,
+    determineSpinEffect,
+    onPathCalculated,
   ]);
 
   const handleBallDragEnd = useCallback(
@@ -620,10 +688,10 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
         );
       }
 
-      // 立即重新計算路徑
-      calculatePath();
+      // 拖動結束後立即觸發重新計算
+      setShouldRecalculate(true);
     },
-    [balls, calculatePath, constrainBallPosition]
+    [balls, constrainBallPosition]
   );
 
   const handleBallDrag = useCallback(
@@ -641,16 +709,17 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
         );
       }
 
+      // 使用節流來避免過度計算
       if (timeoutIdRef.current) {
         cancelAnimationFrame(timeoutIdRef.current);
       }
 
       timeoutIdRef.current = requestAnimationFrame(() => {
-        calculatePath();
+        setShouldRecalculate(true); // 設置標記，觸發重新計算
         timeoutIdRef.current = null;
       });
     },
-    [balls, calculatePath, constrainBallPosition]
+    [balls, constrainBallPosition]
   );
 
   const handleAddBlockBall = useCallback(
