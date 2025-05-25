@@ -84,7 +84,6 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
   const [englishValue, setEnglishValue] = useState<EnglishType>(EnglishType.NONE);
   const [spinValue, setSpinValue] = useState<number>(0);
   const [strengthValue, setStrengthValue] = useState<number>(0);
-  const [shouldRecalculate, setShouldRecalculate] = useState<boolean>(false);
 
   const renderBalls = useMemo((): BallType[] => [...balls, ...obstacleBalls], [balls, obstacleBalls]);
 
@@ -687,9 +686,6 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
           prevBalls.map((ball) => (ball.id === ballId ? { ...ball, x: constrainedX, y: constrainedY } : ball))
         );
       }
-
-      // 拖動結束後立即觸發重新計算
-      setShouldRecalculate(true);
     },
     [balls, constrainBallPosition]
   );
@@ -715,7 +711,6 @@ const CushionCalculator: React.FC<CushionCalculatorProps> = ({ width = 800, heig
       }
 
       timeoutIdRef.current = requestAnimationFrame(() => {
-        setShouldRecalculate(true); // 設置標記，觸發重新計算
         timeoutIdRef.current = null;
       });
     },
