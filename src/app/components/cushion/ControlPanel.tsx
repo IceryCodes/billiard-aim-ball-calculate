@@ -130,7 +130,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               <Button
                 onClick={() => handleAddBlockBall()}
                 text="新增障礙球"
-                className="text-sm px-2 py-1 ml-1 hidden md:flex"
+                className="text-sm px-2 py-1 ml-1"
                 buttonStyle={ButtonStyleType.Active}
               />
               <Button
