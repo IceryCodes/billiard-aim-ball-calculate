@@ -1,6 +1,6 @@
 import type { Config } from 'tailwindcss';
 
-export const headerHeight: number = 60;
+export const headerHeight = 60;
 
 const config: Config = {
   content: [
