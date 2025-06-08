@@ -6,7 +6,7 @@ interface SelectProps extends InputHTMLAttributes<HTMLSelectElement> {
   className?: string;
 }
 
-const selectClassName: string = 'border rounded px-4 py-2 w-full bg-backgroundLight text-foreground';
+const selectClassName = 'border rounded px-4 py-2 w-full bg-backgroundLight text-foreground';
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ defaultValue, options, className = '', ...restProps }, ref) => {

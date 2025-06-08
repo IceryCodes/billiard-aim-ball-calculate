@@ -81,7 +81,7 @@ export const getGoogleInfos = async ({ query, byTitle }: GetGoogleInfosDto): Pro
       takeout,
     };
   } catch (error) {
-    const message: string = '搜尋Google資料失敗!';
+    const message = '搜尋Google資料失敗!';
     logApiError({ error, message });
 
     // Return default values in case of error
