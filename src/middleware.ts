@@ -206,7 +206,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.includes('/tournaments/') || pathname.includes('/courts/') || pathname.includes('/players/')) {
-    console.info('檢查頁面是否有 noindex:', pathname);
+    // console.info('檢查頁面是否有 noindex:', pathname);
 
     // 創建響應
     const response = NextResponse.next();
@@ -214,7 +214,7 @@ export async function middleware(req: NextRequest) {
     // 診斷現有頭信息
     const currentRobotsHeader = response.headers.get('X-Robots-Tag');
     if (currentRobotsHeader) {
-      console.info('發現 X-Robots-Tag:', currentRobotsHeader, '在頁面:', pathname);
+      // console.info('發現 X-Robots-Tag:', currentRobotsHeader, '在頁面:', pathname);
     }
 
     // 確保沒有 noindex 標記

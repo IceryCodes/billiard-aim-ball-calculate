@@ -9,7 +9,7 @@ interface TextAreaProps extends InputHTMLAttributes<HTMLTextAreaElement> {
   required?: boolean;
 }
 
-const textareaClassName: string = 'border rounded px-4 py-2 w-full bg-backgroundLight text-foreground h-40';
+const textareaClassName = 'border rounded px-4 py-2 w-full bg-backgroundLight text-foreground h-40';
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
   ({ placeholder, element, className = '', onChange, disabled = false, required = false, ...restProps }, ref) => {

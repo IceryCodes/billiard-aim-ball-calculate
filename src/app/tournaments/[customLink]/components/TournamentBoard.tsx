@@ -190,6 +190,7 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
     setLastUpdateTime(new Date().toLocaleTimeString());
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { isConnected, onlineCount, lastMessage, reconnect } = useTournamentRealtime({
     tournamentId: tournamentData.customLink,
     userId: viewerId,
