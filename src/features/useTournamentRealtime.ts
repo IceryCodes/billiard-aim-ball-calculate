@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { BroadcastUpdateData, PresenceData, RealtimeMessage } from '@/domains/realtime';
+import { RealtimeMessageType } from '@/domains/tournament';
 import { RealtimeChannel, supabase } from '@/lib/supabase';
 
 // Supabase realtime 的狀態類型
@@ -202,7 +203,7 @@ export function useTournamentRealtime({
 
       // 創建完整的訊息，確保有必要的屬性
       const fullMessage: RealtimeMessage = {
-        type: message.type || 'testUpdate',
+        type: message.type || RealtimeMessageType.TEST_UPDATE,
         data: message.data,
         timestamp: new Date().toISOString(),
         fromUserId: userId,
@@ -241,9 +242,9 @@ export function useTournamentRealtime({
       let message: RealtimeMessage;
 
       switch (updateData.type) {
-        case 'playerUpdate':
+        case RealtimeMessageType.PLAYER_UPDATE:
           message = {
-            type: 'playerUpdate',
+            type: RealtimeMessageType.PLAYER_UPDATE,
             data: updateData.data,
             timestamp: new Date().toISOString(),
             fromUserId: userId,
@@ -251,9 +252,9 @@ export function useTournamentRealtime({
           } as RealtimeMessage;
           break;
 
-        case 'matchUpdate':
+        case RealtimeMessageType.MATCH_UPDATE:
           message = {
-            type: 'matchUpdate',
+            type: RealtimeMessageType.MATCH_UPDATE,
             data: updateData.data,
             timestamp: new Date().toISOString(),
             fromUserId: userId,
@@ -261,9 +262,9 @@ export function useTournamentRealtime({
           } as RealtimeMessage;
           break;
 
-        case 'announcement':
+        case RealtimeMessageType.ANNOUNCEMENT:
           message = {
-            type: 'announcement',
+            type: RealtimeMessageType.ANNOUNCEMENT,
             message: updateData.message as string,
             timestamp: new Date().toISOString(),
             fromUserId: userId,
@@ -271,9 +272,9 @@ export function useTournamentRealtime({
           } as RealtimeMessage;
           break;
 
-        case 'testUpdate':
+        case RealtimeMessageType.TEST_UPDATE:
           message = {
-            type: 'testUpdate',
+            type: RealtimeMessageType.TEST_UPDATE,
             message: updateData.message as string,
             timestamp: new Date().toISOString(),
             fromUserId: userId,
@@ -281,9 +282,9 @@ export function useTournamentRealtime({
           } as RealtimeMessage;
           break;
 
-        case 'refreshRequest':
+        case RealtimeMessageType.REFRESH_REQUEST:
           message = {
-            type: 'refreshRequest',
+            type: RealtimeMessageType.REFRESH_REQUEST,
             timestamp: new Date().toISOString(),
             fromUserId: userId,
             tournamentId,
@@ -293,7 +294,7 @@ export function useTournamentRealtime({
         default:
           // 預設為 tournamentUpdated
           message = {
-            type: 'tournamentUpdated',
+            type: RealtimeMessageType.TOURNAMENT_UPDATED,
             data: updateData.data || updateData,
             timestamp: new Date().toISOString(),
             fromUserId: userId,

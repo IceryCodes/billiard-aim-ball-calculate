@@ -38,7 +38,7 @@ export const generateMetadata = async (props: { params: Params }): Promise<Metad
 };
 
 const Page = (): ReactNode => (
-  <main className=" w-[80vw] max-w-[900px] mx-auto overflow-auto">
+  <main className="mx-auto overflow-auto">
     <TournamentEdit />
   </main>
 );

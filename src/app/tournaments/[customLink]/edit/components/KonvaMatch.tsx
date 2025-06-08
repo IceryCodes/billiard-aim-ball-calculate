@@ -10,10 +10,8 @@ import { boxHeight, boxWidth } from './constants';
 import { KonvaMatchProps } from './interfaces';
 
 const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) => {
-  // 檢查比賽是否可以進行（兩個選手都存在，或者是第一輪）
   const canMatchProceed = match.round === 1 || (match.player1 !== null && match.player2 !== null);
 
-  // 檢查選手是否可以點擊
   const canClickPlayer1 = match.player1 !== null && canMatchProceed;
   const canClickPlayer2 = match.player2 !== null && canMatchProceed;
 
@@ -29,11 +27,10 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
     }
   }, [match.id, match.player2, onPlayerClick, canClickPlayer2]);
 
-  // 獲取選手框的樣式
   const getPlayerBoxStyle = (player: Player | null, isWinner: boolean, canClick: boolean) => {
     if (!player) {
       return {
-        fill: '#f9fafb', // 淺灰色背景表示空位
+        fill: '#f9fafb',
         stroke: '#e5e7eb',
         strokeWidth: 1,
         cursor: 'default',
@@ -42,7 +39,7 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
 
     if (!canClick) {
       return {
-        fill: '#f3f4f6', // 禁用狀態的背景
+        fill: '#f3f4f6',
         stroke: '#d1d5db',
         strokeWidth: 1,
         cursor: 'not-allowed',
@@ -51,7 +48,7 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
 
     if (isWinner) {
       return {
-        fill: '#fef3c7', // 淺黃色背景表示獲勝者
+        fill: '#fef3c7',
         stroke: '#f97316',
         strokeWidth: 3,
         cursor: 'pointer',
@@ -66,24 +63,23 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
     };
   };
 
-  // 獲取文字樣式
   const getTextStyle = (player: Player | null, canClick: boolean) => {
     if (!player) {
       return {
-        fill: '#9ca3af', // 灰色文字表示空位
+        fill: '#9ca3af',
         text: '待定',
       };
     }
 
     if (!canClick) {
       return {
-        fill: '#9ca3af', // 禁用狀態的灰色文字
+        fill: '#9ca3af',
         text: player.name,
       };
     }
 
     return {
-      fill: '#000000', // 正常黑色文字
+      fill: '#000000',
       text: player.name,
     };
   };
@@ -96,7 +92,6 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
 
   return (
     <Group>
-      {/* 選手1框 */}
       <Rect
         x={x}
         y={y}
@@ -125,19 +120,19 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
         }}
       />
       <Text
-        x={x + 8}
-        y={y + 10}
+        x={x + 6}
+        y={y + (boxHeight - 12) / 2}
         text={player1TextStyle.text}
-        fontSize={14}
+        fontSize={12}
         fill={player1TextStyle.fill}
-        width={boxWidth - 16}
+        width={boxWidth - 12}
         onClick={handlePlayer1Click}
         onTap={handlePlayer1Click}
         ellipsis
         wrap="none"
+        verticalAlign="middle"
       />
 
-      {/* 選手2框 */}
       <Rect
         x={x}
         y={y + boxHeight}
@@ -151,7 +146,7 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
           if (stage) {
-            if (canClickPlayer1) {
+            if (canClickPlayer2) {
               stage.container().style.cursor = 'pointer';
             } else {
               stage.container().style.cursor = 'not-allowed';
@@ -166,21 +161,21 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
         }}
       />
       <Text
-        x={x + 8}
-        y={y + boxHeight + 10}
+        x={x + 6}
+        y={y + boxHeight + (boxHeight - 12) / 2}
         text={player2TextStyle.text}
-        fontSize={14}
+        fontSize={12}
         fill={player2TextStyle.fill}
-        width={boxWidth - 16}
+        width={boxWidth - 12}
         onClick={handlePlayer2Click}
         onTap={handlePlayer2Click}
         ellipsis
         wrap="none"
+        verticalAlign="middle"
       />
 
-      {/* 如果比賽無法進行，顯示鎖定圖標 */}
       {!canMatchProceed && match.round > 1 && (
-        <Text x={x + boxWidth - 25} y={y + boxHeight / 2 + 5} text="🔒" fontSize={16} />
+        <Text x={x + boxWidth - 16} y={y + boxHeight / 2 + 3} text="🔒" fontSize={11} />
       )}
     </Group>
   );
