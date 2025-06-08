@@ -52,6 +52,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UserLoginReturn
     const verificationToken: string = await generateToken({
       user: { _id: userId.toString(), ...newUser },
       manage: {
+        courts: [],
         players: [],
       },
       isRegister: true,
