@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, useState } from 'react';
 
 import { BroadcastTestType, Player, PlayerCount, ToastType, TournamentType } from '@/domains/tournament';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
@@ -13,7 +13,6 @@ import {
 } from '../../edit/components/interfaces';
 import SingleEliminationKonva from '../../edit/components/SingleEliminationKonva';
 
-// ===== 狀態欄組件 =====
 export const TournamentStatusBar = ({
   isConnected,
   onlineCount,
@@ -59,7 +58,6 @@ export const TournamentStatusBar = ({
   );
 };
 
-// ===== Toast 通知組件 =====
 export const TournamentToast = ({ toast }: TournamentToastProps): ReactElement | null => {
   if (!toast) return null;
 
@@ -78,53 +76,183 @@ export const TournamentToast = ({ toast }: TournamentToastProps): ReactElement |
   );
 };
 
-// ===== 賽程表顯示組件 =====
 export const TournamentDisplay = ({
   tournament,
   onMatchUpdate,
   isEditMode = false,
 }: TournamentDisplayProps): ReactElement => {
+  const [scale, setScale] = useState(1.0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleZoomIn = () => {
+    setScale((prev) => Math.min(prev + 0.1, 2.0));
+  };
+
+  const handleZoomOut = () => {
+    setScale((prev) => Math.max(prev - 0.1, 0.5));
+  };
+
+  const handleReset = () => {
+    setScale(1.0);
+  };
+
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      setIsFullscreen(true);
+    } else {
+      setIsFullscreen(false);
+      setScale(1.0); // 回到正常大小
+    }
+  };
+
+  const closeFullscreen = () => {
+    setIsFullscreen(false);
+    setScale(1.0);
+  };
+
   return (
-    <div className="max-w-full mx-auto">
-      <div className="bg-white rounded-lg shadow-md">
-        <h3 className="text-xl font-semibold p-6 pb-2 text-center text-background">
-          {tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表
-        </h3>
+    <>
+      <div className="w-full mx-auto">
+        <div className="bg-white rounded-lg shadow-md">
+          <div className="flex justify-between items-center px-6 pt-4 pb-2">
+            <h3 className="text-lg font-semibold text-center text-background flex-1">
+              {tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表
+            </h3>
 
-        <div
-          className="w-full overflow-x-auto overflow-y-hidden p-4"
-          style={{ scrollBehavior: 'smooth' }}
-          ref={(el) => {
-            if (el) {
-              setTimeout(() => {
-                const maxScroll = el.scrollWidth - el.clientWidth;
-                if (maxScroll > 0) {
-                  el.scrollLeft = Math.max(0, maxScroll * 0.8);
-                }
-              }, 100);
-            }
-          }}
-        >
-          <div className="min-w-fit">
-            {tournament.tournamentType === TournamentType.SINGLE && (
-              <SingleEliminationKonva
-                players={tournament.players}
-                matches={tournament.matches}
-                onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
-              />
-            )}
+            {/* 控制按鈕 */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleZoomOut}
+                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 text-sm font-bold"
+                title="縮小"
+              >
+                −
+              </button>
+              <span className="text-sm text-gray-500 min-w-[50px] text-center">{Math.round(scale * 100)}%</span>
+              <button
+                onClick={handleZoomIn}
+                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 text-sm font-bold"
+                title="放大"
+              >
+                +
+              </button>
+              <button
+                onClick={handleReset}
+                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600"
+                title="重設大小"
+              >
+                重設
+              </button>
+              <button
+                onClick={toggleFullscreen}
+                className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs text-blue-600"
+                title="全螢幕顯示"
+              >
+                🔍 全螢幕
+              </button>
+            </div>
+          </div>
 
-            {tournament.tournamentType === TournamentType.DOUBLE && (
-              <div className="text-center text-gray-500 py-8">雙敗淘汰賽程表功能開發中...</div>
-            )}
+          <div className="w-full flex justify-center items-center p-4 overflow-auto">
+            <div
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.2s ease-in-out',
+                imageRendering: 'pixelated',
+                WebkitTransform: `scale(${scale})`,
+                MozTransform: `scale(${scale})`,
+              }}
+            >
+              {tournament.tournamentType === TournamentType.SINGLE && (
+                <SingleEliminationKonva
+                  players={tournament.players}
+                  matches={tournament.matches}
+                  onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
+                />
+              )}
+
+              {tournament.tournamentType === TournamentType.DOUBLE && (
+                <div className="text-center text-gray-500 py-8">雙敗淘汰賽程表功能開發中...</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* 全螢幕模式 */}
+      {isFullscreen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
+          {/* 全螢幕控制欄 */}
+          <div className="bg-white border-b px-6 py-3 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-800">
+              {tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表
+            </h3>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleZoomOut}
+                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold"
+                title="縮小"
+              >
+                −
+              </button>
+              <span className="text-sm text-gray-600 min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
+              <button
+                onClick={handleZoomIn}
+                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold"
+                title="放大"
+              >
+                +
+              </button>
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600"
+                title="重設大小"
+              >
+                重設
+              </button>
+              <button
+                onClick={closeFullscreen}
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 rounded text-sm text-red-600"
+                title="關閉全螢幕"
+              >
+                ✕ 關閉
+              </button>
+            </div>
+          </div>
+
+          {/* 全螢幕賽程表內容 */}
+          <div className="flex-1 flex justify-center items-center overflow-auto bg-white">
+            <div
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.2s ease-in-out',
+                imageRendering: 'pixelated',
+                WebkitTransform: `scale(${scale})`,
+                MozTransform: `scale(${scale})`,
+              }}
+            >
+              {tournament.tournamentType === TournamentType.SINGLE && (
+                <SingleEliminationKonva
+                  players={tournament.players}
+                  matches={tournament.matches}
+                  onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
+                />
+              )}
+
+              {tournament.tournamentType === TournamentType.DOUBLE && (
+                <div className="text-center text-gray-500 py-8">雙敗淘汰賽程表功能開發中...</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
-// ===== 響應式警告組件 =====
 export const ResponsiveWarning = ({ windowWidth }: ResponsiveWarningProps): ReactElement | null => {
   if (windowWidth > 400) return null;
 
@@ -139,7 +267,6 @@ export const ResponsiveWarning = ({ windowWidth }: ResponsiveWarningProps): Reac
   );
 };
 
-// ===== 編輯控制組件 =====
 export const TournamentControls = ({
   tournament,
   isConnected,
@@ -152,7 +279,6 @@ export const TournamentControls = ({
 }: TournamentControlsProps): ReactElement => {
   return (
     <div className="max-w-full mx-auto">
-      {/* 賽程設置 */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
@@ -193,7 +319,6 @@ export const TournamentControls = ({
         </div>
       </div>
 
-      {/* 參賽選手 */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h3 className="text-lg font-semibold mb-4 text-background">參賽選手 ({tournament.players.length} 人)</h3>
         <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, 120px)' }}>
@@ -203,7 +328,6 @@ export const TournamentControls = ({
         </div>
       </div>
 
-      {/* 即時廣播控制 */}
       <div className="bg-white rounded-lg shadow-md p-6 mt-6">
         <h3 className="text-lg font-semibold mb-4 text-background">即時廣播控制</h3>
 
