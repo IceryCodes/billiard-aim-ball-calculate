@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb';
+
 import { GenderType, UserRoleType } from './interface';
 
 export interface UserLoginDto {
@@ -31,6 +33,9 @@ export interface UserWithPasswordProps extends UserRegisterDto {
 }
 
 export type UserProps = Omit<UserWithPasswordProps, 'password'>;
+export interface UserDBProps extends Omit<UserProps, '_id'> {
+  _id: ObjectId;
+}
 
 export type UserUpdateProps = Omit<UserProps, '_id' | 'email' | 'role' | 'isVerified' | 'createdAt' | 'updatedAt'>;
 export type DeleteUserDto = Pick<UserProps, '_id'>;
