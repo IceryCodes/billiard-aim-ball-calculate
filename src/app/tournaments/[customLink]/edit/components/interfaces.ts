@@ -1,6 +1,12 @@
-// types.ts - 類型定義檔案
-
-import { Match, Player } from '@/domains/tournament';
+import {
+  BroadcastTestType,
+  Match,
+  Player,
+  PlayerCount,
+  ToastNotification,
+  TournamentState,
+  TournamentType,
+} from '@/domains/tournament';
 
 // 組件 Props 介面
 export interface EditablePlayerProps {
@@ -27,5 +33,68 @@ export interface KonvaConnectorProps {
 export interface SingleEliminationKonvaProps {
   players: Player[];
   matches: Match[];
-  onMatchUpdate?: (match: Match[]) => void;
+  onMatchUpdate?: (matches: Match[]) => void;
+}
+
+// 狀態欄組件介面
+export interface TournamentStatusBarProps {
+  isConnected: boolean;
+  onlineCount: number;
+  lastUpdateTime?: string;
+  isEditMode?: boolean;
+  tournamentTitle?: string;
+  reconnect?: () => void;
+}
+
+// Toast 組件介面
+export interface TournamentToastProps {
+  toast: ToastNotification | null;
+}
+
+// 賽程表顯示組件介面
+export interface TournamentDisplayProps {
+  tournament: TournamentState;
+  onMatchUpdate?: (matches: Match[]) => void;
+  isEditMode?: boolean;
+}
+
+// 響應式警告組件介面
+export interface ResponsiveWarningProps {
+  windowWidth: number;
+}
+
+// 編輯控制組件介面
+export interface TournamentControlsProps {
+  tournament: TournamentState;
+  isConnected: boolean;
+  onlineCount: number;
+  onPlayerCountChange: (count: PlayerCount) => void;
+  onTournamentTypeChange: (type: TournamentType) => void;
+  onPlayerNameChange: (id: number, name: string) => void;
+  onDragStart: (player: Player) => void;
+  onTestBroadcast: (testType: BroadcastTestType) => void;
+}
+
+// Hook 參數介面
+export interface UseTournamentStateProps {
+  tournamentData: import('@/domains/tournament').TournamentProps;
+  updateTournament?: (tournament: import('@/domains/tournament').UpdateTournamentDto) => void;
+  refetchTournament?: () => void;
+  isEditMode?: boolean;
+}
+
+// Hook 返回值介面
+export interface UseTournamentStateReturn {
+  currentTournament: import('@/domains/tournament').TournamentProps;
+  toast: ToastNotification | null;
+  windowWidth: number;
+  lastUpdateTime: string;
+  isConnected: boolean;
+  onlineCount: number;
+  reconnect: () => void;
+  handlePlayerNameChange: (id: number, name: string) => Promise<void>;
+  handlePlayerCountChange: (count: PlayerCount) => Promise<void>;
+  handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
+  handleMatchUpdate: (matches: Match[]) => Promise<void>;
+  handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
 }

@@ -1,8 +1,8 @@
-import { Match, Player, TournamentState } from '@/domains/tournament';
+import { Match, Player, RealtimeMessageType, TournamentAction, TournamentState } from '@/domains/tournament';
 
 // WebSocket 訊息的基礎類型
 export interface BaseRealtimeMessage {
-  type: string;
+  type: RealtimeMessageType;
   timestamp?: string;
   fromUserId?: string;
   tournamentId?: string;
@@ -11,61 +11,61 @@ export interface BaseRealtimeMessage {
 
 // 選手更新訊息 - 完整選手列表
 export interface PlayerUpdateCompleteMessage extends BaseRealtimeMessage {
-  type: 'playerUpdate';
+  type: RealtimeMessageType.PLAYER_UPDATE;
   data: {
     players: Player[];
     matches?: Match[];
+    action?: TournamentAction;
   };
 }
 
 // 選手更新訊息 - 單個選手
 export interface PlayerUpdateSingleMessage extends BaseRealtimeMessage {
-  type: 'playerUpdate';
+  type: RealtimeMessageType.PLAYER_UPDATE;
   data: {
     playerId: number;
     playerName: string;
+    action?: TournamentAction;
   };
 }
 
 // 比賽更新訊息
 export interface MatchUpdateMessage extends BaseRealtimeMessage {
-  type: 'matchUpdate';
+  type: RealtimeMessageType.MATCH_UPDATE;
   data: {
     matches: Match[];
+    action?: TournamentAction;
   };
 }
 
-// 賽事更新訊息
+// 賽程更新訊息
 export interface TournamentUpdatedMessage extends BaseRealtimeMessage {
-  type: 'tournamentUpdated';
+  type: RealtimeMessageType.TOURNAMENT_UPDATED;
   data: {
     tournament?: Partial<TournamentState>;
-    action?: 'player_count_changed' | 'tournament_type_changed' | 'general_update';
+    action?: TournamentAction;
     [key: string]: unknown;
   };
 }
 
 // 公告訊息
 export interface AnnouncementMessage extends BaseRealtimeMessage {
-  type: 'announcement';
+  type: RealtimeMessageType.ANNOUNCEMENT;
   message: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 // 測試更新訊息
 export interface TestUpdateMessage extends BaseRealtimeMessage {
-  type: 'testUpdate';
+  type: RealtimeMessageType.TEST_UPDATE;
   message: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 // 刷新請求訊息
 export interface RefreshRequestMessage extends BaseRealtimeMessage {
-  type: 'refreshRequest';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any;
+  type: RealtimeMessageType.REFRESH_REQUEST;
+  data?: Record<string, unknown>;
 }
 
 // 聯合類型 - 所有可能的訊息類型
@@ -91,38 +91,46 @@ export interface PresenceData {
   joinTime: string;
 }
 
-// 廣播更新資料類型 - 更新以支援所有需要的組合
+// 廣播更新資料類型 - 使用枚舉類型
 export type BroadcastUpdateData =
   | {
-      type: 'playerUpdate';
+      type: RealtimeMessageType.PLAYER_UPDATE;
       data: {
         playerId?: number;
         playerName?: string;
-        players?: unknown;
-        matches?: unknown;
-        action?: string;
+        players?: Player[];
+        matches?: Match[];
+        action?: TournamentAction;
         [key: string]: unknown;
       };
-      action?: string;
+      action?: TournamentAction;
     }
   | {
-      type: 'matchUpdate';
+      type: RealtimeMessageType.MATCH_UPDATE;
       data: {
-        matches: unknown;
-        action?: string;
+        matches: Match[];
+        action?: TournamentAction;
         [key: string]: unknown;
       };
-      action?: string;
+      action?: TournamentAction;
     }
   | {
-      type: 'tournamentUpdated';
+      type: RealtimeMessageType.TOURNAMENT_UPDATED;
       data?: {
-        tournament?: unknown;
-        action?: string;
+        tournament?: Partial<TournamentState>;
+        action?: TournamentAction;
         [key: string]: unknown;
       };
-      action?: string;
+      action?: TournamentAction;
     }
-  | { type: 'announcement'; message: string }
-  | { type: 'testUpdate'; message: string }
-  | { type: 'refreshRequest' };
+  | {
+      type: RealtimeMessageType.ANNOUNCEMENT;
+      message: string;
+    }
+  | {
+      type: RealtimeMessageType.TEST_UPDATE;
+      message: string;
+    }
+  | {
+      type: RealtimeMessageType.REFRESH_REQUEST;
+    };

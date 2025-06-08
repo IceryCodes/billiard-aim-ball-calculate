@@ -10,6 +10,43 @@ export enum PlayerCount {
   SIXTY_FOUR = 64,
   ONE_HUNDRED_AND_TWENTY_EIGHT = 128,
 }
+
+// 新增的enum定義
+export enum UserType {
+  EDITOR = 'editor',
+  VIEWER = 'viewer',
+}
+
+export enum ToastType {
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  ERROR = 'error',
+  INFO = 'info',
+  ANNOUNCEMENT = 'announcement',
+}
+
+export enum RealtimeMessageType {
+  PLAYER_UPDATE = 'playerUpdate',
+  MATCH_UPDATE = 'matchUpdate',
+  TOURNAMENT_UPDATED = 'tournamentUpdated',
+  ANNOUNCEMENT = 'announcement',
+  TEST_UPDATE = 'testUpdate',
+  REFRESH_REQUEST = 'refreshRequest',
+}
+
+export enum BroadcastTestType {
+  ANNOUNCEMENT = 'announcement',
+  TEST_UPDATE = 'testUpdate',
+  REFRESH_REQUEST = 'refreshRequest',
+}
+
+export enum TournamentAction {
+  PLAYER_NAME_CHANGED = 'player_name_changed',
+  PLAYER_COUNT_CHANGED = 'player_count_changed',
+  TOURNAMENT_TYPE_CHANGED = 'tournament_type_changed',
+  MATCH_RESULT_UPDATED = 'match_result_updated',
+}
+
 // 基礎類型定義
 export interface Player {
   id: number;
@@ -60,3 +97,93 @@ export interface TournamentDBProps extends Omit<TournamentProps, '_id'> {
 }
 
 export type UpdateTournamentDto = TournamentProps;
+
+// Toast 相關類型
+export interface ToastNotification {
+  message: string;
+  type: ToastType;
+}
+
+// 即時訊息相關類型
+export interface BaseRealtimeMessage {
+  type: RealtimeMessageType;
+  fromUserId?: string;
+  timestamp?: number;
+}
+
+export interface PlayerUpdateMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.PLAYER_UPDATE;
+  data: {
+    playerId?: number;
+    playerName?: string;
+    players?: Player[];
+    matches?: Match[];
+    action?: TournamentAction;
+  };
+}
+
+export interface MatchUpdateMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.MATCH_UPDATE;
+  data: {
+    matches: Match[];
+    action: TournamentAction;
+  };
+}
+
+export interface TournamentUpdatedMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.TOURNAMENT_UPDATED;
+  data: Partial<TournamentProps> & {
+    action?: TournamentAction;
+  };
+}
+
+export interface AnnouncementMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.ANNOUNCEMENT;
+  message: string;
+}
+
+export interface TestUpdateMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.TEST_UPDATE;
+  message: string;
+}
+
+export interface RefreshRequestMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.REFRESH_REQUEST;
+}
+
+export type RealtimeMessage =
+  | PlayerUpdateMessage
+  | MatchUpdateMessage
+  | TournamentUpdatedMessage
+  | AnnouncementMessage
+  | TestUpdateMessage
+  | RefreshRequestMessage;
+
+// 廣播更新數據
+export interface BroadcastUpdateData {
+  type: RealtimeMessageType;
+  data?: Record<string, unknown>;
+  message?: string;
+  action?: TournamentAction;
+  fromUserId?: string;
+}
+
+// Hook 狀態介面
+export interface TournamentHookState {
+  currentTournament: TournamentProps;
+  toast: ToastNotification | null;
+  windowWidth: number;
+  lastUpdateTime: string;
+  isConnected: boolean;
+  onlineCount: number;
+}
+
+// Hook 操作介面
+export interface TournamentHookActions {
+  reconnect: () => void;
+  handlePlayerNameChange: (id: number, name: string) => Promise<void>;
+  handlePlayerCountChange: (count: PlayerCount) => Promise<void>;
+  handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
+  handleMatchUpdate: (matches: Match[]) => Promise<void>;
+  handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
+}
