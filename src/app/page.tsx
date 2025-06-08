@@ -7,7 +7,7 @@ const pageExcerpt = '開會無聊想打撞球就做了個撞球瞄準相關的si
 export async function generateMetadata(): Promise<Metadata> {
   const name = process.env.NEXT_PUBLIC_ICERY;
   const siteName = process.env.NEXT_PUBLIC_SITENAME;
-  const siteUrl = process.env.NEXT_PUBLIC_SITEURL;
+  const siteUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
   return {
     title: siteName,
