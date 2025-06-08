@@ -1,7 +1,7 @@
 import { Collection, WithId } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { UserProps, UserWithPasswordProps } from '@/domains/user';
+import { UserDBProps, UserWithPasswordProps } from '@/domains/user';
 import { getUsersCollection } from '@/lib/mongodb';
 import { GetUsersReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
@@ -36,10 +36,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetUsersReturnT
 
     const total: number = await usersCollection.countDocuments(mongoQuery);
 
-    const users: WithId<UserProps>[] = await usersCollection.find(mongoQuery).toArray();
+    const users: WithId<UserDBProps>[] = await usersCollection.find(mongoQuery).toArray();
 
     res.status(HttpStatus.Ok).json({
-      users,
+      users: users.map((user: UserDBProps) => ({ ...user, _id: user._id.toString() })),
       total,
       message: 'Success',
     });
