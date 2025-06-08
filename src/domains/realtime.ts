@@ -49,17 +49,23 @@ export interface TournamentUpdatedMessage extends BaseRealtimeMessage {
 export interface AnnouncementMessage extends BaseRealtimeMessage {
   type: 'announcement';
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: any;
 }
 
 // 測試更新訊息
 export interface TestUpdateMessage extends BaseRealtimeMessage {
   type: 'testUpdate';
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: any;
 }
 
 // 刷新請求訊息
 export interface RefreshRequestMessage extends BaseRealtimeMessage {
   type: 'refreshRequest';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: any;
 }
 
 // 聯合類型 - 所有可能的訊息類型
