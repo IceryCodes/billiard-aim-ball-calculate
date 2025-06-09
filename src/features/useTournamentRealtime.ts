@@ -74,7 +74,7 @@ export function useTournamentRealtime({
 
   const disconnect = useCallback(() => {
     if (channelRef.current) {
-      // console.log('🔌 [REALTIME] 手動斷開連接');
+      // console.log('🔌 [REALTIME] 手動斷開連線');
       channelRef.current.unsubscribe();
       channelRef.current = null;
     }
@@ -84,17 +84,17 @@ export function useTournamentRealtime({
 
   const connect = useCallback(() => {
     if (!isMounted.current || !enabled || !tournamentId) {
-      // console.log('⏸️ [REALTIME] 連接條件不滿足');
+      // console.log('⏸️ [REALTIME] 連線條件不滿足');
       return;
     }
 
-    // 斷開舊連接
+    // 斷開舊連線
     disconnect();
 
     try {
       // 創建頻道
       const channelName = `tournament_${tournamentId}`;
-      // console.log('🔗 [REALTIME] 連接頻道:', channelName);
+      // console.log('🔗 [REALTIME] 連線頻道:', channelName);
 
       const channel = supabase.channel(channelName, {
         config: {
@@ -160,7 +160,7 @@ export function useTournamentRealtime({
 
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
-          // console.log('✅ [REALTIME] 連接成功');
+          // console.log('✅ [REALTIME] 連線成功');
 
           // 設置 presence
           const presenceData: PresenceData = {
@@ -178,16 +178,16 @@ export function useTournamentRealtime({
           callbacksRef.current.onError?.(new Error('Channel error'));
         } else if (status === 'TIMED_OUT') {
           setIsConnected(false);
-          console.error('⏰ [REALTIME] 連接超時');
+          console.error('⏰ [REALTIME] 連線超時');
           callbacksRef.current.onError?.(new Error('Connection timeout'));
         } else if (status === 'CLOSED') {
           setIsConnected(false);
-          // console.log('🔌 [REALTIME] 連接關閉');
+          // console.log('🔌 [REALTIME] 連線關閉');
           callbacksRef.current.onDisconnect?.();
         }
       });
     } catch (error) {
-      console.error('❌ [REALTIME] 連接失敗:', error);
+      console.error('❌ [REALTIME] 連線失敗:', error);
       setIsConnected(false);
       const errorMessage = error instanceof Error ? error : new Error('Unknown connection error');
       callbacksRef.current.onError?.(errorMessage);
@@ -197,7 +197,7 @@ export function useTournamentRealtime({
   const sendMessage = useCallback(
     (message: Partial<RealtimeMessage>): boolean => {
       if (!channelRef.current || !isConnected) {
-        console.warn('⚠️ [REALTIME] 頻道未連接，無法發送訊息');
+        console.warn('⚠️ [REALTIME] 頻道未連線，無法發送訊息');
         return false;
       }
 
@@ -234,7 +234,7 @@ export function useTournamentRealtime({
       // console.log('📊 [REALTIME] updateData:', updateData);
 
       if (!channelRef.current || !isConnected) {
-        console.error('❌ [REALTIME] 頻道未連接');
+        console.error('❌ [REALTIME] 頻道未連線');
         return false;
       }
 
@@ -332,15 +332,15 @@ export function useTournamentRealtime({
     }, 1000);
   }, [disconnect, connect]);
 
-  // 主要連接效果
+  // 主要連線效果
   useEffect(() => {
     isMounted.current = true;
 
     if (enabled && tournamentId) {
-      // console.log('🚀 [REALTIME] 初始化連接');
+      // console.log('🚀 [REALTIME] 初始化連線');
       connect();
     } else {
-      // console.log('⏸️ [REALTIME] 連接被禁用或缺少 tournamentId');
+      // console.log('⏸️ [REALTIME] 連線被禁用或缺少 tournamentId');
       disconnect();
     }
 

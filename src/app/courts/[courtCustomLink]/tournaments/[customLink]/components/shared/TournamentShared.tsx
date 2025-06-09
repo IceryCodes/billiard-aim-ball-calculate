@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useCallback, useState } from 'react';
 
 import { BroadcastTestType, Player, PlayerCount, ToastType, TournamentType } from '@/domains/tournament';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
@@ -35,7 +35,7 @@ export const TournamentStatusBar = ({
             <span className={isEditMode ? 'text-gray-700 font-medium' : 'text-gray-600'}>{statusText}</span>
             {!isConnected && reconnect && (
               <button onClick={reconnect} className="text-blue-600 hover:text-blue-800 underline text-xs">
-                重新連接
+                重新連線
               </button>
             )}
           </div>
@@ -77,38 +77,25 @@ export const TournamentToast = ({ toast }: TournamentToastProps): ReactElement |
 };
 
 export const TournamentDisplay = ({
-  tournament,
+  tournamentData,
   onMatchUpdate,
   isEditMode = false,
 }: TournamentDisplayProps): ReactElement => {
-  const [scale, setScale] = useState(1.0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const { tournament, courtTitle, title } = tournamentData;
 
-  const handleZoomIn = () => {
-    setScale((prev) => Math.min(prev + 0.1, 2.0));
-  };
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-  const handleZoomOut = () => {
-    setScale((prev) => Math.max(prev - 0.1, 0.5));
-  };
-
-  const handleReset = () => {
-    setScale(1.0);
-  };
-
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setIsFullscreen(true);
     } else {
       setIsFullscreen(false);
-      setScale(1.0); // 回到正常大小
     }
-  };
+  }, [isFullscreen]);
 
-  const closeFullscreen = () => {
+  const closeFullscreen = useCallback(() => {
     setIsFullscreen(false);
-    setScale(1.0);
-  };
+  }, []);
 
   return (
     <>
@@ -122,28 +109,6 @@ export const TournamentDisplay = ({
             {/* 控制按鈕 */}
             <div className="flex items-center space-x-2">
               <button
-                onClick={handleZoomOut}
-                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 text-sm font-bold"
-                title="縮小"
-              >
-                −
-              </button>
-              <span className="text-sm text-gray-500 min-w-[50px] text-center">{Math.round(scale * 100)}%</span>
-              <button
-                onClick={handleZoomIn}
-                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 text-sm font-bold"
-                title="放大"
-              >
-                +
-              </button>
-              <button
-                onClick={handleReset}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600"
-                title="重設大小"
-              >
-                重設
-              </button>
-              <button
                 onClick={toggleFullscreen}
                 className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs text-blue-600"
                 title="全螢幕顯示"
@@ -153,30 +118,17 @@ export const TournamentDisplay = ({
             </div>
           </div>
 
-          <div className="w-full flex justify-center items-center p-4 overflow-auto">
-            <div
-              style={{
-                transform: `scale(${scale})`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.2s ease-in-out',
-                imageRendering: 'pixelated',
-                WebkitTransform: `scale(${scale})`,
-                MozTransform: `scale(${scale})`,
-              }}
-            >
-              {tournament.tournamentType === TournamentType.SINGLE && (
-                <SingleEliminationKonva
-                  players={tournament.players}
-                  matches={tournament.matches}
-                  onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
-                />
-              )}
+          {tournament.tournamentType === TournamentType.SINGLE && (
+            <SingleEliminationKonva
+              players={tournament.players}
+              matches={tournament.matches}
+              onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
+            />
+          )}
 
-              {tournament.tournamentType === TournamentType.DOUBLE && (
-                <div className="text-center text-gray-500 py-8">雙敗淘汰賽程表功能開發中...</div>
-              )}
-            </div>
-          </div>
+          {tournament.tournamentType === TournamentType.DOUBLE && (
+            <div className="text-center text-gray-500 py-8">雙敗淘汰賽程表功能開發中...</div>
+          )}
         </div>
       </div>
 
@@ -186,32 +138,10 @@ export const TournamentDisplay = ({
           {/* 全螢幕控制欄 */}
           <div className="bg-white border-b px-6 py-3 flex justify-between items-center">
             <h3 className="text-lg font-semibold text-gray-800">
-              {tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表
+              {`${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表`}
             </h3>
 
             <div className="flex items-center space-x-3">
-              <button
-                onClick={handleZoomOut}
-                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold"
-                title="縮小"
-              >
-                −
-              </button>
-              <span className="text-sm text-gray-600 min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
-              <button
-                onClick={handleZoomIn}
-                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold"
-                title="放大"
-              >
-                +
-              </button>
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600"
-                title="重設大小"
-              >
-                重設
-              </button>
               <button
                 onClick={closeFullscreen}
                 className="px-4 py-2 bg-red-100 hover:bg-red-200 rounded text-sm text-red-600"
@@ -224,28 +154,17 @@ export const TournamentDisplay = ({
 
           {/* 全螢幕賽程表內容 */}
           <div className="flex-1 flex justify-center items-center overflow-auto bg-white">
-            <div
-              style={{
-                transform: `scale(${scale})`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.2s ease-in-out',
-                imageRendering: 'pixelated',
-                WebkitTransform: `scale(${scale})`,
-                MozTransform: `scale(${scale})`,
-              }}
-            >
-              {tournament.tournamentType === TournamentType.SINGLE && (
-                <SingleEliminationKonva
-                  players={tournament.players}
-                  matches={tournament.matches}
-                  onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
-                />
-              )}
+            {tournament.tournamentType === TournamentType.SINGLE && (
+              <SingleEliminationKonva
+                players={tournament.players}
+                matches={tournament.matches}
+                onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
+              />
+            )}
 
-              {tournament.tournamentType === TournamentType.DOUBLE && (
-                <div className="text-center text-gray-500 py-8">雙敗淘汰賽程表功能開發中...</div>
-              )}
-            </div>
+            {tournament.tournamentType === TournamentType.DOUBLE && (
+              <div className="text-center text-gray-500 py-8">雙敗淘汰賽程表功能開發中...</div>
+            )}
           </div>
         </div>
       )}
@@ -333,10 +252,10 @@ export const TournamentControls = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600 mb-1">連接狀態</div>
+            <div className="text-sm text-gray-600 mb-1">連線狀態</div>
             <div className={`flex items-center space-x-2 ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="font-medium">{isConnected ? '✅ 已連接' : '❌ 未連接'}</span>
+              <span className="font-medium text-background">{isConnected ? '✅ 已連線' : '❌ 未連線'}</span>
             </div>
           </div>
 
@@ -372,7 +291,7 @@ export const TournamentControls = ({
           </button>
         </div>
 
-        {!isConnected && <p className="text-red-600 text-sm mt-2">⚠️ 即時廣播未連接，編輯不會即時同步</p>}
+        {!isConnected && <p className="text-red-600 text-sm mt-2">⚠️ 即時廣播未連線，編輯不會即時同步</p>}
       </div>
     </div>
   );

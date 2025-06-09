@@ -1,13 +1,14 @@
-import { Collection, WithId } from 'mongodb';
+import { Collection, ObjectId, WithId } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+import { CourtDBProps } from '@/domains/court';
 import { TournamentDBProps } from '@/domains/tournament';
-import { getTournamentsCollection } from '@/lib/mongodb';
+import { getCourtsCollection, getTournamentsCollection } from '@/lib/mongodb';
 import { GetTournamentsReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentsReturnType>) => {
-  const { page = '1', limit = '10' } = req.query;
+  const { court = '', page = '1', limit = '10' } = req.query;
 
   // Parse page and limit as integers
   const currentPage = Number(page);
@@ -20,9 +21,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentsR
 
   try {
     const tournamentsCollection: Collection<TournamentDBProps> = await getTournamentsCollection();
+    const courtsCollection: Collection<CourtDBProps> = await getCourtsCollection();
 
     const mongoQuery: Record<string, unknown> = {}; // Type-safe object
     mongoQuery.$or = [{ deletedAt: null }, { deletedAt: { $exists: false } }];
+
+    if (court) {
+      mongoQuery.court = court;
+    }
 
     const total: number = await tournamentsCollection.countDocuments(mongoQuery);
 
@@ -32,11 +38,33 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentsR
       .limit(pageSize ?? total)
       .toArray();
 
+    const courtIds = [...new Set(tournaments.map((t) => t.court).filter(Boolean))];
+    const courts = await courtsCollection
+      .find({
+        _id: { $in: courtIds.map((id) => new ObjectId(id)) },
+        $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+      })
+      .project({ _id: 1, title: 1, customLink: 1 })
+      .toArray();
+
+    const courtInfoMap = new Map<string, { title: string; customLink: string }>();
+    courts.forEach((court) => {
+      courtInfoMap.set(court._id.toString(), {
+        title: court.title || '',
+        customLink: court.customLink || '',
+      });
+    });
+
     res.status(HttpStatus.Ok).json({
-      tournaments: tournaments.map((tournament) => ({
-        ...tournament,
-        _id: tournament._id.toString(),
-      })),
+      tournaments: tournaments.map((tournament) => {
+        const courtInfo = courtInfoMap.get(tournament.court ?? '');
+        return {
+          ...tournament,
+          _id: tournament._id.toString(),
+          courtTitle: courtInfo?.title ?? '',
+          courtCustomLink: courtInfo?.customLink ?? '',
+        };
+      }),
       total,
       message: 'Success',
     });

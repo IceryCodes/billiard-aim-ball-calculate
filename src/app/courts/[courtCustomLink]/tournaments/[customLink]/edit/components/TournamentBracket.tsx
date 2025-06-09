@@ -62,7 +62,7 @@ const TournamentBracket = ({
   }, []);
 
   return (
-    <section className="flex flex-col items-center">
+    <section className="flex flex-col items-center gap-y-4">
       {/* 狀態欄 */}
       <TournamentStatusBar
         isConnected={isConnected}
@@ -99,8 +99,9 @@ const TournamentBracket = ({
         />
 
         {/* 賽程表顯示 */}
-        <TournamentDisplay tournament={currentTournament.tournament} onMatchUpdate={handleMatchUpdate} isEditMode={true} />
       </div>
+
+      <TournamentDisplay tournamentData={currentTournament} onMatchUpdate={handleMatchUpdate} isEditMode={true} />
 
       <Popup title={`${PageType.TOURNAMENTS}說明`} display={showTips} onClose={() => setShowTips(false)}>
         <Tips />

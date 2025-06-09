@@ -27,10 +27,14 @@ export const getTournament = async ({ customLink }: GetTournamentDto): Promise<G
   }
 };
 
-export const getTournaments = async ({ page = 1, limit = 10 }: GetTournamentsDto): Promise<GetTournamentsReturnType> => {
+export const getTournaments = async ({
+  court = '',
+  page = 1,
+  limit = 10,
+}: GetTournamentsDto): Promise<GetTournamentsReturnType> => {
   try {
     const { data } = await apiOrigin.get('/get-tournaments', {
-      params: { page, limit },
+      params: { court, page, limit },
     });
 
     return {

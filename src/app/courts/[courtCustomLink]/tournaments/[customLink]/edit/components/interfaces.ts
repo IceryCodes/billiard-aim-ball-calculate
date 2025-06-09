@@ -4,6 +4,7 @@ import {
   Player,
   PlayerCount,
   ToastNotification,
+  TournamentProps,
   TournamentState,
   TournamentType,
 } from '@/domains/tournament';
@@ -53,7 +54,7 @@ export interface TournamentToastProps {
 
 // 賽程表顯示組件介面
 export interface TournamentDisplayProps {
-  tournament: TournamentState;
+  tournamentData: TournamentProps;
   onMatchUpdate?: (matches: Match[]) => void;
   isEditMode?: boolean;
 }

@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
 
-import SidebarLayout from '@/app/courts/[customLink]/components/SidebarLayout';
+import SidebarLayout from '@/app/courts/[courtCustomLink]/components/SidebarLayout';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { defaultCourtExcerpt } from '@/domains/metadatas';
 import { useCourtQuery } from '@/features/courts/hooks/useCourtQuery';
@@ -27,10 +27,10 @@ import GoogleInfos from './GoogleInfos';
 
 const CourtContent = (): ReactNode => {
   const params = useParams();
-  const customLink: string = params?.customLink as string;
+  const courtCustomLink: string = params?.courtCustomLink as string;
   const router = useRouter();
 
-  const { data: { court, manage } = {}, isLoading, isError } = useCourtQuery({ customLink });
+  const { data: { court, manage } = {}, isLoading, isError } = useCourtQuery({ customLink: courtCustomLink });
   const { mutateAsync: updateCourtView } = useUpdateCourtViewMutation();
 
   const { data: googleInfo, mutateAsync: fetchGoogleInfo } = useGoogleInfosMutation();
@@ -237,6 +237,15 @@ const CourtContent = (): ReactNode => {
                       ),
                     }
                   : undefined,
+              ]}
+              otherButton={[
+                {
+                  title: PageType.TOURNAMENTS,
+                  onClick: () =>
+                    router.push(
+                      `${getPageUrlByType(PageType.COURTS)}/${courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}`
+                    ),
+                },
               ]}
             />
 
