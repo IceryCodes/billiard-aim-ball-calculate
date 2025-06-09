@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   UseTournamentStateProps,
   UseTournamentStateReturn,
-} from '@/app/tournaments/[customLink]/edit/components/interfaces';
+} from '@/app/courts/[courtCustomLink]/tournaments/[customLink]/edit/components/interfaces';
 import { BroadcastUpdateData, RealtimeMessage } from '@/domains/realtime';
 import {
   BroadcastTestType,
@@ -173,7 +173,7 @@ export const useTournamentState = ({
     enabled: !!tournamentData.customLink,
     onMessage: handleWebSocketMessage,
     onConnect: () => {
-      showToast(isEditMode ? '即時廣播已連接' : '即時更新已連接', ToastType.SUCCESS, 2000);
+      showToast(isEditMode ? '即時廣播已連線' : '即時更新已連線', ToastType.SUCCESS, 2000);
     },
     onDisconnect: () => {
       showToast(isEditMode ? '即時廣播已斷開' : '即時更新已斷開', ToastType.WARNING, 2000);
@@ -181,7 +181,7 @@ export const useTournamentState = ({
     onError: (error) => {
       console.error('WebSocket 錯誤:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      showToast(`連接錯誤: ${errorMessage}`, ToastType.WARNING);
+      showToast(`連線錯誤: ${errorMessage}`, ToastType.WARNING);
     },
   });
 

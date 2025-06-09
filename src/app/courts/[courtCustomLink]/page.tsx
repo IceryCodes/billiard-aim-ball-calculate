@@ -11,14 +11,14 @@ import { GetCourtReturnType } from '@/services/interfaces';
 
 import CourtContent from './components/CourtContent';
 
-type Params = Promise<{ customLink: string }>;
+type Params = Promise<{ courtCustomLink: string }>;
 
 export const generateMetadata = async (props: { params: Params }): Promise<Metadata> => {
   const params = await props.params;
-  const { customLink } = params;
+  const { courtCustomLink } = params;
 
   let pageName = '';
-  const { court }: GetCourtReturnType = await getCourt({ customLink });
+  const { court }: GetCourtReturnType = await getCourt({ customLink: courtCustomLink });
 
   if (court) {
     pageName = court.title;
@@ -26,7 +26,7 @@ export const generateMetadata = async (props: { params: Params }): Promise<Metad
     notFound();
   }
 
-  const currentPath = `${process.env.NEXT_PUBLIC_BASE_URL}${getPageUrlByType(PageType.COURTS)}/${customLink}`;
+  const currentPath = `${process.env.NEXT_PUBLIC_BASE_URL}${getPageUrlByType(PageType.COURTS)}/${courtCustomLink}`;
 
   return metadataInfo({
     pageName,

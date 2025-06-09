@@ -2,7 +2,7 @@
 
 import React, { useCallback } from 'react';
 
-import { Group, Rect, Text } from 'react-konva';
+import { Group, Line, Rect, Text } from 'react-konva';
 
 import { Player } from '@/domains/tournament';
 
@@ -90,16 +90,32 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
   const player1TextStyle = getTextStyle(match.player1, canClickPlayer1);
   const player2TextStyle = getTextStyle(match.player2, canClickPlayer2);
 
+  // 橫向佈局：兩個選手左右並排，而不是上下排列
+  const halfWidth = boxWidth / 2;
+
   return (
     <Group>
+      {/* 整個比賽框的外框 - 確保四邊都有完整邊框 */}
       <Rect
         x={x}
         y={y}
         width={boxWidth}
         height={boxHeight}
+        fill="transparent"
+        stroke="#d1d5db"
+        strokeWidth={1}
+        cornerRadius={0}
+      />
+
+      {/* 選手1框（左側）- 不要外邊框，避免重複 */}
+      <Rect
+        x={x}
+        y={y}
+        width={halfWidth}
+        height={boxHeight}
         fill={player1Style.fill}
-        stroke={player1Style.stroke}
-        strokeWidth={player1Style.strokeWidth}
+        stroke="transparent"
+        strokeWidth={0}
         onClick={handlePlayer1Click}
         onTap={handlePlayer1Click}
         onMouseEnter={(e) => {
@@ -119,28 +135,47 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
           }
         }}
       />
+
+      {/* 選手1獲勝時的內框高亮 */}
+      {match.winner?.id === match.player1?.id && (
+        <Rect
+          x={x + 1}
+          y={y + 1}
+          width={halfWidth - 2}
+          height={boxHeight - 2}
+          fill="transparent"
+          stroke="#f97316"
+          strokeWidth={2}
+        />
+      )}
+
       <Text
-        x={x + 6}
+        x={x}
         y={y + (boxHeight - 12) / 2}
         text={player1TextStyle.text}
         fontSize={12}
         fill={player1TextStyle.fill}
-        width={boxWidth - 12}
+        width={halfWidth}
         onClick={handlePlayer1Click}
         onTap={handlePlayer1Click}
         ellipsis
         wrap="none"
+        align="center"
         verticalAlign="middle"
       />
 
+      {/* VS 分隔線 */}
+      <Line points={[x + halfWidth, y + 1, x + halfWidth, y + boxHeight - 1]} stroke="#d1d5db" strokeWidth={1} />
+
+      {/* 選手2框（右側）- 不要外邊框，避免重複 */}
       <Rect
-        x={x}
-        y={y + boxHeight}
-        width={boxWidth}
+        x={x + halfWidth}
+        y={y}
+        width={halfWidth}
         height={boxHeight}
         fill={player2Style.fill}
-        stroke={player2Style.stroke}
-        strokeWidth={player2Style.strokeWidth}
+        stroke="transparent"
+        strokeWidth={0}
         onClick={handlePlayer2Click}
         onTap={handlePlayer2Click}
         onMouseEnter={(e) => {
@@ -160,22 +195,38 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
           }
         }}
       />
+
+      {/* 選手2獲勝時的內框高亮 */}
+      {match.winner?.id === match.player2?.id && (
+        <Rect
+          x={x + halfWidth + 1}
+          y={y + 1}
+          width={halfWidth - 2}
+          height={boxHeight - 2}
+          fill="transparent"
+          stroke="#f97316"
+          strokeWidth={2}
+        />
+      )}
+
       <Text
-        x={x + 6}
-        y={y + boxHeight + (boxHeight - 12) / 2}
+        x={x + halfWidth}
+        y={y + (boxHeight - 12) / 2}
         text={player2TextStyle.text}
         fontSize={12}
         fill={player2TextStyle.fill}
-        width={boxWidth - 12}
+        width={halfWidth}
         onClick={handlePlayer2Click}
         onTap={handlePlayer2Click}
         ellipsis
         wrap="none"
+        align="center"
         verticalAlign="middle"
       />
 
+      {/* 如果比賽無法進行，顯示鎖定圖標 */}
       {!canMatchProceed && match.round > 1 && (
-        <Text x={x + boxWidth - 16} y={y + boxHeight / 2 + 3} text="🔒" fontSize={11} />
+        <Text x={x + boxWidth - 20} y={y + boxHeight / 2 - 8} text="🔒" fontSize={16} />
       )}
     </Group>
   );

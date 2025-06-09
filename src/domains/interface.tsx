@@ -3,7 +3,7 @@ export enum PageType {
   AIM = '瞄球角度',
   CUSHION = '顆星公式',
   COURTS = '撞球場地',
-  TOURNAMENTS = '賽程系統',
+  TOURNAMENTS = '賽程列表',
   REGISTER = '註冊',
   LOGIN = '登入',
   VERIFY = '帳號驗證',

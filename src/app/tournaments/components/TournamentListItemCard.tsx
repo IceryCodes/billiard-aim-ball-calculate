@@ -10,13 +10,21 @@ interface TournamentListItemCardProps {
   image: string;
   title: string;
   excerpt: string;
+  courtCustomLink: string;
   customLink: string;
   tags: string[];
 }
 
-const TournamentListItemCard = ({ image, title, excerpt, customLink, tags }: TournamentListItemCardProps): ReactNode => (
+const TournamentListItemCard = ({
+  image,
+  title,
+  excerpt,
+  courtCustomLink,
+  customLink,
+  tags,
+}: TournamentListItemCardProps): ReactNode => (
   <Link
-    href={`${getPageUrlByType(PageType.TOURNAMENTS)}/${customLink}`}
+    href={`${getPageUrlByType(PageType.COURTS)}/${courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${customLink}`}
     className="flex flex-col gap-1 border rounded p-4 shadow-lg hover:scale-105 transition-transform duration-300 bg-backgroundLight"
   >
     <Image src={image} alt={title} width={720} height={480} className="rounded" placeholder="blur" blurDataURL={image} />

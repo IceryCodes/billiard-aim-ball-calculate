@@ -26,7 +26,7 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
   });
 
   return (
-    <section className="flex flex-col items-center">
+    <section className="flex flex-col items-center gap-y-4">
       {/* 狀態欄 */}
       <TournamentStatusBar
         isConnected={isConnected}
@@ -44,7 +44,11 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
           <h1 className="text-2xl font-bold">{currentTournament.title}</h1>
           <ManagerCourtProtected pageId={currentTournament.customLink}>
             <Button
-              onClick={() => router.push(`${getPageUrlByType(PageType.TOURNAMENTS)}/${currentTournament.customLink}/edit`)}
+              onClick={() =>
+                router.push(
+                  `${getPageUrlByType(PageType.COURTS)}/${currentTournament.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${currentTournament.customLink}/edit`
+                )
+              }
               text="編輯"
               buttonStyle={ButtonStyleType.Active}
             />
@@ -56,9 +60,9 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
         <ResponsiveWarning windowWidth={windowWidth} />
 
         <Card>{currentTournament.content}</Card>
-
-        <TournamentDisplay tournament={currentTournament.tournament} isEditMode={false} />
       </div>
+
+      <TournamentDisplay tournamentData={currentTournament} isEditMode={false} />
     </section>
   );
 };

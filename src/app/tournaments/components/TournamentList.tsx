@@ -9,12 +9,18 @@ import TournamentListItemCard from './TournamentListItemCard';
 
 const limit = 30;
 
-const TournamentList = (): ReactNode => {
+interface TournamentListProps {
+  courtId?: string;
+  courtName?: string;
+}
+
+const TournamentList = ({ courtId = '', courtName = '' }: TournamentListProps): ReactNode => {
   const {
     data: { tournaments = [] } = {},
     isLoading,
     isError,
   } = useTournamentsQuery({
+    court: courtId,
     page: 1,
     limit,
   });
@@ -22,7 +28,7 @@ const TournamentList = (): ReactNode => {
   return (
     <div className="container mx-auto p-6 flex flex-col gap-y-4">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-        <h1 className="text-2xl font-bold">{PageType.TOURNAMENTS}</h1>
+        <h1 className="text-2xl font-bold">{`${courtName}${PageType.TOURNAMENTS}`}</h1>
       </div>
 
       {/* Loading overlay */}
@@ -37,12 +43,13 @@ const TournamentList = (): ReactNode => {
         {/* Hospital list */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {!tournaments.length && <label>沒有符合的球場賽程資料</label>}
-          {tournaments.map(({ _id, title, featuredImg, excerpt, customLink, tags }: TournamentProps) => (
+          {tournaments.map(({ _id, title, featuredImg, excerpt, courtCustomLink, customLink, tags }: TournamentProps) => (
             <TournamentListItemCard
               key={_id.toString()}
               image={featuredImg ? featuredImg : process.env.NEXT_PUBLIC_FEATURED_IMAGE}
               title={title}
               excerpt={excerpt}
+              courtCustomLink={courtCustomLink}
               customLink={customLink}
               tags={tags}
             />

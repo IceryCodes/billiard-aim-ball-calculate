@@ -74,6 +74,7 @@ export interface GetTournamentDto {
 }
 
 export interface GetTournamentsDto {
+  court?: string;
   page?: number;
   limit?: number;
 }
@@ -82,6 +83,8 @@ export interface TournamentProps {
   _id: string;
   title: string;
   court: string;
+  courtTitle: string;
+  courtCustomLink: string;
   excerpt: string;
   content: string;
   featuredImg: string;
@@ -92,7 +95,7 @@ export interface TournamentProps {
   updatedAt: Date;
 }
 
-export interface TournamentDBProps extends Omit<TournamentProps, '_id'> {
+export interface TournamentDBProps extends Omit<TournamentProps, '_id' | 'courtCustomLink'> {
   _id: ObjectId;
 }
 
