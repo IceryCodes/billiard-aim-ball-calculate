@@ -53,7 +53,7 @@ const SidebarLayout = ({ pageId, children }: SidebarLayoutProps) => {
             {!tournaments.length && <label>沒有符合球場賽程資料</label>}
             {tournaments
               .filter(({ _id }: TournamentProps) => _id !== pageId)
-              .map(({ _id, title, excerpt, customLink, tags, featuredImg }: TournamentProps) => (
+              .map(({ _id, title, excerpt, customLink, tags, featuredImg, courtCustomLink }: TournamentProps) => (
                 <TournamentListItemCard
                   key={_id}
                   image={featuredImg ? featuredImg : process.env.NEXT_PUBLIC_FEATURED_IMAGE}
@@ -61,6 +61,7 @@ const SidebarLayout = ({ pageId, children }: SidebarLayoutProps) => {
                   excerpt={excerpt}
                   customLink={customLink}
                   tags={tags}
+                  courtCustomLink={courtCustomLink}
                 />
               ))}
           </div>
