@@ -42,7 +42,7 @@ interface MousePoint {
   y: number;
 }
 
-const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players, matches, onMatchUpdate }) => {
+const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players, matches, isEditMode, onMatchUpdate }) => {
   const rounds = Math.floor(Math.log2(players.length));
   const stageRef = useRef<Konva.Stage>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -380,7 +380,16 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
           {/* 比賽框 */}
           {matches.map((match: Match) => {
             const pos: Position = getMatchPosition(match.round, match.matchIndex);
-            return <KonvaMatch key={match.id} match={match} x={pos.x} y={pos.y} onPlayerClick={advanceWinner} />;
+            return (
+              <KonvaMatch
+                key={match.id}
+                match={match}
+                x={pos.x}
+                y={pos.y}
+                onPlayerClick={advanceWinner}
+                isEditMode={isEditMode}
+              />
+            );
           })}
 
           {/* 冠軍框 */}

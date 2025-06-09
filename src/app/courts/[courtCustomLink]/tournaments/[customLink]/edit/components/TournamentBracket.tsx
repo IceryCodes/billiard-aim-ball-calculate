@@ -2,7 +2,9 @@
 
 import { ReactElement, useCallback, useState } from 'react';
 
-import { PageType } from '@/domains/interface';
+import Link from 'next/link';
+
+import { getPageUrlByType, PageType } from '@/domains/interface';
 import { Player, TournamentProps, UpdateTournamentDto } from '@/domains/tournament';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
@@ -11,6 +13,7 @@ import Popup from '@/global-components/Popup';
 
 import {
   ResponsiveWarning,
+  TournamentContentFormatter,
   TournamentControls,
   TournamentDisplay,
   TournamentStatusBar,
@@ -76,7 +79,12 @@ const TournamentBracket = ({
 
       <section className="flex flex-col items-center mt-[20px] mb-[30px] gap-4">
         <div className="flex flex-row items-center gap-4">
-          <h1 className="text-2xl font-bold">{tournamentData.title}</h1>
+          <Link
+            title={tournamentData.title}
+            href={`${getPageUrlByType(PageType.COURTS)}/${tournamentData.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${tournamentData.customLink}`}
+          >
+            <h1 className="text-2xl font-bold">{tournamentData.title}</h1>
+          </Link>
           <Button onClick={() => setShowTips(true)} text="說明" buttonStyle={ButtonStyleType.Active} />
         </div>
       </section>
@@ -84,7 +92,7 @@ const TournamentBracket = ({
       <div className="w-full">
         <ResponsiveWarning windowWidth={windowWidth} />
 
-        <Card>{tournamentData.content}</Card>
+        <Card>{<TournamentContentFormatter content={tournamentData.content} />}</Card>
 
         {/* 編輯控制面板 */}
         <TournamentControls

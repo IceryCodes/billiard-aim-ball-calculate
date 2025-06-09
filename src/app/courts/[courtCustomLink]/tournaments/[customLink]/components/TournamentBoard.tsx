@@ -11,7 +11,13 @@ import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Card from '@/global-components/Card';
 import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
-import { ResponsiveWarning, TournamentDisplay, TournamentStatusBar, TournamentToast } from './shared/TournamentShared';
+import {
+  ResponsiveWarning,
+  TournamentContentFormatter,
+  TournamentDisplay,
+  TournamentStatusBar,
+  TournamentToast,
+} from './shared/TournamentShared';
 
 interface TournamentBoardProps {
   tournamentData: TournamentProps;
@@ -59,7 +65,7 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
       <div className="w-full">
         <ResponsiveWarning windowWidth={windowWidth} />
 
-        <Card>{currentTournament.content}</Card>
+        <Card>{<TournamentContentFormatter content={currentTournament.content} />}</Card>
       </div>
 
       <TournamentDisplay tournamentData={currentTournament} isEditMode={false} />
