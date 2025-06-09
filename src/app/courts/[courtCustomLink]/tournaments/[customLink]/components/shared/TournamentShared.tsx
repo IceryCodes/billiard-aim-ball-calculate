@@ -1,5 +1,8 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
 
+import { Group, Image as KonvaImage, Rect } from 'react-konva';
+import useImage from 'use-image';
+
 import { BroadcastTestType, Player, PlayerCount, ToastType, TournamentType } from '@/domains/tournament';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 
@@ -12,6 +15,50 @@ import {
   TournamentToastProps,
 } from '../../edit/components/interfaces';
 import SingleEliminationKonva from '../../edit/components/SingleEliminationKonva';
+
+// QR Code Image Hook
+const useQRCodeImage = (url: string, size = 100) => {
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
+  const [image] = useImage(qrCodeUrl, 'anonymous');
+  return image;
+};
+
+export const QRCodeCanvas = ({ x, y, size = 80 }: { x: number; y: number; size?: number }) => {
+  const [currentUrl, setCurrentUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentUrl(window.location.href);
+    }
+  }, []);
+
+  const qrImage = useQRCodeImage(currentUrl, size);
+
+  if (!qrImage || !currentUrl) return <></>;
+
+  return (
+    <Group x={x - size / 2} y={y}>
+      {/* QR Code 背景 */}
+      <Rect
+        width={size + 4}
+        height={size + 4}
+        x={-2}
+        y={-2}
+        fill="white"
+        stroke="#d1d5db"
+        strokeWidth={1}
+        cornerRadius={6}
+        shadowColor="black"
+        shadowBlur={4}
+        shadowOpacity={0.1}
+        shadowOffset={{ x: 0, y: 2 }}
+      />
+
+      {/* QR Code 圖片 */}
+      <KonvaImage image={qrImage} width={size} height={size} cornerRadius={4} />
+    </Group>
+  );
+};
 
 export const TournamentStatusBar = ({
   isConnected,
@@ -93,18 +140,6 @@ export const TournamentDisplay = ({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
-  // 檢測是否為手機裝置
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setIsFullscreen(true);
@@ -123,6 +158,18 @@ export const TournamentDisplay = ({
       setIsFullscreen(true);
     }
   }, [isMobile]);
+
+  // 檢測是否為手機裝置
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   return (
     <>
