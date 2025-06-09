@@ -3,6 +3,9 @@ import { ReactNode } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { getPageUrlByType, PageType } from '@/domains/interface';
+import { metadataTournamentInfo } from '@/domains/metadatas';
+import { TournamentProps } from '@/domains/tournament';
 import { GetTournamentReturnType } from '@/services/interfaces';
 import { getTournament } from '@/services/tournament';
 
@@ -24,21 +27,20 @@ export const generateMetadata = async (props: { params: Params }): Promise<Metad
     notFound();
   }
 
-  return {};
-  // const currentPath = `${process.env.NEXT_PUBLIC_BASE_URL}${getPageUrlByType(PageType.TOURNAMENTS)}/${customLink}`;
+  const currentPath = `${getPageUrlByType(PageType.COURTS)}/${tournament.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${customLink}/edit`;
 
-  // return metadataTournamentInfo({
-  //   pageName,
-  //   currentPath,
-  //   description: tournament?.excerpt,
-  //   tags: tournament?.tags,
-  //   featuredImage: tournament?.featuredImg,
-  //   data: tournament as TournamentProps,
-  // });
+  return metadataTournamentInfo({
+    pageName,
+    currentPath,
+    description: tournament?.excerpt,
+    tags: tournament?.tags,
+    featuredImage: tournament?.featuredImg,
+    data: tournament as TournamentProps,
+  });
 };
 
 const Page = (): ReactNode => (
-  <main className="mx-auto overflow-auto">
+  <main className="container mx-auto p-6">
     <TournamentEdit />
   </main>
 );

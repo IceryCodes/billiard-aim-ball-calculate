@@ -34,7 +34,7 @@ export const defaultPlayerExcerpt = ({ title }: PlayerProps): string => `${title
 export const getDescription = ({ currentPath }: GetDescriptionProps): string => {
   switch (true) {
     case currentPath.includes(getPageUrlByType(PageType.HOME)):
-      return `${process.env.NEXT_PUBLIC_SITENAME}是一間以寵物健康為建立核心的虛擬公寓，屋頂上提供寵物與鏟屎官透過經驗分享或實際病歷的方式做交流並互相幫助，此外負責人也能透過認證飼主的分享來提升資訊可信度與建立專業形象，除了改善寵物健康資訊封閉的生態外，我們也希望未來與更多寵物產業合作，讓每位有毛或沒毛的寵物都能在公寓內快樂成長與交流!`;
+      return `${process.env.NEXT_PUBLIC_SITENAME}是${process.env.NEXT_PUBLIC_ICERY}日常開會無聊時開發的撞球網站，提供全台撞球場的搜尋之外，也讓撞球場可以自行編輯相關資訊，更能透過網站舉辦撞球比賽，讓撞球選手累積參賽經驗，選手也能使用瞄球角度跟顆星公式來提升技巧。`;
     case currentPath.includes(getPageUrlByType(PageType.REGISTER)):
       return `${process.env.NEXT_PUBLIC_SITENAME}註冊頁面`;
     case currentPath.includes(getPageUrlByType(PageType.LOGIN)):
@@ -44,7 +44,7 @@ export const getDescription = ({ currentPath }: GetDescriptionProps): string => 
     case currentPath.includes(getPageUrlByType(PageType.PROFILE)):
       return `${process.env.NEXT_PUBLIC_SITENAME}個人頁面`;
     default:
-      return `${process.env.NEXT_PUBLIC_SITENAME}是一間以寵物健康為建立核心的虛擬公寓，屋頂上提供寵物與鏟屎官透過經驗分享或實際病歷的方式做交流並互相幫助，此外負責人也能透過認證飼主的分享來提升資訊可信度與建立專業形象，除了改善寵物健康資訊封閉的生態外，我們也希望未來與更多寵物產業合作，讓每位有毛或沒毛的寵物都能在公寓內快樂成長與交流!`;
+      return `${process.env.NEXT_PUBLIC_SITENAME}是${process.env.NEXT_PUBLIC_ICERY}日常開會無聊時開發的撞球網站，提供全台撞球場的搜尋之外，也讓撞球場可以自行編輯相關資訊，更能透過網站舉辦撞球比賽，讓撞球選手累積參賽經驗，選手也能使用瞄球角度跟顆星公式來提升技巧。`;
   }
 };
 
@@ -110,7 +110,7 @@ export const metadataTournamentInfo = ({
   featuredImage = '',
   data,
 }: MetadataInfoTournamentProps) => {
-  const pagedescription: string = description || getDescription({ currentPath, data });
+  const pagedescription: string = description.replaceAll('\n', ' ') || getDescription({ currentPath, data });
 
   return {
     title: `${pageName} - ${process.env.NEXT_PUBLIC_SITENAME}`,

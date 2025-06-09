@@ -9,7 +9,7 @@ import { Player } from '@/domains/tournament';
 import { boxHeight, boxWidth } from './constants';
 import { KonvaMatchProps } from './interfaces';
 
-const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) => {
+const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlayerClick }) => {
   const canMatchProceed = match.round === 1 || (match.player1 !== null && match.player2 !== null);
 
   const canClickPlayer1 = match.player1 !== null && canMatchProceed;
@@ -120,7 +120,7 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, onPlayerClick }) =
         onTap={handlePlayer1Click}
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
-          if (stage) {
+          if (stage && isEditMode) {
             if (canClickPlayer1) {
               stage.container().style.cursor = 'pointer';
             } else {

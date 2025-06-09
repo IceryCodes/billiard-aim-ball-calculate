@@ -22,15 +22,11 @@ const TournamentEdit = (): ReactNode => {
   if (!tournament) return <span>沒有符合的球場賽程資料</span>;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="relative w-full">
-        <TournamentBracket
-          tournamentData={tournament}
-          updateTournament={updateTournament}
-          refetchTournament={refetchTournament}
-        />
-      </div>
-    </div>
+    <TournamentBracket
+      tournamentData={tournament}
+      updateTournament={updateTournament}
+      refetchTournament={refetchTournament}
+    />
   );
 };
 

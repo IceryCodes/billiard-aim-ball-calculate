@@ -7,6 +7,8 @@ import { Group, Layer, Line, Rect, Stage, Text } from 'react-konva';
 
 import { Match, Player } from '@/domains/tournament';
 
+import { QRCodeCanvas } from '../../components/shared/TournamentShared';
+
 import {
   boxHeight,
   boxWidth,
@@ -21,6 +23,8 @@ import {
 } from './constants';
 import { SingleEliminationKonvaProps } from './interfaces';
 import KonvaMatch from './KonvaMatch';
+
+// 導入 QRCodeCanvas 組件
 
 interface StageConfig {
   width: number;
@@ -42,7 +46,7 @@ interface MousePoint {
   y: number;
 }
 
-const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players, matches, onMatchUpdate }) => {
+const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players, matches, isEditMode, onMatchUpdate }) => {
   const rounds = Math.floor(Math.log2(players.length));
   const stageRef = useRef<Konva.Stage>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,8 +54,9 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
   // 定義虛擬場景尺寸 - 這是我們內容的實際大小
   const firstRoundMatches = players.length / 2;
   const matchesAreaWidth = firstRoundMatches * playerSpacing;
+  // 移除額外的 QR code 空間，因為現在放在左上角
   const sceneWidth = titleWidth + canvasLeftPadding + matchesAreaWidth + canvasRightPadding;
-  const sceneHeight = rounds * roundHeight + headerHeight + boxHeight + canvasBottomPadding + 40; // 增加空間
+  const sceneHeight = rounds * roundHeight + headerHeight + boxHeight + canvasBottomPadding + 40;
 
   // 追蹤當前的縮放和尺寸
   const [stageConfig, setStageConfig] = useState<StageConfig>({
@@ -116,16 +121,6 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
 
     stage.position(newPos);
   }, []);
-
-  // 響應式更新
-  useEffect((): (() => void) => {
-    updateStageSize();
-    window.addEventListener('resize', updateStageSize);
-
-    return (): void => {
-      window.removeEventListener('resize', updateStageSize);
-    };
-  }, [updateStageSize]);
 
   const generateSingleEliminationMatches = useCallback((playerList: Player[]): Match[] => {
     const matchList: Match[] = [];
@@ -259,7 +254,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
 
       if (round === 1) {
         const x: number = titleWidth + canvasLeftPadding + matchIndex * playerSpacing + boxHeight;
-        const y: number = headerHeight + (rounds - 1) * roundHeight + canvasBottomPadding - boxHeight + boxHeight / 2; // 增加與標題的距離
+        const y: number = headerHeight + (rounds - 1) * roundHeight + canvasBottomPadding - boxHeight + boxHeight / 2;
         positions[key] = { x, y };
       } else {
         const prevMatch1Index: number = matchIndex * 2;
@@ -269,7 +264,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
         const prevMatch2Pos: Position = calculatePosition(round - 1, prevMatch2Index);
 
         const x: number = (prevMatch1Pos.x + prevMatch2Pos.x) / 2;
-        const y: number = headerHeight + (rounds - round) * roundHeight + canvasBottomPadding - boxHeight + boxHeight / 2; // 增加與標題的距離
+        const y: number = headerHeight + (rounds - round) * roundHeight + canvasBottomPadding - boxHeight + boxHeight / 2;
 
         positions[key] = { x, y };
       }
@@ -299,6 +294,23 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
     return finalMatch?.winner || null;
   }, [matches, rounds]);
 
+  const qrCodePosition = useMemo(() => {
+    return {
+      x: titleWidth + boxWidth,
+      y: boxWidth / 5,
+    };
+  }, []);
+
+  // 響應式更新
+  useEffect((): (() => void) => {
+    updateStageSize();
+    window.addEventListener('resize', updateStageSize);
+
+    return (): void => {
+      window.removeEventListener('resize', updateStageSize);
+    };
+  }, [updateStageSize]);
+
   useEffect((): void => {
     if (matches.length === 0) {
       const initialMatches: Match[] = generateSingleEliminationMatches(players);
@@ -312,6 +324,9 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
     <div ref={containerRef} className="w-full h-full">
       <Stage width={stageConfig.width} height={stageConfig.height} ref={stageRef} onWheel={handleWheel} draggable>
         <Layer>
+          {/* QR Code - 放在最上層 */}
+          <QRCodeCanvas x={qrCodePosition.x} y={qrCodePosition.y} size={80} />
+
           {/* 輪次標題 */}
           {Array.from({ length: rounds }, (_, roundIndex: number) => {
             const roundNumber: number = roundIndex + 1;
@@ -322,7 +337,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
               boxHeight +
               boxHeight / 2 -
               titlePadding +
-              20; // 調整標題位置以增加距離
+              20;
 
             return (
               <Group key={`title-group-${roundNumber}`}>
@@ -380,7 +395,16 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
           {/* 比賽框 */}
           {matches.map((match: Match) => {
             const pos: Position = getMatchPosition(match.round, match.matchIndex);
-            return <KonvaMatch key={match.id} match={match} x={pos.x} y={pos.y} onPlayerClick={advanceWinner} />;
+            return (
+              <KonvaMatch
+                key={match.id}
+                match={match}
+                x={pos.x}
+                y={pos.y}
+                onPlayerClick={advanceWinner}
+                isEditMode={isEditMode}
+              />
+            );
           })}
 
           {/* 冠軍框 */}
@@ -388,7 +412,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
             <Group>
               <Rect
                 x={getMatchPosition(rounds, 0).x}
-                y={headerHeight - 30} // 增加與決賽框的距離
+                y={headerHeight - 30}
                 width={boxWidth}
                 height={boxHeight}
                 fill="#ffd700"
@@ -398,7 +422,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
               />
               <Text
                 x={getMatchPosition(rounds, 0).x + titlePadding}
-                y={headerHeight - 30 + (boxHeight - 14) / 2} // 調整文字位置
+                y={headerHeight - 30 + (boxHeight - 14) / 2}
                 text={champion.name}
                 fontSize={14}
                 fontFamily="Arial"
@@ -410,7 +434,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
               />
               <Text
                 x={getMatchPosition(rounds, 0).x + boxWidth - titlePadding * 2.5}
-                y={headerHeight - 30 + (boxHeight - 16) / 2} // 調整皇冠位置
+                y={headerHeight - 30 + (boxHeight - 16) / 2}
                 text="👑"
                 fontSize={16}
               />
@@ -424,7 +448,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
                 getMatchPosition(rounds, 0).x + boxWidth / 2,
                 getMatchPosition(rounds, 0).y,
                 getMatchPosition(rounds, 0).x + boxWidth / 2,
-                headerHeight - 30 + boxHeight, // 調整連接到新的冠軍框位置
+                headerHeight - 30 + boxHeight,
               ]}
               stroke="#f97316"
               strokeWidth={3}
@@ -465,7 +489,6 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
                 const nextMatchCenterX: number = nextPos.x + boxWidth / 2;
                 const nextMatchBottomY: number = nextPos.y + boxHeight;
 
-                // 修正連接線位置 - 橫線應該在兩個階段框框的正中央
                 const midY: number = (firstMatchTopY + nextMatchBottomY) / 2;
 
                 return (

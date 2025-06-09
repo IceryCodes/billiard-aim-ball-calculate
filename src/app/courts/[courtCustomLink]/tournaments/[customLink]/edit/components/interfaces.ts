@@ -21,6 +21,7 @@ export interface KonvaMatchProps {
   match: Match;
   x: number;
   y: number;
+  isEditMode: boolean;
   onPlayerClick: (matchId: string, player: Player) => void;
 }
 
@@ -34,6 +35,7 @@ export interface KonvaConnectorProps {
 export interface SingleEliminationKonvaProps {
   players: Player[];
   matches: Match[];
+  isEditMode: boolean;
   onMatchUpdate?: (matches: Match[]) => void;
 }
 
