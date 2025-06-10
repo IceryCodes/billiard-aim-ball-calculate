@@ -62,13 +62,13 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
         </div>
       </section>
 
+      <TournamentDisplay tournamentData={currentTournament} isEditMode={false} />
+
       <div className="w-full">
         <ResponsiveWarning windowWidth={windowWidth} />
 
         <Card>{<TournamentContentFormatter content={currentTournament.content} />}</Card>
       </div>
-
-      <TournamentDisplay tournamentData={currentTournament} isEditMode={false} />
     </section>
   );
 };

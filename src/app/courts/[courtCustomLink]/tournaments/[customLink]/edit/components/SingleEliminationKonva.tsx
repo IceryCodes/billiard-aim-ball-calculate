@@ -99,12 +99,7 @@ const SingleEliminationKonva: React.FC<SingleEliminationKonvaProps> = ({ players
       y: (pointer.y - stage.y()) / oldScale,
     };
 
-    let direction: number = e.evt.deltaY > 0 ? 1 : -1;
-
-    // 在觸控板上縮放時，e.evt.ctrlKey 為 true，此時反轉方向
-    if (e.evt.ctrlKey) {
-      direction = -direction;
-    }
+    const direction: number = e.evt.deltaY > 0 ? -1 : 1;
 
     const scaleBy = 1.05;
     const newScale: number = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;

@@ -4,6 +4,7 @@ import { ReactElement, useCallback, useState } from 'react';
 
 import Link from 'next/link';
 
+import { useAuth } from '@/contexts/AuthContext';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { Player, TournamentProps, UpdateTournamentDto } from '@/domains/tournament';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
@@ -40,6 +41,7 @@ const TournamentBracket = ({
   refetchTournament,
 }: TournamentBracketProps): ReactElement => {
   const [showTips, setShowTips] = useState<boolean>(false);
+  const { isLoading: authLoading } = useAuth();
 
   const {
     currentTournament,
@@ -63,6 +65,8 @@ const TournamentBracket = ({
   const handleDragStart = useCallback((player: Player) => {
     // 拖拽邏輯
   }, []);
+
+  if (authLoading) return <span>載入中...</span>;
 
   return (
     <section className="flex flex-col items-center gap-y-4">
@@ -89,10 +93,11 @@ const TournamentBracket = ({
         </div>
       </section>
 
-      <div className="w-full">
+      <div className="w-full flex flex-col gap-y-4">
         <ResponsiveWarning windowWidth={windowWidth} />
 
-        <Card>{<TournamentContentFormatter content={tournamentData.content} />}</Card>
+        {/* 賽程表顯示 */}
+        <TournamentDisplay tournamentData={currentTournament} onMatchUpdate={handleMatchUpdate} isEditMode={true} />
 
         {/* 編輯控制面板 */}
         <TournamentControls
@@ -105,11 +110,9 @@ const TournamentBracket = ({
           onDragStart={handleDragStart}
           onTestBroadcast={handleTestBroadcast}
         />
-
-        {/* 賽程表顯示 */}
       </div>
 
-      <TournamentDisplay tournamentData={currentTournament} onMatchUpdate={handleMatchUpdate} isEditMode={true} />
+      <Card>{<TournamentContentFormatter content={tournamentData.content} />}</Card>
 
       <Popup title={`${PageType.TOURNAMENTS}說明`} display={showTips} onClose={() => setShowTips(false)}>
         <Tips />

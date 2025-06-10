@@ -271,7 +271,7 @@ export const TournamentDisplay = ({
           {/* 手機版底部提示 */}
           {isMobile && (
             <div className="bg-gray-800 text-white px-3 py-2 text-center">
-              <p className="text-xs">💡 雙指縮放、拖曳移動來瀏覽賽程表</p>
+              <p className="text-xs">💡 拖曳移動來瀏覽賽程表</p>
             </div>
           )}
         </div>
@@ -306,7 +306,7 @@ export const TournamentControls = ({
   onTestBroadcast,
 }: TournamentControlsProps): ReactElement => {
   return (
-    <div className="max-w-full mx-auto px-2 sm:px-0">
+    <div className="w-full mx-auto px-2 sm:px-0">
       <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mb-4 sm:mb-6">
         <div className="grid grid-cols-1 gap-6 sm:gap-8">
           <div>
