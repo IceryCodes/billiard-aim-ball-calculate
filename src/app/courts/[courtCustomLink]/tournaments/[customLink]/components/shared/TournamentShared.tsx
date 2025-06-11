@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
@@ -14,7 +14,7 @@ import {
   TournamentStatusBarProps,
   TournamentToastProps,
 } from '../../edit/components/interfaces';
-import SingleEliminationKonva from '../../edit/components/SingleEliminationKonva';
+import SingleEliminationKonva, { SingleEliminationKonvaRef } from '../../edit/components/SingleEliminationKonva';
 
 // QR Code Image Hook
 const useQRCodeImage = (url: string, size = 100) => {
@@ -28,7 +28,7 @@ export const QRCodeCanvas = ({ x, y, size = 80 }: { x: number; y: number; size?:
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setCurrentUrl(window.location.href);
+      setCurrentUrl(window.location.href.replaceAll('/edit', ''));
     }
   }, []);
 
@@ -139,23 +139,48 @@ export const TournamentDisplay = ({
   const { tournament, courtTitle, title } = tournamentData;
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const konvaRef = useRef<SingleEliminationKonvaRef>(null);
 
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setIsFullscreen(true);
+      // 延遲設定全螢幕視角，確保全螢幕轉換完成
+      setTimeout(() => {
+        konvaRef.current?.setFullscreenView();
+      }, 100);
     } else {
       setIsFullscreen(false);
+      // 延遲設定標準視角，確保退出全螢幕完成
+      setTimeout(() => {
+        konvaRef.current?.setOptimalView();
+      }, 100);
     }
   }, [isFullscreen]);
 
   const closeFullscreen = useCallback(() => {
     setIsFullscreen(false);
+    // 延遲設定標準視角
+    setTimeout(() => {
+      konvaRef.current?.setOptimalView();
+    }, 100);
+  }, []);
+
+  // 縮放控制
+  const handleZoomIn = useCallback(() => {
+    konvaRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    konvaRef.current?.zoomOut();
   }, []);
 
   // 手機版自動進入全螢幕模式
   const handleMobileView = useCallback(() => {
     if (isMobile) {
       setIsFullscreen(true);
+      setTimeout(() => {
+        konvaRef.current?.setFullscreenView();
+      }, 100);
     }
   }, [isMobile]);
 
@@ -192,13 +217,32 @@ export const TournamentDisplay = ({
                   📱 最佳顯示
                 </button>
               ) : (
-                <button
-                  onClick={toggleFullscreen}
-                  className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs text-blue-600"
-                  title="全螢幕顯示"
-                >
-                  🔍 全螢幕
-                </button>
+                <>
+                  {/* 縮放控制按鈕 */}
+                  <button
+                    onClick={handleZoomOut}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600 font-bold"
+                    title="縮小"
+                  >
+                    −
+                  </button>
+                  <button
+                    onClick={handleZoomIn}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600 font-bold"
+                    title="放大"
+                  >
+                    +
+                  </button>
+
+                  {/* 全螢幕按鈕 */}
+                  <button
+                    onClick={toggleFullscreen}
+                    className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs text-blue-600"
+                    title="全螢幕顯示"
+                  >
+                    🔍 全螢幕
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -209,6 +253,7 @@ export const TournamentDisplay = ({
           >
             {tournament.tournamentType === TournamentType.SINGLE && (
               <SingleEliminationKonva
+                ref={konvaRef}
                 players={tournament.players}
                 matches={tournament.matches}
                 onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
@@ -242,6 +287,26 @@ export const TournamentDisplay = ({
             </h3>
 
             <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* 全螢幕模式下的縮放控制 */}
+              {!isMobile && (
+                <>
+                  <button
+                    onClick={handleZoomOut}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600 font-bold"
+                    title="縮小"
+                  >
+                    −
+                  </button>
+                  <button
+                    onClick={handleZoomIn}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600 font-bold"
+                    title="放大"
+                  >
+                    +
+                  </button>
+                </>
+              )}
+
               <button
                 onClick={closeFullscreen}
                 className="px-3 sm:px-4 py-1 sm:py-2 bg-red-100 hover:bg-red-200 rounded text-xs sm:text-sm text-red-600 whitespace-nowrap"
@@ -256,6 +321,7 @@ export const TournamentDisplay = ({
           <div className="flex-1 flex justify-center items-center overflow-auto bg-white">
             {tournament.tournamentType === TournamentType.SINGLE && (
               <SingleEliminationKonva
+                ref={konvaRef}
                 players={tournament.players}
                 matches={tournament.matches}
                 onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
