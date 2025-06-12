@@ -83,19 +83,19 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
 
   // 修正後的選手1雙擊處理
   const handlePlayer1DoubleClick = useCallback(() => {
-    // 只有在編輯模式且是第一輪才允許編輯選手名稱
-    if (editMode === EditMode.PLAYER_EDIT && match.player1 && match.round === 1) {
+    // 在編輯模式下，允許編輯任何選手
+    if (editMode === EditMode.PLAYER_EDIT && match.player1) {
       onPlayerDoubleClick(match.player1);
     }
-  }, [match.player1, match.round, onPlayerDoubleClick, editMode]);
+  }, [editMode, match.player1, onPlayerDoubleClick]);
 
   // 修正後的選手2雙擊處理
   const handlePlayer2DoubleClick = useCallback(() => {
-    // 只有在編輯模式且是第一輪才允許編輯選手名稱
-    if (editMode === EditMode.PLAYER_EDIT && match.player2 && match.round === 1) {
+    // 在編輯模式下，允許編輯任何選手
+    if (editMode === EditMode.PLAYER_EDIT && match.player2) {
       onPlayerDoubleClick(match.player2);
     }
-  }, [match.player2, match.round, onPlayerDoubleClick, editMode]);
+  }, [editMode, match.player2, onPlayerDoubleClick]);
 
   // 判斷是否在編輯狀態
   const isEditingPlayer1 =
@@ -105,27 +105,42 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
 
   // 渲染編輯中的視覺提示
   const renderEditingIndicator = (inputX: number, inputY: number, width: number) => {
+    const tempName = playerEditState.tempName || '';
+    const displayText = tempName || '輸入姓名...';
+
     return (
       <Group>
-        {/* 編輯中的背景 */}
-        <Rect x={inputX} y={inputY} width={width} height={boxHeight} fill="#e3f2fd" stroke="#2196f3" strokeWidth={2} />
-        {/* 編輯中的文字 */}
-        <Text
-          x={inputX}
-          y={inputY + boxHeight / 2 - 8}
-          text={playerEditState.tempName || '輸入姓名...'}
-          fontSize={playerNameFontSize}
-          fill="#1976d2"
-          width={width}
-          align="center"
-          verticalAlign="middle"
-        />
-        {/* 游標指示 */}
         <Rect
-          x={inputX + width / 2 + playerEditState.tempName.length * 6}
-          y={inputY + boxHeight / 2 - 10}
+          x={inputX}
+          y={inputY}
+          width={width + 40}
+          height={boxHeight}
+          fill="#e3f2fd"
+          stroke="#2196f3"
+          strokeWidth={2}
+          cornerRadius={2}
+        />
+
+        {Array.from(displayText).map((char: string, index: number) => (
+          <Text
+            key={`edit-${index}`}
+            x={inputX}
+            y={inputY + boxHeight / 4 + index * (playerNameFontSize + 2)}
+            text={char === ' ' ? '·' : char}
+            fontSize={playerNameFontSize}
+            fill="#1976d2"
+            width={width}
+            align="center"
+            fontStyle="bold"
+          />
+        ))}
+
+        {/* 游標指示 - 簡化 */}
+        <Rect
+          x={inputX + width / 2 - 1}
+          y={inputY + boxHeight / 4 + displayText.length * (playerNameFontSize + 2)}
           width={2}
-          height={20}
+          height={playerNameFontSize}
           fill="#1976d2"
         />
       </Group>
@@ -137,30 +152,42 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!playerEditState.isEditing) return;
 
+      // 阻止默認行為
+      e.preventDefault();
+
       if (e.key === 'Enter') {
-        e.preventDefault();
         onConfirmEdit();
       } else if (e.key === 'Escape') {
-        e.preventDefault();
         onCancelEdit();
       } else if (e.key === 'Backspace') {
-        e.preventDefault();
         onEditStateChange({
           ...playerEditState,
           tempName: playerEditState.tempName.slice(0, -1),
         });
-      } else if (e.key.length === 1) {
-        // 只處理可見字符
-        e.preventDefault();
+      } else if (e.key === 'Delete') {
+        // 支援 Delete 鍵清空
         onEditStateChange({
           ...playerEditState,
-          tempName: playerEditState.tempName + e.key,
+          tempName: '',
         });
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        // 只處理可見字符，排除組合鍵
+        const newName = playerEditState.tempName + e.key;
+        // 限制最大長度
+        if (newName.length <= 8) {
+          onEditStateChange({
+            ...playerEditState,
+            tempName: newName,
+          });
+        }
       }
     };
 
     if (playerEditState.isEditing) {
       document.addEventListener('keydown', handleKeyDown);
+      // 聚焦到 body 確保能接收鍵盤事件
+      document.body.focus();
+
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
       };
@@ -177,7 +204,26 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       };
     }
 
-    if (!canClick && editMode !== EditMode.PLAYER_EDIT) {
+    // 在編輯模式下，所有選手都應該可以編輯，不管是否獲勝
+    if (editMode === EditMode.PLAYER_EDIT) {
+      if (isWinner) {
+        return {
+          fill: winnerHighlightColor,
+          stroke: highlightColor,
+          strokeWidth: winnerStrokeWidth + 1,
+          cursor: 'text',
+        };
+      }
+      return {
+        fill: 'white',
+        stroke: strokeColor,
+        strokeWidth: defaultStrokeWidth,
+        cursor: 'text',
+      };
+    }
+
+    // 非編輯模式的原始邏輯
+    if (!canClick) {
       return {
         fill: disabledColor,
         stroke: strokeColor,
@@ -191,7 +237,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         fill: winnerHighlightColor,
         stroke: highlightColor,
         strokeWidth: winnerStrokeWidth + 1,
-        cursor: editMode === EditMode.PLAYER_EDIT && match.round === 1 ? 'text' : 'pointer',
+        cursor: 'pointer',
       };
     }
 
@@ -199,7 +245,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       fill: 'white',
       stroke: strokeColor,
       strokeWidth: defaultStrokeWidth,
-      cursor: editMode === EditMode.PLAYER_EDIT && match.round === 1 ? 'text' : 'pointer',
+      cursor: 'pointer',
     };
   };
 
@@ -211,7 +257,16 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       };
     }
 
-    if (!canClick && editMode !== EditMode.PLAYER_EDIT) {
+    // 在編輯模式下，所有選手的文字都應該是可編輯的樣式
+    if (editMode === EditMode.PLAYER_EDIT) {
+      return {
+        fill: textColor,
+        text: player.name,
+      };
+    }
+
+    // 非編輯模式的原始邏輯
+    if (!canClick) {
       return {
         fill: disabledTextColor,
         text: player.name,
@@ -261,7 +316,11 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         stroke="transparent"
         strokeWidth={0}
         onClick={handlePlayer1Click}
-        onDblClick={handlePlayer1DoubleClick}
+        onDblClick={(e) => {
+          e.evt.preventDefault();
+          e.evt.stopPropagation();
+          handlePlayer1DoubleClick();
+        }}
         onTap={handlePlayer1Click}
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
@@ -282,7 +341,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         ? renderEditingIndicator(x, y, halfBoxWidth)
         : Array.from(player1TextStyle.text).map((text: string, index: number) => (
             <Text
-              key={index}
+              key={`player1-${index}`}
               x={x}
               y={y + boxHeight / 4 + index * (playerNameFontSize + 2)}
               text={text}
@@ -290,12 +349,17 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
               fill={player1TextStyle.fill}
               width={halfBoxWidth}
               onClick={handlePlayer1Click}
-              onDblClick={handlePlayer1DoubleClick}
+              onDblClick={(e) => {
+                e.evt.preventDefault();
+                e.evt.stopPropagation();
+                handlePlayer1DoubleClick();
+              }}
               onTap={handlePlayer1Click}
               ellipsis
               wrap="none"
               align="center"
               verticalAlign="middle"
+              listening={editMode === EditMode.PLAYER_EDIT}
             />
           ))}
 
@@ -316,7 +380,11 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         stroke="transparent"
         strokeWidth={0}
         onClick={handlePlayer2Click}
-        onDblClick={handlePlayer2DoubleClick}
+        onDblClick={(e) => {
+          e.evt.preventDefault();
+          e.evt.stopPropagation();
+          handlePlayer2DoubleClick();
+        }}
         onTap={handlePlayer2Click}
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
@@ -337,7 +405,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         ? renderEditingIndicator(x + halfBoxWidth, y, halfBoxWidth)
         : Array.from(player2TextStyle.text).map((text: string, index: number) => (
             <Text
-              key={index}
+              key={`player2-${index}`}
               x={x + halfBoxWidth}
               y={y + boxHeight / 4 + index * (playerNameFontSize + 2)}
               text={text}
@@ -345,12 +413,17 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
               fill={player2TextStyle.fill}
               width={halfBoxWidth}
               onClick={handlePlayer2Click}
-              onDblClick={handlePlayer2DoubleClick}
+              onDblClick={(e) => {
+                e.evt.preventDefault();
+                e.evt.stopPropagation();
+                handlePlayer2DoubleClick();
+              }}
               onTap={handlePlayer2Click}
               ellipsis
               wrap="none"
               align="center"
               verticalAlign="middle"
+              listening={editMode === EditMode.PLAYER_EDIT}
             />
           ))}
 
@@ -364,6 +437,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
           fill="transparent"
           stroke={highlightColor}
           strokeWidth={winnerStrokeWidth}
+          listening={false}
         />
       )}
 
@@ -376,6 +450,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
           fill="transparent"
           stroke={highlightColor}
           strokeWidth={winnerStrokeWidth}
+          listening={false}
         />
       )}
 
