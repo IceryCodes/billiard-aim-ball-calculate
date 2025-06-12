@@ -790,10 +790,12 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         )}
 
         {/* 調試信息顯示 */}
-        <div className="absolute bottom-4 left-4 z-10 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
-          <div>本地線條: {localDrawingData.lines.length}</div>
-          <div>外部線條: {drawingData?.lines?.length || 0}</div>
-        </div>
+        {isEditMode && (
+          <div className="absolute bottom-4 left-4 z-10 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+            <div>本地線條: {localDrawingData.lines.length}</div>
+            <div>外部線條: {drawingData?.lines?.length || 0}</div>
+          </div>
+        )}
       </div>
     );
   }

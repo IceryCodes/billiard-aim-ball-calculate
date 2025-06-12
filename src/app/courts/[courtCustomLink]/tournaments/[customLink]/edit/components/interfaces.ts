@@ -55,6 +55,12 @@ export interface SingleEliminationKonvaProps {
   onDrawingUpdate?: (drawingData: DrawingData) => void;
 }
 
+export enum ConnectionQualityType {
+  GOOD = 'good',
+  POOR = 'poor',
+  DISCONNECTED = 'disconnected',
+}
+
 // 狀態欄組件介面
 export interface TournamentStatusBarProps {
   isConnected: boolean;
@@ -63,6 +69,7 @@ export interface TournamentStatusBarProps {
   isEditMode?: boolean;
   tournamentTitle?: string;
   reconnect?: () => void;
+  connectionQuality: ConnectionQualityType;
 }
 
 // Toast 組件介面

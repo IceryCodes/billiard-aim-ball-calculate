@@ -9,6 +9,7 @@ import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import { DrawingMode } from '../../edit/components/constants';
 import EditablePlayer from '../../edit/components/EditablePlayer';
 import {
+  ConnectionQualityType,
   ResponsiveWarningProps,
   TournamentControlsProps,
   TournamentDisplayProps,
@@ -65,21 +66,57 @@ export const TournamentStatusBar = ({
   isEditMode = false,
   tournamentTitle,
   reconnect,
+  connectionQuality = ConnectionQualityType.DISCONNECTED,
 }: TournamentStatusBarProps): ReactElement => {
   const bgColor = isEditMode ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200';
-  const statusText = isEditMode
-    ? `編輯模式 - ${isConnected ? '即時廣播已啟用' : '即時廣播已斷開'}`
-    : `${isConnected ? '🔄' : '❌'} 即時更新`;
+
+  const getStatusDisplay = () => {
+    if (!isConnected) {
+      return {
+        icon: '❌',
+        text: isEditMode ? '即時廣播已斷開' : '即時更新已斷開',
+        color: 'text-red-600',
+        dotColor: 'bg-red-500',
+      };
+    }
+
+    if (connectionQuality === 'poor') {
+      return {
+        icon: '⚠️',
+        text: isEditMode ? '即時廣播連線不穩' : '即時更新連線不穩',
+        color: 'text-yellow-600',
+        dotColor: 'bg-yellow-500',
+      };
+    }
+
+    return {
+      icon: '🔄',
+      text: isEditMode ? '即時廣播已啟用' : '即時更新已啟用',
+      color: isEditMode ? 'text-blue-700' : 'text-green-600',
+      dotColor: 'bg-green-500',
+    };
+  };
+
+  const statusDisplay = getStatusDisplay();
 
   return (
     <div className={`w-full ${bgColor} border-b px-2 sm:px-4 py-2 mb-2 sm:mb-4`}>
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs sm:text-sm gap-2 sm:gap-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className={isEditMode ? 'text-gray-700 font-medium' : 'text-gray-600'}>{statusText}</span>
+            <div className={`w-2 h-2 rounded-full ${statusDisplay.dotColor}`}></div>
+            <span className={`${statusDisplay.color} font-medium`}>{statusDisplay.text}</span>
+
+            {/* 連線品質指示器 */}
+            {isConnected && connectionQuality === 'poor' && (
+              <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-1 rounded">連線不穩</span>
+            )}
+
             {!isConnected && reconnect && (
-              <button onClick={reconnect} className="text-blue-600 hover:text-blue-800 underline text-xs">
+              <button
+                onClick={reconnect}
+                className="text-blue-600 hover:text-blue-800 underline text-xs bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
+              >
                 重新連線
               </button>
             )}
