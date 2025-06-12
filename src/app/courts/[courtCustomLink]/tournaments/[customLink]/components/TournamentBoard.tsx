@@ -26,10 +26,11 @@ interface TournamentBoardProps {
 const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement => {
   const router = useRouter();
 
-  const { currentTournament, toast, windowWidth, lastUpdateTime, isConnected, onlineCount, drawingData, reconnect } = useTournamentState({
-    tournamentData,
-    isEditMode: false,
-  });
+  const { currentTournament, toast, windowWidth, lastUpdateTime, isConnected, onlineCount, drawingData, reconnect } =
+    useTournamentState({
+      tournamentData,
+      isEditMode: false,
+    });
 
   return (
     <section className="flex flex-col items-center gap-y-4">
@@ -62,9 +63,12 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
         </div>
       </section>
 
-      <TournamentDisplay tournamentData={currentTournament} isEditMode={false}
-          drawingData={drawingData}
-          onDrawingUpdate={undefined} />
+      <TournamentDisplay
+        tournamentData={currentTournament}
+        isEditMode={false}
+        drawingData={drawingData}
+        onDrawingUpdate={undefined}
+      />
 
       <div className="w-full">
         <ResponsiveWarning windowWidth={windowWidth} />

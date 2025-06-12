@@ -9,7 +9,6 @@ import {
   TournamentType,
 } from '@/domains/tournament';
 
-
 // 繪圖相關介面
 export interface DrawingLine {
   id: string;

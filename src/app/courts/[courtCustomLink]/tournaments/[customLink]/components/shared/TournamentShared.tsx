@@ -13,7 +13,7 @@ import {
   TournamentControlsProps,
   TournamentDisplayProps,
   TournamentStatusBarProps,
-  TournamentToastProps
+  TournamentToastProps,
 } from '../../edit/components/interfaces';
 import SingleEliminationKonva, { SingleEliminationKonvaRef } from '../../edit/components/SingleEliminationKonva';
 
