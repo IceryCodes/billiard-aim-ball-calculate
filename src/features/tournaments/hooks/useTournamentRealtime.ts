@@ -113,14 +113,14 @@ export function useTournamentRealtime({
         setOnlineCount(userCount);
       });
 
-      channel.on('presence', { event: 'join' }, ({ key }: { key: string }) => {
+      channel.on('presence', { event: 'join' }, () => {
         if (!isMounted.current) return;
 
         const presenceState = channel.presenceState() as PresenceState;
         setOnlineCount(Object.keys(presenceState).length);
       });
 
-      channel.on('presence', { event: 'leave' }, ({ key }: { key: string }) => {
+      channel.on('presence', { event: 'leave' }, () => {
         if (!isMounted.current) return;
 
         const presenceState = channel.presenceState() as PresenceState;

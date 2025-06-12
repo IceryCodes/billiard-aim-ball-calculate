@@ -11,8 +11,8 @@ import { useTournamentState } from '@/features/tournaments/hooks/useTournamentSt
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Card from '@/global-components/Card';
 import Popup from '@/global-components/Popup';
-
 import { TournamentUpdateReturnType } from '@/services/interfaces';
+
 import {
   ResponsiveWarning,
   TournamentContentFormatter,

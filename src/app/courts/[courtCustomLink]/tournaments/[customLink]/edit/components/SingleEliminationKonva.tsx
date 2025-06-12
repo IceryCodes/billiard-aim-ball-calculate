@@ -105,18 +105,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       drawingData || { lines: [], lastUpdated: Date.now() }
     );
 
-    // 強化的調試信息
-    useEffect(() => {
-      // console.log('🎨 [KONVA] === 繪圖數據更新 ===');
-      // console.log('🎨 [KONVA] 外部 drawingData:', drawingData);
-      // console.log('🎨 [KONVA] 本地 localDrawingData:', localDrawingData);
-      // console.log('🎨 [KONVA] 編輯模式:', isEditMode);
-      // console.log('🎨 [KONVA] 繪圖模式:', drawingMode);
-      // console.log('🎨 [KONVA] 線條數量 - 外部:', drawingData?.lines?.length || 0);
-      // console.log('🎨 [KONVA] 線條數量 - 本地:', localDrawingData.lines.length);
-      // console.log('🎨 [KONVA] ===========================');
-    }, [drawingData, localDrawingData, isEditMode, drawingMode]);
-
     // 定義虛擬場景尺寸
     const firstRoundMatches = players.length / 2;
     const matchesAreaWidth = firstRoundMatches * playerSpacing;
@@ -131,19 +119,15 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
     // 修正的同步邏輯
     useEffect(() => {
-      // console.log('🔄 [KONVA] 檢查是否需要同步繪圖數據');
       if (drawingData) {
-        // console.log('🔄 [KONVA] 外部數據時間戳:', drawingData.lastUpdated);
-        // console.log('🔄 [KONVA] 本地數據時間戳:', localDrawingData.lastUpdated);
-        
         // 確保同步所有外部數據，不只是時間戳不同的
-        if (drawingData.lastUpdated !== localDrawingData.lastUpdated || 
-            drawingData.lines.length !== localDrawingData.lines.length) {
-          // console.log('🔄 [KONVA] 正在同步外部繪圖數據');
+        if (
+          drawingData.lastUpdated !== localDrawingData.lastUpdated ||
+          drawingData.lines.length !== localDrawingData.lines.length
+        ) {
           setLocalDrawingData(drawingData);
         }
       } else {
-        // console.log('🔄 [KONVA] 外部數據為空，使用默認數據');
         setLocalDrawingData({ lines: [], lastUpdated: Date.now() });
       }
     }, [drawingData, localDrawingData.lastUpdated, localDrawingData.lines.length]);
@@ -196,24 +180,20 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     }, []);
 
     const handleSetDrawingMode = useCallback((mode: DrawingMode): void => {
-      // console.log('🎨 [KONVA] 設置繪圖模式:', mode);
       setDrawingMode(mode);
       setIsDrawing(false);
       setCurrentLine(null);
     }, []);
 
     const clearDrawing = useCallback((): void => {
-      console.log('🗑️ [KONVA] 清除所有繪圖');
-      
       const newDrawingData: DrawingData = {
         lines: [],
         lastUpdated: Date.now(),
       };
-      
+
       setLocalDrawingData(newDrawingData);
-      
+
       if (onDrawingUpdate) {
-        console.log('📡 [KONVA] 廣播清除繪圖');
         onDrawingUpdate(newDrawingData);
       }
     }, [onDrawingUpdate]);
@@ -228,78 +208,66 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     }));
 
     // 繪圖事件處理
-    const handleMouseDown = useCallback(
-      (e: Konva.KonvaEventObject<MouseEvent>): void => {
-        if (drawingMode !== DrawingMode.DRAWING || !isEditMode) return;
+    const handleMouseDown = useCallback((): void => {
+      if (drawingMode !== DrawingMode.DRAWING || !isEditMode) return;
 
-        // console.log('🎨 [KONVA] 開始繪圖');
-        setIsDrawing(true);
-        const stage = stageRef.current;
-        if (!stage) return;
+      setIsDrawing(true);
+      const stage = stageRef.current;
+      if (!stage) return;
 
-        const pos = stage.getPointerPosition();
-        if (!pos) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
 
-        const transform = stage.getAbsoluteTransform().copy();
-        transform.invert();
-        const relativePos = transform.point(pos);
+      const transform = stage.getAbsoluteTransform().copy();
+      transform.invert();
+      const relativePos = transform.point(pos);
 
-        const newLine: DrawingLine = {
-          id: `drawing-${Date.now()}-${Math.random()}`,
-          points: [relativePos.x, relativePos.y],
-          strokeWidth: drawingStrokeWidth,
-          stroke: drawingStrokeColor,
-          timestamp: Date.now(),
-        };
+      const newLine: DrawingLine = {
+        id: `drawing-${Date.now()}-${Math.random()}`,
+        points: [relativePos.x, relativePos.y],
+        strokeWidth: drawingStrokeWidth,
+        stroke: drawingStrokeColor,
+        timestamp: Date.now(),
+      };
 
-        // console.log('🎨 [KONVA] 新線條:', newLine);
-        setCurrentLine(newLine);
-      },
-      [drawingMode, isEditMode]
-    );
+      setCurrentLine(newLine);
+    }, [drawingMode, isEditMode]);
 
-    const handleMouseMove = useCallback(
-      (e: Konva.KonvaEventObject<MouseEvent>): void => {
-        if (drawingMode !== DrawingMode.DRAWING || !isDrawing || !currentLine) return;
+    const handleMouseMove = useCallback((): void => {
+      if (drawingMode !== DrawingMode.DRAWING || !isDrawing || !currentLine) return;
 
-        const stage = stageRef.current;
-        if (!stage) return;
+      const stage = stageRef.current;
+      if (!stage) return;
 
-        const pos = stage.getPointerPosition();
-        if (!pos) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
 
-        const transform = stage.getAbsoluteTransform().copy();
-        transform.invert();
-        const relativePos = transform.point(pos);
+      const transform = stage.getAbsoluteTransform().copy();
+      transform.invert();
+      const relativePos = transform.point(pos);
 
-        const updatedLine: DrawingLine = {
-          ...currentLine,
-          points: [...currentLine.points, relativePos.x, relativePos.y],
-        };
+      const updatedLine: DrawingLine = {
+        ...currentLine,
+        points: [...currentLine.points, relativePos.x, relativePos.y],
+      };
 
-        setCurrentLine(updatedLine);
-      },
-      [drawingMode, isDrawing, currentLine]
-    );
+      setCurrentLine(updatedLine);
+    }, [drawingMode, isDrawing, currentLine]);
 
     const handleMouseUp = useCallback((): void => {
       if (drawingMode !== DrawingMode.DRAWING || !isDrawing || !currentLine) return;
-    
-      // console.log('🎨 [KONVA] 完成繪製線條:', currentLine);
+
       setIsDrawing(false);
-    
+
       const newDrawingData: DrawingData = {
         lines: [...localDrawingData.lines, currentLine],
         lastUpdated: Date.now(),
       };
-    
-      console.log('📊 [KONVA] 新的繪圖數據:', newDrawingData);
-      
+
       setLocalDrawingData(newDrawingData);
       setCurrentLine(null);
-      
+
       if (onDrawingUpdate) {
-        console.log('📡 [KONVA] 廣播繪圖更新');
         onDrawingUpdate(newDrawingData);
       }
     }, [drawingMode, isDrawing, currentLine, localDrawingData, onDrawingUpdate]);
@@ -771,24 +739,17 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
               lineCap="round"
               lineJoin="round"
             /> */}
-            
+
             {/* 強化的調試信息 */}
-            {/* {console.log('🎨 [RENDER] === 繪圖層渲染開始 ===')} */}
-            {/* {console.log('🎨 [RENDER] 本地線條數量:', localDrawingData.lines.length)} */}
-            {/* {console.log('🎨 [RENDER] 線條詳情:', localDrawingData.lines)} */}
-            {/* {console.log('🎨 [RENDER] 當前線條:', currentLine)} */}
-            {/* {console.log('🎨 [RENDER] === 繪圖層渲染結束 ===')} */}
-            
+
             {/* 已完成的繪圖線條 */}
             {localDrawingData.lines.map((line: DrawingLine, index: number) => {
-              // console.log(`🎨 [RENDER] 正在渲染線條 ${index}:`, line);
-              
               // 驗證線條數據有效性
               if (!line.points || line.points.length < 4) {
                 console.warn(`⚠️ [RENDER] 線條 ${index} 數據無效:`, line);
                 return null;
               }
-              
+
               return (
                 <Line
                   key={line.id}
@@ -805,15 +766,15 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
             {/* 當前正在繪製的線條 */}
             {currentLine && (
-                <Line
-                  points={currentLine.points}
-                  stroke={currentLine.stroke}
-                  strokeWidth={currentLine.strokeWidth}
-                  tension={0.5}
-                  lineCap={drawingLineCap}
-                  lineJoin={drawingLineJoin}
-                  globalCompositeOperation="source-over"
-                />
+              <Line
+                points={currentLine.points}
+                stroke={currentLine.stroke}
+                strokeWidth={currentLine.strokeWidth}
+                tension={0.5}
+                lineCap={drawingLineCap}
+                lineJoin={drawingLineJoin}
+                globalCompositeOperation="source-over"
+              />
             )}
           </Layer>
         </Stage>

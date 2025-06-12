@@ -37,9 +37,7 @@ interface ViewerTournamentStateReturn {
   drawingData: DrawingData;
 }
 
-export const useViewerTournamentState = ({
-  tournamentData,
-}: ViewerTournamentStateProps): ViewerTournamentStateReturn => {
+export const useViewerTournamentState = ({ tournamentData }: ViewerTournamentStateProps): ViewerTournamentStateReturn => {
   const [currentTournament, setCurrentTournament] = useState<TournamentProps>(tournamentData);
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
   const [toast, setToast] = useState<ToastNotification | null>(null);
@@ -48,9 +46,7 @@ export const useViewerTournamentState = ({
     tournamentData.drawingData || { lines: [], lastUpdated: Date.now() }
   );
 
-  const userId = useState(
-    () => `${UserType.VIEWER}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  )[0];
+  const userId = useState(() => `${UserType.VIEWER}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)[0];
 
   const showToast = useCallback((message: string, type: ToastType, duration = 3000) => {
     setToast({ message, type });
