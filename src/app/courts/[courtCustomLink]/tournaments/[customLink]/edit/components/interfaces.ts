@@ -9,6 +9,8 @@ import {
   TournamentType,
 } from '@/domains/tournament';
 
+import { EditMode } from './constants';
+
 // 繪圖相關介面
 export interface DrawingLine {
   id: string;
@@ -53,6 +55,14 @@ export interface SingleEliminationKonvaProps {
   onMatchUpdate?: (matches: Match[]) => void;
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
+  editMode?: EditMode;
+  onPlayerNameEdit?: (playerId: number, newName: string) => void;
+}
+
+export interface PlayerEditState {
+  playerId: number | null;
+  tempName: string;
+  isEditing: boolean;
 }
 
 export enum ConnectionQualityType {
@@ -84,6 +94,7 @@ export interface TournamentDisplayProps {
   isEditMode?: boolean;
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
+  onPlayerNameEdit?: (playerId: number, newName: string) => void;
 }
 
 // 響應式警告組件介面
@@ -127,4 +138,5 @@ export interface UseTournamentStateReturn {
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
   drawingData: DrawingData;
   handleDrawingUpdate: (drawingData: DrawingData) => Promise<void>;
+  connectionQuality: ConnectionQualityType;
 }

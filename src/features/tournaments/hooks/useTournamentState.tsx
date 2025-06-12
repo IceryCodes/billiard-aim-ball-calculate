@@ -179,7 +179,8 @@ export const useTournamentState = ({
     [isEditMode, showToast]
   );
 
-  const { isConnected, onlineCount, broadcastUpdate, reconnect } = useTournamentRealtime({
+  // ✅ 從 useTournamentRealtime 中獲取 connectionQuality
+  const { isConnected, onlineCount, connectionQuality, broadcastUpdate, reconnect } = useTournamentRealtime({
     tournamentId: tournamentData.customLink,
     userId,
     enabled: !!tournamentData.customLink,
@@ -535,6 +536,7 @@ export const useTournamentState = ({
     lastUpdateTime,
     isConnected,
     onlineCount,
+    connectionQuality,
     reconnect,
     handlePlayerNameChange,
     handlePlayerCountChange,

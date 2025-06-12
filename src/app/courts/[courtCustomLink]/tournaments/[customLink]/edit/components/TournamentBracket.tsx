@@ -59,6 +59,7 @@ const TournamentBracket = ({
     handleTestBroadcast,
     drawingData,
     handleDrawingUpdate,
+    connectionQuality,
   } = useTournamentState({
     tournamentData,
     updateTournament,
@@ -81,6 +82,7 @@ const TournamentBracket = ({
         onlineCount={onlineCount}
         isEditMode={true}
         tournamentTitle={tournamentData.title}
+        connectionQuality={connectionQuality}
       />
 
       {/* Toast 通知 */}
@@ -108,6 +110,7 @@ const TournamentBracket = ({
           isEditMode={true}
           drawingData={drawingData}
           onDrawingUpdate={handleDrawingUpdate}
+          onPlayerNameEdit={handlePlayerNameChange}
         />
 
         {/* 編輯控制面板 */}

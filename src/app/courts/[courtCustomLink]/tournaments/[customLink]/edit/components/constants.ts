@@ -106,6 +106,11 @@ export enum DrawingMode {
   DRAWING = 'drawing',
 }
 
+export enum EditMode {
+  NORMAL = 'normal',
+  PLAYER_EDIT = 'player_edit',
+}
+
 // 繪圖層級
 export const mainLayerName = 'main';
 export const drawingLayerName = 'drawing';
@@ -115,3 +120,8 @@ export const drawingStrokeWidth = 3;
 export const drawingStrokeColor = '#ef4444';
 export const drawingLineCap = 'round' as const;
 export const drawingLineJoin = 'round' as const;
+
+export const editInputFontSize = 14;
+export const editInputPadding = 4;
+export const editInputBorderColor = '#3b82f6';
+export const editInputBackgroundColor = '#ffffff';

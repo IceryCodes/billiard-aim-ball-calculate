@@ -34,6 +34,7 @@ import {
   DrawingMode,
   drawingStrokeColor,
   drawingStrokeWidth,
+  EditMode,
   fullscreenPositionX,
   fullscreenPositionY,
   fullscreenScale,
@@ -58,8 +59,8 @@ import {
   titleWidth,
   zoomStep,
 } from './constants';
-import { DrawingData, DrawingLine, SingleEliminationKonvaProps } from './interfaces';
-import KonvaMatch from './KonvaMatch';
+import EditableKonvaMatch from './EditableKonvaMatch';
+import { DrawingData, DrawingLine, PlayerEditState, SingleEliminationKonvaProps } from './interfaces';
 
 interface StageConfig {
   width: number;
@@ -88,10 +89,23 @@ export interface SingleEliminationKonvaRef {
   zoomOut: () => void;
   setDrawingMode: (mode: DrawingMode) => void;
   clearDrawing: () => void;
+  setEditMode: (mode: EditMode) => void;
 }
 
 const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleEliminationKonvaProps>(
-  ({ players, matches, isEditMode, onMatchUpdate, drawingData, onDrawingUpdate }, ref) => {
+  (
+    {
+      players,
+      matches,
+      isEditMode,
+      onMatchUpdate,
+      drawingData,
+      onDrawingUpdate,
+      editMode = EditMode.NORMAL,
+      onPlayerNameEdit,
+    },
+    ref
+  ) => {
     const rounds = Math.floor(Math.log2(players.length));
     const stageRef = useRef<Konva.Stage>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -104,6 +118,12 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     const [localDrawingData, setLocalDrawingData] = useState<DrawingData>(
       drawingData || { lines: [], lastUpdated: Date.now() }
     );
+    const [currentEditMode, setCurrentEditMode] = useState<EditMode>(editMode);
+    const [playerEditState, setPlayerEditState] = useState<PlayerEditState>({
+      playerId: null,
+      tempName: '',
+      isEditing: false,
+    });
 
     // 定義虛擬場景尺寸
     const firstRoundMatches = players.length / 2;
@@ -116,6 +136,76 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       height: sceneHeight,
       scale: 1,
     });
+
+    // 處理選手框雙擊編輯
+    const handlePlayerDoubleClick = useCallback(
+      (player: Player) => {
+        if (currentEditMode !== EditMode.PLAYER_EDIT || !isEditMode) return;
+
+        setPlayerEditState({
+          playerId: player.id,
+          tempName: player.name,
+          isEditing: true,
+        });
+      },
+      [currentEditMode, isEditMode]
+    );
+
+    // 確認編輯
+    const confirmPlayerEdit = useCallback(() => {
+      if (!playerEditState.isEditing || !playerEditState.playerId || !onPlayerNameEdit) return;
+
+      onPlayerNameEdit(playerEditState.playerId, playerEditState.tempName);
+      setPlayerEditState({
+        playerId: null,
+        tempName: '',
+        isEditing: false,
+      });
+    }, [onPlayerNameEdit, playerEditState]);
+
+    // 取消編輯
+    const cancelPlayerEdit = useCallback(() => {
+      setPlayerEditState({
+        playerId: null,
+        tempName: '',
+        isEditing: false,
+      });
+    }, []);
+    const handleKeyDown = useCallback(
+      (e: KeyboardEvent) => {
+        if (!playerEditState.isEditing) return;
+
+        if (e.key === 'Enter') {
+          confirmPlayerEdit();
+        } else if (e.key === 'Escape') {
+          cancelPlayerEdit();
+        }
+      },
+      [playerEditState.isEditing, confirmPlayerEdit, cancelPlayerEdit]
+    );
+
+    // 設定編輯模式
+    const handleSetEditMode = useCallback(
+      (mode: EditMode) => {
+        setCurrentEditMode(mode);
+        // 如果切換到非編輯模式，取消當前編輯
+        if (mode !== EditMode.PLAYER_EDIT) {
+          cancelPlayerEdit();
+        }
+      },
+      [cancelPlayerEdit]
+    );
+
+    // 鍵盤事件監聽
+    useEffect(() => {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [handleKeyDown]);
+
+    // 同步外部編輯模式
+    useEffect(() => {
+      setCurrentEditMode(editMode);
+    }, [editMode]);
 
     // 修正的同步邏輯
     useEffect(() => {
@@ -197,15 +287,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         onDrawingUpdate(newDrawingData);
       }
     }, [onDrawingUpdate]);
-
-    useImperativeHandle(ref, () => ({
-      setOptimalView,
-      setFullscreenView,
-      zoomIn: handleZoomIn,
-      zoomOut: handleZoomOut,
-      setDrawingMode: handleSetDrawingMode,
-      clearDrawing,
-    }));
 
     // 繪圖事件處理
     const handleMouseDown = useCallback((): void => {
@@ -371,6 +452,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
     const advanceWinner = useCallback(
       (matchId: string, selectedPlayer: Player): void => {
+        if (currentEditMode === EditMode.PLAYER_EDIT) return;
         if (drawingMode === DrawingMode.DRAWING) return;
         if (!onMatchUpdate) return;
 
@@ -417,7 +499,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         }
         onMatchUpdate(updatedMatches);
       },
-      [matches, canMatchProceed, players.length, onMatchUpdate, clearPlayerFromFutureMatches, drawingMode]
+      [currentEditMode, drawingMode, onMatchUpdate, matches, canMatchProceed, players.length, clearPlayerFromFutureMatches]
     );
 
     const getRoundName = useCallback((roundNumber: number, totalRounds: number): string => {
@@ -494,6 +576,34 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       };
     }, [getMatchPosition, rounds]);
 
+    const handleStageClick = useCallback(
+      (e: Konva.KonvaEventObject<MouseEvent>) => {
+        if (playerEditState.isEditing && e.target.getClassName() !== 'Html') {
+          cancelPlayerEdit();
+        }
+      },
+      [playerEditState.isEditing, cancelPlayerEdit]
+    );
+
+    useImperativeHandle(ref, () => ({
+      setOptimalView,
+      setFullscreenView,
+      zoomIn: handleZoomIn,
+      zoomOut: handleZoomOut,
+      setDrawingMode: handleSetDrawingMode,
+      clearDrawing,
+      setEditMode: handleSetEditMode,
+    }));
+
+    useEffect(() => {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [handleKeyDown]);
+
+    useEffect(() => {
+      setCurrentEditMode(editMode);
+    }, [editMode]);
+
     useEffect((): (() => void) => {
       updateStageSize();
       window.addEventListener('resize', updateStageSize);
@@ -528,7 +638,8 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
           onMouseDown={handleMouseDown}
           onMousemove={handleMouseMove}
           onMouseup={handleMouseUp}
-          draggable={drawingMode === DrawingMode.NORMAL}
+          onClick={handleStageClick}
+          draggable={drawingMode === DrawingMode.NORMAL && currentEditMode === EditMode.NORMAL}
         >
           {/* 主要內容層 */}
           <Layer name={mainLayerName}>
@@ -606,13 +717,19 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
             {matches.map((match: Match) => {
               const pos: Position = getMatchPosition(match.round, match.matchIndex);
               return (
-                <KonvaMatch
+                <EditableKonvaMatch
                   key={match.id}
                   match={match}
                   x={pos.x}
                   y={pos.y + championToFinalGap}
                   onPlayerClick={advanceWinner}
+                  onPlayerDoubleClick={handlePlayerDoubleClick}
                   isEditMode={isEditMode && drawingMode === DrawingMode.NORMAL}
+                  editMode={currentEditMode}
+                  playerEditState={playerEditState}
+                  onEditStateChange={setPlayerEditState}
+                  onConfirmEdit={confirmPlayerEdit}
+                  onCancelEdit={cancelPlayerEdit}
                 />
               );
             })}

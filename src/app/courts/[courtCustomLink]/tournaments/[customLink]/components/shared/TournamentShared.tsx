@@ -6,7 +6,7 @@ import useImage from 'use-image';
 import { BroadcastTestType, Player, PlayerCount, ToastType, TournamentType } from '@/domains/tournament';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 
-import { DrawingMode } from '../../edit/components/constants';
+import { DrawingMode, EditMode } from '../../edit/components/constants';
 import EditablePlayer from '../../edit/components/EditablePlayer';
 import {
   ConnectionQualityType,
@@ -172,12 +172,20 @@ export const TournamentDisplay = ({
   isEditMode = false,
   drawingData,
   onDrawingUpdate,
+  onPlayerNameEdit,
 }: TournamentDisplayProps): ReactElement => {
   const { tournament, courtTitle, title } = tournamentData;
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [drawingMode, setDrawingMode] = useState<DrawingMode>(DrawingMode.NORMAL);
+  const [editMode, setEditMode] = useState<EditMode>(EditMode.NORMAL);
   const konvaRef = useRef<SingleEliminationKonvaRef>(null);
+
+  const toggleEditMode = useCallback(() => {
+    const newMode = editMode === EditMode.NORMAL ? EditMode.PLAYER_EDIT : EditMode.NORMAL;
+    setEditMode(newMode);
+    konvaRef.current?.setEditMode(newMode);
+  }, [editMode]);
 
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
@@ -276,6 +284,19 @@ export const TournamentDisplay = ({
                   {isEditMode && (
                     <>
                       <button
+                        onClick={toggleEditMode}
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          editMode === EditMode.PLAYER_EDIT
+                            ? 'bg-blue-100 hover:bg-blue-200 text-blue-600'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                        }`}
+                        title={editMode === EditMode.PLAYER_EDIT ? '完成編輯' : '編輯選手'}
+                        disabled={drawingMode === DrawingMode.DRAWING}
+                      >
+                        {editMode === EditMode.PLAYER_EDIT ? '✅ 完成' : '✏️ 編輯選手'}
+                      </button>
+
+                      <button
                         onClick={toggleDrawingMode}
                         className={`px-2 py-1 rounded text-xs font-medium ${
                           drawingMode === DrawingMode.DRAWING
@@ -321,6 +342,8 @@ export const TournamentDisplay = ({
                 isEditMode={isEditMode}
                 drawingData={drawingData}
                 onDrawingUpdate={onDrawingUpdate}
+                editMode={editMode}
+                onPlayerNameEdit={onPlayerNameEdit}
               />
             )}
 
