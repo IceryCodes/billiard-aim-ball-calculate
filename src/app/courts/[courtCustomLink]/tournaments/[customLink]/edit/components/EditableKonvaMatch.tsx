@@ -87,7 +87,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     if (editMode === EditMode.PLAYER_EDIT && match.player1) {
       onPlayerDoubleClick(match.player1);
     }
-  }, [editMode, match.player1, onPlayerDoubleClick]);
+  }, [match.player1, onPlayerDoubleClick, editMode]);
 
   // 修正後的選手2雙擊處理
   const handlePlayer2DoubleClick = useCallback(() => {
@@ -95,7 +95,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     if (editMode === EditMode.PLAYER_EDIT && match.player2) {
       onPlayerDoubleClick(match.player2);
     }
-  }, [editMode, match.player2, onPlayerDoubleClick]);
+  }, [match.player2, onPlayerDoubleClick, editMode]);
 
   // 判斷是否在編輯狀態
   const isEditingPlayer1 =
@@ -106,14 +106,14 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
   // 渲染編輯中的視覺提示
   const renderEditingIndicator = (inputX: number, inputY: number, width: number) => {
     const tempName = playerEditState.tempName || '';
-    const displayText = tempName || '輸入姓名...';
+    const displayText = tempName;
 
     return (
       <Group>
         <Rect
           x={inputX}
           y={inputY}
-          width={width + 40}
+          width={width}
           height={boxHeight}
           fill="#e3f2fd"
           stroke="#2196f3"
@@ -121,12 +121,13 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
           cornerRadius={2}
         />
 
+        {/* 當前輸入的文字 - 顯示為直向 */}
         {Array.from(displayText).map((char: string, index: number) => (
           <Text
             key={`edit-${index}`}
             x={inputX}
             y={inputY + boxHeight / 4 + index * (playerNameFontSize + 2)}
-            text={char === ' ' ? '·' : char}
+            text={char === ' ' ? '·' : char} // 空格顯示為中點
             fontSize={playerNameFontSize}
             fill="#1976d2"
             width={width}
@@ -183,13 +184,28 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       }
     };
 
+    // 處理點擊外部區域自動確認
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!playerEditState.isEditing) return;
+
+      // 檢查是否點擊在 Konva canvas 外部，或者點擊到其他地方
+      const target = e.target as HTMLElement;
+
+      // 如果點擊的不是 canvas 或者是 canvas 但不在編輯的選手框內
+      if (target.tagName !== 'CANVAS') {
+        onConfirmEdit();
+      }
+    };
+
     if (playerEditState.isEditing) {
       document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('mousedown', handleClickOutside);
       // 聚焦到 body 確保能接收鍵盤事件
       document.body.focus();
 
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('mousedown', handleClickOutside);
       };
     }
   }, [playerEditState, onEditStateChange, onConfirmEdit, onCancelEdit]);
@@ -294,6 +310,22 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
 
   return (
     <Group>
+      {/* 編輯狀態下的背景點擊區域 - 用於捕捉點擊外部的事件 */}
+      {playerEditState.isEditing && (
+        <Rect
+          x={-1000}
+          y={-1000}
+          width={2000}
+          height={2000}
+          fill="transparent"
+          onClick={(e) => {
+            e.evt.stopPropagation();
+            onConfirmEdit();
+          }}
+          listening={true}
+        />
+      )}
+
       {/* 外框 */}
       <Rect
         x={x}
@@ -315,7 +347,14 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         fill={player1Style.fill}
         stroke="transparent"
         strokeWidth={0}
-        onClick={handlePlayer1Click}
+        onClick={(e) => {
+          if (playerEditState.isEditing) {
+            // 如果正在編輯中，點擊編輯框不應該觸發背景點擊
+            e.evt.stopPropagation();
+            return;
+          }
+          handlePlayer1Click();
+        }}
         onDblClick={(e) => {
           e.evt.preventDefault();
           e.evt.stopPropagation();
@@ -379,7 +418,14 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         fill={player2Style.fill}
         stroke="transparent"
         strokeWidth={0}
-        onClick={handlePlayer2Click}
+        onClick={(e) => {
+          if (playerEditState.isEditing) {
+            // 如果正在編輯中，點擊編輯框不應該觸發背景點擊
+            e.evt.stopPropagation();
+            return;
+          }
+          handlePlayer2Click();
+        }}
         onDblClick={(e) => {
           e.evt.preventDefault();
           e.evt.stopPropagation();
