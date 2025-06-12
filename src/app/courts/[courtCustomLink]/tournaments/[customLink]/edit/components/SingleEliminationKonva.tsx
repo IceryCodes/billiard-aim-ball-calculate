@@ -29,11 +29,17 @@ import {
   connectionLineWidth,
   crownIconFontSize,
   crownIconOffsetX,
+  drawingLineCap,
+  drawingLineJoin,
+  DrawingMode,
+  drawingStrokeColor,
+  drawingStrokeWidth,
   fullscreenPositionX,
   fullscreenPositionY,
   fullscreenScale,
   headerHeight,
   highlightColor,
+  mainLayerName,
   maxZoom,
   minZoom,
   optimalPositionX,
@@ -52,7 +58,7 @@ import {
   titleWidth,
   zoomStep,
 } from './constants';
-import { SingleEliminationKonvaProps } from './interfaces';
+import { DrawingData, DrawingLine, SingleEliminationKonvaProps } from './interfaces';
 import KonvaMatch from './KonvaMatch';
 
 interface StageConfig {
@@ -75,34 +81,73 @@ interface MousePoint {
   y: number;
 }
 
-// 導出控制方法的接口
 export interface SingleEliminationKonvaRef {
   setOptimalView: () => void;
   setFullscreenView: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
+  setDrawingMode: (mode: DrawingMode) => void;
+  clearDrawing: () => void;
 }
 
 const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleEliminationKonvaProps>(
-  ({ players, matches, isEditMode, onMatchUpdate }, ref) => {
+  ({ players, matches, isEditMode, onMatchUpdate, drawingData, onDrawingUpdate }, ref) => {
     const rounds = Math.floor(Math.log2(players.length));
     const stageRef = useRef<Konva.Stage>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const drawingLayerRef = useRef<Konva.Layer>(null);
 
-    // 定義虛擬場景尺寸 - 這是我們內容的實際大小
+    // 繪圖狀態
+    const [drawingMode, setDrawingMode] = useState<DrawingMode>(DrawingMode.NORMAL);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [currentLine, setCurrentLine] = useState<DrawingLine | null>(null);
+    const [localDrawingData, setLocalDrawingData] = useState<DrawingData>(
+      drawingData || { lines: [], lastUpdated: Date.now() }
+    );
+
+    // 強化的調試信息
+    useEffect(() => {
+      // console.log('🎨 [KONVA] === 繪圖數據更新 ===');
+      // console.log('🎨 [KONVA] 外部 drawingData:', drawingData);
+      // console.log('🎨 [KONVA] 本地 localDrawingData:', localDrawingData);
+      // console.log('🎨 [KONVA] 編輯模式:', isEditMode);
+      // console.log('🎨 [KONVA] 繪圖模式:', drawingMode);
+      // console.log('🎨 [KONVA] 線條數量 - 外部:', drawingData?.lines?.length || 0);
+      // console.log('🎨 [KONVA] 線條數量 - 本地:', localDrawingData.lines.length);
+      // console.log('🎨 [KONVA] ===========================');
+    }, [drawingData, localDrawingData, isEditMode, drawingMode]);
+
+    // 定義虛擬場景尺寸
     const firstRoundMatches = players.length / 2;
     const matchesAreaWidth = firstRoundMatches * playerSpacing;
     const sceneWidth = titleWidth + canvasLeftPadding + matchesAreaWidth + canvasRightPadding;
     const sceneHeight = rounds * roundHeight + headerHeight + boxHeight + canvasBottomPadding + sceneHeightExtra;
 
-    // 追蹤當前的縮放和尺寸
     const [stageConfig, setStageConfig] = useState<StageConfig>({
       width: sceneWidth,
       height: sceneHeight,
       scale: 1,
     });
 
-    // 處理容器大小變化
+    // 修正的同步邏輯
+    useEffect(() => {
+      // console.log('🔄 [KONVA] 檢查是否需要同步繪圖數據');
+      if (drawingData) {
+        // console.log('🔄 [KONVA] 外部數據時間戳:', drawingData.lastUpdated);
+        // console.log('🔄 [KONVA] 本地數據時間戳:', localDrawingData.lastUpdated);
+        
+        // 確保同步所有外部數據，不只是時間戳不同的
+        if (drawingData.lastUpdated !== localDrawingData.lastUpdated || 
+            drawingData.lines.length !== localDrawingData.lines.length) {
+          // console.log('🔄 [KONVA] 正在同步外部繪圖數據');
+          setLocalDrawingData(drawingData);
+        }
+      } else {
+        // console.log('🔄 [KONVA] 外部數據為空，使用默認數據');
+        setLocalDrawingData({ lines: [], lastUpdated: Date.now() });
+      }
+    }, [drawingData, localDrawingData.lastUpdated, localDrawingData.lines.length]);
+
     const updateStageSize = useCallback((): void => {
       if (!containerRef.current) return;
 
@@ -112,35 +157,26 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       setStageConfig({
         width: containerWidth,
         height: containerHeight,
-        scale: 1, // 這裡先設定為 1，實際縮放在 Stage 組件中設定
+        scale: 1,
       });
     }, []);
 
-    // 設定最佳的初始縮放和位置
     const setOptimalView = useCallback((): void => {
       const stage = stageRef.current;
       if (!stage) return;
 
-      // 設定最佳縮放
       stage.scale({ x: optimalScale, y: optimalScale });
-
-      // 設定最佳位置
       stage.position({ x: optimalPositionX, y: optimalPositionY });
     }, []);
 
-    // 設定全螢幕視角
     const setFullscreenView = useCallback((): void => {
       const stage = stageRef.current;
       if (!stage) return;
 
-      // 設定全螢幕縮放
       stage.scale({ x: fullscreenScale, y: fullscreenScale });
-
-      // 設定全螢幕位置
       stage.position({ x: fullscreenPositionX, y: fullscreenPositionY });
     }, []);
 
-    // 縮放控制
     const handleZoomIn = useCallback((): void => {
       const stage = stageRef.current;
       if (!stage) return;
@@ -159,46 +195,148 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       stage.scale({ x: newScale, y: newScale });
     }, []);
 
-    // 暴露方法給父組件
+    const handleSetDrawingMode = useCallback((mode: DrawingMode): void => {
+      // console.log('🎨 [KONVA] 設置繪圖模式:', mode);
+      setDrawingMode(mode);
+      setIsDrawing(false);
+      setCurrentLine(null);
+    }, []);
+
+    const clearDrawing = useCallback((): void => {
+      console.log('🗑️ [KONVA] 清除所有繪圖');
+      
+      const newDrawingData: DrawingData = {
+        lines: [],
+        lastUpdated: Date.now(),
+      };
+      
+      setLocalDrawingData(newDrawingData);
+      
+      if (onDrawingUpdate) {
+        console.log('📡 [KONVA] 廣播清除繪圖');
+        onDrawingUpdate(newDrawingData);
+      }
+    }, [onDrawingUpdate]);
+
     useImperativeHandle(ref, () => ({
       setOptimalView,
       setFullscreenView,
       zoomIn: handleZoomIn,
       zoomOut: handleZoomOut,
+      setDrawingMode: handleSetDrawingMode,
+      clearDrawing,
     }));
 
-    // 處理滾輪縮放
-    const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>): void => {
-      e.evt.preventDefault();
+    // 繪圖事件處理
+    const handleMouseDown = useCallback(
+      (e: Konva.KonvaEventObject<MouseEvent>): void => {
+        if (drawingMode !== DrawingMode.DRAWING || !isEditMode) return;
 
-      const stage: Konva.Stage | null = stageRef.current;
-      if (!stage) return;
+        // console.log('🎨 [KONVA] 開始繪圖');
+        setIsDrawing(true);
+        const stage = stageRef.current;
+        if (!stage) return;
 
-      const oldScale: number = stage.scaleX();
-      const pointer: MousePoint = stage.getPointerPosition() || { x: 0, y: 0 };
+        const pos = stage.getPointerPosition();
+        if (!pos) return;
 
-      const mousePointTo: MousePoint = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
+        const transform = stage.getAbsoluteTransform().copy();
+        transform.invert();
+        const relativePos = transform.point(pos);
+
+        const newLine: DrawingLine = {
+          id: `drawing-${Date.now()}-${Math.random()}`,
+          points: [relativePos.x, relativePos.y],
+          strokeWidth: drawingStrokeWidth,
+          stroke: drawingStrokeColor,
+          timestamp: Date.now(),
+        };
+
+        // console.log('🎨 [KONVA] 新線條:', newLine);
+        setCurrentLine(newLine);
+      },
+      [drawingMode, isEditMode]
+    );
+
+    const handleMouseMove = useCallback(
+      (e: Konva.KonvaEventObject<MouseEvent>): void => {
+        if (drawingMode !== DrawingMode.DRAWING || !isDrawing || !currentLine) return;
+
+        const stage = stageRef.current;
+        if (!stage) return;
+
+        const pos = stage.getPointerPosition();
+        if (!pos) return;
+
+        const transform = stage.getAbsoluteTransform().copy();
+        transform.invert();
+        const relativePos = transform.point(pos);
+
+        const updatedLine: DrawingLine = {
+          ...currentLine,
+          points: [...currentLine.points, relativePos.x, relativePos.y],
+        };
+
+        setCurrentLine(updatedLine);
+      },
+      [drawingMode, isDrawing, currentLine]
+    );
+
+    const handleMouseUp = useCallback((): void => {
+      if (drawingMode !== DrawingMode.DRAWING || !isDrawing || !currentLine) return;
+    
+      // console.log('🎨 [KONVA] 完成繪製線條:', currentLine);
+      setIsDrawing(false);
+    
+      const newDrawingData: DrawingData = {
+        lines: [...localDrawingData.lines, currentLine],
+        lastUpdated: Date.now(),
       };
+    
+      console.log('📊 [KONVA] 新的繪圖數據:', newDrawingData);
+      
+      setLocalDrawingData(newDrawingData);
+      setCurrentLine(null);
+      
+      if (onDrawingUpdate) {
+        console.log('📡 [KONVA] 廣播繪圖更新');
+        onDrawingUpdate(newDrawingData);
+      }
+    }, [drawingMode, isDrawing, currentLine, localDrawingData, onDrawingUpdate]);
 
-      const direction: number = e.evt.deltaY > 0 ? -1 : 1;
+    const handleWheel = useCallback(
+      (e: Konva.KonvaEventObject<WheelEvent>): void => {
+        if (drawingMode === DrawingMode.DRAWING) return;
 
-      const scaleBy = 1.05;
-      const newScale: number = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+        e.evt.preventDefault();
 
-      // 限制縮放範圍
-      const clampedScale: number = Math.max(minZoom, Math.min(newScale, maxZoom));
+        const stage: Konva.Stage | null = stageRef.current;
+        if (!stage) return;
 
-      stage.scale({ x: clampedScale, y: clampedScale });
+        const oldScale: number = stage.scaleX();
+        const pointer: MousePoint = stage.getPointerPosition() || { x: 0, y: 0 };
 
-      const newPos: MousePoint = {
-        x: pointer.x - mousePointTo.x * clampedScale,
-        y: pointer.y - mousePointTo.y * clampedScale,
-      };
+        const mousePointTo: MousePoint = {
+          x: (pointer.x - stage.x()) / oldScale,
+          y: (pointer.y - stage.y()) / oldScale,
+        };
 
-      stage.position(newPos);
-    }, []);
+        const direction: number = e.evt.deltaY > 0 ? -1 : 1;
+        const scaleBy = 1.05;
+        const newScale: number = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+        const clampedScale: number = Math.max(minZoom, Math.min(newScale, maxZoom));
+
+        stage.scale({ x: clampedScale, y: clampedScale });
+
+        const newPos: MousePoint = {
+          x: pointer.x - mousePointTo.x * clampedScale,
+          y: pointer.y - mousePointTo.y * clampedScale,
+        };
+
+        stage.position(newPos);
+      },
+      [drawingMode]
+    );
 
     const generateSingleEliminationMatches = useCallback((playerList: Player[]): Match[] => {
       const matchList: Match[] = [];
@@ -265,6 +403,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
     const advanceWinner = useCallback(
       (matchId: string, selectedPlayer: Player): void => {
+        if (drawingMode === DrawingMode.DRAWING) return;
         if (!onMatchUpdate) return;
 
         const currentMatch: Match | undefined = matches.find((m: Match) => m.id === matchId);
@@ -310,7 +449,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         }
         onMatchUpdate(updatedMatches);
       },
-      [matches, canMatchProceed, players.length, onMatchUpdate, clearPlayerFromFutureMatches]
+      [matches, canMatchProceed, players.length, onMatchUpdate, clearPlayerFromFutureMatches, drawingMode]
     );
 
     const getRoundName = useCallback((roundNumber: number, totalRounds: number): string => {
@@ -379,32 +518,26 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       };
     }, []);
 
-    // 計算冠軍框的位置
     const championPosition = useMemo(() => {
       const finalMatchPos = getMatchPosition(rounds, 0);
       return {
-        x: finalMatchPos.x + (boxWidth - championBoxWidth) / 2, // 置中對齊決賽框
-        y: headerHeight + championTopMargin, // 在冠軍標題下方
+        x: finalMatchPos.x + (boxWidth - championBoxWidth) / 2,
+        y: headerHeight + championTopMargin,
       };
     }, [getMatchPosition, rounds]);
 
-    // 響應式更新
     useEffect((): (() => void) => {
       updateStageSize();
       window.addEventListener('resize', updateStageSize);
-
       return (): void => {
         window.removeEventListener('resize', updateStageSize);
       };
     }, [updateStageSize]);
 
-    // 設定初始最佳視角
     useEffect(() => {
-      // 延遲一點時間確保 Stage 已經完全渲染
       const timer = setTimeout(() => {
         setOptimalView();
       }, 100);
-
       return () => clearTimeout(timer);
     }, [setOptimalView]);
 
@@ -419,9 +552,18 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
     return (
       <div ref={containerRef} className="w-full h-full relative">
-        <Stage width={stageConfig.width} height={stageConfig.height} ref={stageRef} onWheel={handleWheel} draggable>
-          <Layer>
-            {/* QR Code - 放在最上層 */}
+        <Stage
+          width={stageConfig.width}
+          height={stageConfig.height}
+          ref={stageRef}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMousemove={handleMouseMove}
+          onMouseup={handleMouseUp}
+          draggable={drawingMode === DrawingMode.NORMAL}
+        >
+          {/* 主要內容層 */}
+          <Layer name={mainLayerName}>
             <QRCodeCanvas x={qrCodePosition.x} y={qrCodePosition.y} size={qrCodeSize} />
 
             {/* 輪次標題 */}
@@ -502,7 +644,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                   x={pos.x}
                   y={pos.y + championToFinalGap}
                   onPlayerClick={advanceWinner}
-                  isEditMode={isEditMode}
+                  isEditMode={isEditMode && drawingMode === DrawingMode.NORMAL}
                 />
               );
             })}
@@ -561,7 +703,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
             {Array.from({ length: rounds - 1 }, (_, roundIndex: number) => {
               const currentRound: number = roundIndex + 1;
               const nextRound: number = currentRound + 1;
-
               const nextRoundMatches: Match[] = matches.filter((m: Match) => m.round === nextRound);
 
               return nextRoundMatches
@@ -584,13 +725,10 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
                   const firstMatchCenterX: number = firstPos.x + boxWidth / 2;
                   const firstMatchTopY: number = firstPos.y + championToFinalGap;
-
                   const secondMatchCenterX: number = secondPos.x + boxWidth / 2;
                   const secondMatchTopY: number = secondPos.y + championToFinalGap;
-
                   const nextMatchCenterX: number = nextPos.x + boxWidth / 2;
                   const nextMatchBottomY: number = nextPos.y + boxHeight + championToFinalGap;
-
                   const midY: number = (firstMatchTopY + nextMatchBottomY) / 2;
 
                   return (
@@ -621,7 +759,80 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                 .filter((item): item is JSX.Element => item !== null);
             }).flat()}
           </Layer>
+
+          {/* 繪圖層 - 關鍵修正！ */}
+          <Layer ref={drawingLayerRef} listening={false}>
+            {/* 測試線條 - 用於驗證繪圖層是否工作 */}
+            {/* <Line
+              points={[50, 50, 200, 200]}
+              stroke="#ff0000"
+              strokeWidth={3}
+              tension={0.5}
+              lineCap="round"
+              lineJoin="round"
+            /> */}
+            
+            {/* 強化的調試信息 */}
+            {/* {console.log('🎨 [RENDER] === 繪圖層渲染開始 ===')} */}
+            {/* {console.log('🎨 [RENDER] 本地線條數量:', localDrawingData.lines.length)} */}
+            {/* {console.log('🎨 [RENDER] 線條詳情:', localDrawingData.lines)} */}
+            {/* {console.log('🎨 [RENDER] 當前線條:', currentLine)} */}
+            {/* {console.log('🎨 [RENDER] === 繪圖層渲染結束 ===')} */}
+            
+            {/* 已完成的繪圖線條 */}
+            {localDrawingData.lines.map((line: DrawingLine, index: number) => {
+              // console.log(`🎨 [RENDER] 正在渲染線條 ${index}:`, line);
+              
+              // 驗證線條數據有效性
+              if (!line.points || line.points.length < 4) {
+                console.warn(`⚠️ [RENDER] 線條 ${index} 數據無效:`, line);
+                return null;
+              }
+              
+              return (
+                <Line
+                  key={line.id}
+                  points={line.points}
+                  stroke={line.stroke}
+                  strokeWidth={line.strokeWidth}
+                  tension={0.5}
+                  lineCap={drawingLineCap}
+                  lineJoin={drawingLineJoin}
+                  globalCompositeOperation="source-over"
+                />
+              );
+            })}
+
+            {/* 當前正在繪製的線條 */}
+            {currentLine && (
+                <Line
+                  points={currentLine.points}
+                  stroke={currentLine.stroke}
+                  strokeWidth={currentLine.strokeWidth}
+                  tension={0.5}
+                  lineCap={drawingLineCap}
+                  lineJoin={drawingLineJoin}
+                  globalCompositeOperation="source-over"
+                />
+            )}
+          </Layer>
         </Stage>
+
+        {/* 繪圖模式指示器 */}
+        {drawingMode === DrawingMode.DRAWING && (
+          <div className="absolute top-4 left-4 z-10 bg-red-100 border border-red-300 rounded-lg px-3 py-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-red-700 text-sm font-medium">繪圖模式</span>
+            </div>
+          </div>
+        )}
+
+        {/* 調試信息顯示 */}
+        <div className="absolute bottom-4 left-4 z-10 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+          <div>本地線條: {localDrawingData.lines.length}</div>
+          <div>外部線條: {drawingData?.lines?.length || 0}</div>
+        </div>
       </div>
     );
   }

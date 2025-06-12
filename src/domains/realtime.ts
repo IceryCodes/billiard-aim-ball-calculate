@@ -1,4 +1,4 @@
-import { Match, Player, RealtimeMessageType, TournamentAction, TournamentState } from '@/domains/tournament';
+import { DrawingData, Match, Player, RealtimeMessageType, TournamentAction, TournamentState } from '@/domains/tournament';
 
 // WebSocket 訊息的基礎類型
 export interface BaseRealtimeMessage {
@@ -44,7 +44,7 @@ export interface TournamentUpdatedMessage extends BaseRealtimeMessage {
   data: {
     tournament?: Partial<TournamentState>;
     action?: TournamentAction;
-    [key: string]: unknown;
+    [key: string]: string | number | boolean | object | undefined;
   };
 }
 
@@ -52,20 +52,29 @@ export interface TournamentUpdatedMessage extends BaseRealtimeMessage {
 export interface AnnouncementMessage extends BaseRealtimeMessage {
   type: RealtimeMessageType.ANNOUNCEMENT;
   message: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, string | number | boolean | object>;
 }
 
 // 測試更新訊息
 export interface TestUpdateMessage extends BaseRealtimeMessage {
   type: RealtimeMessageType.TEST_UPDATE;
   message: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, string | number | boolean | object>;
 }
 
 // 刷新請求訊息
 export interface RefreshRequestMessage extends BaseRealtimeMessage {
   type: RealtimeMessageType.REFRESH_REQUEST;
-  data?: Record<string, unknown>;
+  data?: Record<string, string | number | boolean | object>;
+}
+
+// 繪圖更新訊息
+export interface DrawingUpdateMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.DRAWING_UPDATE;
+  data: {
+    drawingData: DrawingData;
+    action: TournamentAction;
+  };
 }
 
 // 聯合類型 - 所有可能的訊息類型
@@ -76,7 +85,8 @@ export type RealtimeMessage =
   | TournamentUpdatedMessage
   | AnnouncementMessage
   | TestUpdateMessage
-  | RefreshRequestMessage;
+  | RefreshRequestMessage
+  | DrawingUpdateMessage;
 
 // Toast 通知類型
 export interface ToastNotification {
@@ -91,7 +101,7 @@ export interface PresenceData {
   joinTime: string;
 }
 
-// 廣播更新資料類型 - 使用枚舉類型
+// 廣播更新資料類型
 export type BroadcastUpdateData =
   | {
       type: RealtimeMessageType.PLAYER_UPDATE;
@@ -101,7 +111,7 @@ export type BroadcastUpdateData =
         players?: Player[];
         matches?: Match[];
         action?: TournamentAction;
-        [key: string]: unknown;
+        [key: string]: string | number | boolean | object | undefined;
       };
       action?: TournamentAction;
     }
@@ -110,7 +120,7 @@ export type BroadcastUpdateData =
       data: {
         matches: Match[];
         action?: TournamentAction;
-        [key: string]: unknown;
+        [key: string]: string | number | boolean | object | undefined;
       };
       action?: TournamentAction;
     }
@@ -119,7 +129,7 @@ export type BroadcastUpdateData =
       data?: {
         tournament?: Partial<TournamentState>;
         action?: TournamentAction;
-        [key: string]: unknown;
+        [key: string]: string | number | boolean | object | undefined;
       };
       action?: TournamentAction;
     }
@@ -133,4 +143,12 @@ export type BroadcastUpdateData =
     }
   | {
       type: RealtimeMessageType.REFRESH_REQUEST;
+    }
+  | {
+      type: RealtimeMessageType.DRAWING_UPDATE;
+      data: {
+        drawingData: DrawingData;
+        action: TournamentAction;
+      };
+      action: TournamentAction;
     };
