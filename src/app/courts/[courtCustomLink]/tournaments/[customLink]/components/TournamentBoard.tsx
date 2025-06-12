@@ -26,7 +26,7 @@ interface TournamentBoardProps {
 const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement => {
   const router = useRouter();
 
-  const { currentTournament, toast, windowWidth, lastUpdateTime, isConnected, onlineCount, reconnect } = useTournamentState({
+  const { currentTournament, toast, windowWidth, lastUpdateTime, isConnected, onlineCount, drawingData, reconnect } = useTournamentState({
     tournamentData,
     isEditMode: false,
   });
@@ -62,13 +62,15 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
         </div>
       </section>
 
+      <TournamentDisplay tournamentData={currentTournament} isEditMode={false}
+          drawingData={drawingData}
+          onDrawingUpdate={undefined} />
+
       <div className="w-full">
         <ResponsiveWarning windowWidth={windowWidth} />
 
         <Card>{<TournamentContentFormatter content={currentTournament.content} />}</Card>
       </div>
-
-      <TournamentDisplay tournamentData={currentTournament} isEditMode={false} />
     </section>
   );
 };

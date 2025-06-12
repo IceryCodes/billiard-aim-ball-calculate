@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
@@ -6,15 +6,16 @@ import useImage from 'use-image';
 import { BroadcastTestType, Player, PlayerCount, ToastType, TournamentType } from '@/domains/tournament';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 
+import { DrawingMode } from '../../edit/components/constants';
 import EditablePlayer from '../../edit/components/EditablePlayer';
 import {
   ResponsiveWarningProps,
   TournamentControlsProps,
   TournamentDisplayProps,
   TournamentStatusBarProps,
-  TournamentToastProps,
+  TournamentToastProps
 } from '../../edit/components/interfaces';
-import SingleEliminationKonva from '../../edit/components/SingleEliminationKonva';
+import SingleEliminationKonva, { SingleEliminationKonvaRef } from '../../edit/components/SingleEliminationKonva';
 
 // QR Code Image Hook
 const useQRCodeImage = (url: string, size = 100) => {
@@ -28,7 +29,7 @@ export const QRCodeCanvas = ({ x, y, size = 80 }: { x: number; y: number; size?:
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setCurrentUrl(window.location.href);
+      setCurrentUrl(window.location.href.replaceAll('/edit', ''));
     }
   }, []);
 
@@ -38,7 +39,6 @@ export const QRCodeCanvas = ({ x, y, size = 80 }: { x: number; y: number; size?:
 
   return (
     <Group x={x - size / 2} y={y}>
-      {/* QR Code 背景 */}
       <Rect
         width={size + 4}
         height={size + 4}
@@ -53,8 +53,6 @@ export const QRCodeCanvas = ({ x, y, size = 80 }: { x: number; y: number; size?:
         shadowOpacity={0.1}
         shadowOffset={{ x: 0, y: 2 }}
       />
-
-      {/* QR Code 圖片 */}
       <KonvaImage image={qrImage} width={size} height={size} cornerRadius={4} />
     </Group>
   );
@@ -135,31 +133,63 @@ export const TournamentDisplay = ({
   tournamentData,
   onMatchUpdate,
   isEditMode = false,
+  drawingData,
+  onDrawingUpdate,
 }: TournamentDisplayProps): ReactElement => {
   const { tournament, courtTitle, title } = tournamentData;
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [drawingMode, setDrawingMode] = useState<DrawingMode>(DrawingMode.NORMAL);
+  const konvaRef = useRef<SingleEliminationKonvaRef>(null);
 
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setIsFullscreen(true);
+      setTimeout(() => {
+        konvaRef.current?.setFullscreenView();
+      }, 100);
     } else {
       setIsFullscreen(false);
+      setTimeout(() => {
+        konvaRef.current?.setOptimalView();
+      }, 100);
     }
   }, [isFullscreen]);
 
   const closeFullscreen = useCallback(() => {
     setIsFullscreen(false);
+    setTimeout(() => {
+      konvaRef.current?.setOptimalView();
+    }, 100);
   }, []);
 
-  // 手機版自動進入全螢幕模式
+  const handleZoomIn = useCallback(() => {
+    konvaRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    konvaRef.current?.zoomOut();
+  }, []);
+
+  const toggleDrawingMode = useCallback(() => {
+    const newMode = drawingMode === DrawingMode.NORMAL ? DrawingMode.DRAWING : DrawingMode.NORMAL;
+    setDrawingMode(newMode);
+    konvaRef.current?.setDrawingMode(newMode);
+  }, [drawingMode]);
+
+  const handleClearDrawing = useCallback(() => {
+    konvaRef.current?.clearDrawing();
+  }, []);
+
   const handleMobileView = useCallback(() => {
     if (isMobile) {
       setIsFullscreen(true);
+      setTimeout(() => {
+        konvaRef.current?.setFullscreenView();
+      }, 100);
     }
   }, [isMobile]);
 
-  // 檢測是否為手機裝置
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -175,13 +205,11 @@ export const TournamentDisplay = ({
     <>
       <div className="w-full mx-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* 標題區域 - 手機版優化 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-3 sm:px-6 pt-3 sm:pt-4 pb-2 gap-2 sm:gap-0">
             <h3 className="text-base sm:text-lg font-semibold text-background">
               {tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表
             </h3>
 
-            {/* 控制按鈕 - 手機版優化 */}
             <div className="flex items-center space-x-2 w-full sm:w-auto">
               {isMobile ? (
                 <button
@@ -192,27 +220,70 @@ export const TournamentDisplay = ({
                   📱 最佳顯示
                 </button>
               ) : (
-                <button
-                  onClick={toggleFullscreen}
-                  className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs text-blue-600"
-                  title="全螢幕顯示"
-                >
-                  🔍 全螢幕
-                </button>
+                <>
+                  <button
+                    onClick={handleZoomOut}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600 font-bold"
+                    title="縮小"
+                  >
+                    −
+                  </button>
+                  <button
+                    onClick={handleZoomIn}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600 font-bold"
+                    title="放大"
+                  >
+                    +
+                  </button>
+
+                  {isEditMode && (
+                    <>
+                      <button
+                        onClick={toggleDrawingMode}
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          drawingMode === DrawingMode.DRAWING
+                            ? 'bg-red-100 hover:bg-red-200 text-red-600'
+                            : 'bg-orange-100 hover:bg-orange-200 text-orange-600'
+                        }`}
+                        title={drawingMode === DrawingMode.DRAWING ? '結束繪圖' : '開始繪圖'}
+                      >
+                        {drawingMode === DrawingMode.DRAWING ? '✏️ 結束' : '✏️ 繪圖'}
+                      </button>
+
+                      <button
+                        onClick={handleClearDrawing}
+                        className="px-2 py-1 bg-purple-100 hover:bg-purple-200 rounded text-xs text-purple-600 font-medium"
+                        title="清除繪圖"
+                      >
+                        🗑️ 清除
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={toggleFullscreen}
+                    className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs text-blue-600"
+                    title="全螢幕顯示"
+                  >
+                    🔍 全螢幕
+                  </button>
+                </>
               )}
             </div>
           </div>
 
-          {/* 賽程表內容區域 */}
           <div
             className={`${isMobile && !isFullscreen ? 'h-64 sm:h-auto' : 'h-96 sm:h-[500px] lg:h-[600px]'} overflow-hidden`}
           >
             {tournament.tournamentType === TournamentType.SINGLE && (
               <SingleEliminationKonva
+                ref={konvaRef}
                 players={tournament.players}
                 matches={tournament.matches}
                 onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
                 isEditMode={isEditMode}
+                drawingData={drawingData}
+                onDrawingUpdate={onDrawingUpdate}
               />
             )}
 
@@ -221,7 +292,6 @@ export const TournamentDisplay = ({
             )}
           </div>
 
-          {/* 手機版提示文字 */}
           {isMobile && !isFullscreen && (
             <div className="px-3 py-2 bg-blue-50 border-t text-center">
               <p className="text-xs text-blue-600">👆 點擊「最佳顯示」以獲得更好的瀏覽體驗</p>
@@ -230,10 +300,8 @@ export const TournamentDisplay = ({
         </div>
       </div>
 
-      {/* 全螢幕模式 - 手機版優化 */}
       {isFullscreen && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
-          {/* 全螢幕控制欄 */}
           <div className="bg-white border-b px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center">
             <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
               {isMobile
@@ -242,6 +310,49 @@ export const TournamentDisplay = ({
             </h3>
 
             <div className="flex items-center space-x-2 sm:space-x-3">
+              {!isMobile && (
+                <>
+                  <button
+                    onClick={handleZoomOut}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600 font-bold"
+                    title="縮小"
+                  >
+                    −
+                  </button>
+                  <button
+                    onClick={handleZoomIn}
+                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600 font-bold"
+                    title="放大"
+                  >
+                    +
+                  </button>
+
+                  {isEditMode && (
+                    <>
+                      <button
+                        onClick={toggleDrawingMode}
+                        className={`px-2 py-1 rounded text-sm font-medium ${
+                          drawingMode === DrawingMode.DRAWING
+                            ? 'bg-red-100 hover:bg-red-200 text-red-600'
+                            : 'bg-orange-100 hover:bg-orange-200 text-orange-600'
+                        }`}
+                        title={drawingMode === DrawingMode.DRAWING ? '結束繪圖' : '開始繪圖'}
+                      >
+                        {drawingMode === DrawingMode.DRAWING ? '✏️ 結束' : '✏️ 繪圖'}
+                      </button>
+
+                      <button
+                        onClick={handleClearDrawing}
+                        className="px-2 py-1 bg-purple-100 hover:bg-purple-200 rounded text-sm text-purple-600 font-medium"
+                        title="清除繪圖"
+                      >
+                        🗑️ 清除
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+
               <button
                 onClick={closeFullscreen}
                 className="px-3 sm:px-4 py-1 sm:py-2 bg-red-100 hover:bg-red-200 rounded text-xs sm:text-sm text-red-600 whitespace-nowrap"
@@ -252,14 +363,16 @@ export const TournamentDisplay = ({
             </div>
           </div>
 
-          {/* 全螢幕賽程表內容 */}
           <div className="flex-1 flex justify-center items-center overflow-auto bg-white">
             {tournament.tournamentType === TournamentType.SINGLE && (
               <SingleEliminationKonva
+                ref={konvaRef}
                 players={tournament.players}
                 matches={tournament.matches}
                 onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
                 isEditMode={isEditMode}
+                drawingData={drawingData}
+                onDrawingUpdate={onDrawingUpdate}
               />
             )}
 
@@ -268,10 +381,9 @@ export const TournamentDisplay = ({
             )}
           </div>
 
-          {/* 手機版底部提示 */}
           {isMobile && (
             <div className="bg-gray-800 text-white px-3 py-2 text-center">
-              <p className="text-xs">💡 雙指縮放、拖曳移動來瀏覽賽程表</p>
+              <p className="text-xs">💡 拖曳移動來瀏覽賽程表</p>
             </div>
           )}
         </div>
@@ -281,7 +393,6 @@ export const TournamentDisplay = ({
 };
 
 export const ResponsiveWarning = ({ windowWidth }: ResponsiveWarningProps): ReactElement | null => {
-  // 調整警告觸發條件，在更小的螢幕才顯示
   if (windowWidth > 360) return null;
 
   return (
@@ -306,7 +417,7 @@ export const TournamentControls = ({
   onTestBroadcast,
 }: TournamentControlsProps): ReactElement => {
   return (
-    <div className="max-w-full mx-auto px-2 sm:px-0">
+    <div className="w-full mx-auto px-2 sm:px-0">
       <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mb-4 sm:mb-6">
         <div className="grid grid-cols-1 gap-6 sm:gap-8">
           <div>
@@ -409,7 +520,6 @@ export const TournamentControls = ({
 };
 
 export const TournamentContentFormatter = ({ content }: { content: string }): ReactElement => {
-  // 將 \n 換行符號轉換為 <br> 標籤
   const formatContent = (text: string): ReactElement[] => {
     return text.split('\n').map((line, index, array) => (
       <span key={index}>

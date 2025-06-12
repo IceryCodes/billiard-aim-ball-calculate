@@ -6,7 +6,25 @@ import { Group, Line, Rect, Text } from 'react-konva';
 
 import { Player } from '@/domains/tournament';
 
-import { boxHeight, boxWidth } from './constants';
+import {
+  boxHeight,
+  boxWidth,
+  defaultStrokeWidth,
+  disabledColor,
+  disabledTextColor,
+  emptySlotColor,
+  halfBoxWidth,
+  highlightColor,
+  lockIconFontSize,
+  lockIconOffsetX,
+  lockIconOffsetY,
+  outerStrokeWidth,
+  playerNameFontSize,
+  strokeColor,
+  textColor,
+  winnerHighlightColor,
+  winnerStrokeWidth,
+} from './constants';
 import { KonvaMatchProps } from './interfaces';
 
 const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlayerClick }) => {
@@ -30,35 +48,35 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
   const getPlayerBoxStyle = (player: Player | null, isWinner: boolean, canClick: boolean) => {
     if (!player) {
       return {
-        fill: '#f9fafb',
-        stroke: '#e5e7eb',
-        strokeWidth: 1,
+        fill: emptySlotColor,
+        stroke: strokeColor,
+        strokeWidth: defaultStrokeWidth,
         cursor: 'default',
       };
     }
 
     if (!canClick) {
       return {
-        fill: '#f3f4f6',
-        stroke: '#d1d5db',
-        strokeWidth: 1,
+        fill: disabledColor,
+        stroke: strokeColor,
+        strokeWidth: defaultStrokeWidth,
         cursor: 'not-allowed',
       };
     }
 
     if (isWinner) {
       return {
-        fill: '#fef3c7',
-        stroke: '#f97316',
-        strokeWidth: 3,
+        fill: winnerHighlightColor,
+        stroke: highlightColor,
+        strokeWidth: winnerStrokeWidth + 1, // 外框比內框粗一點
         cursor: 'pointer',
       };
     }
 
     return {
       fill: 'white',
-      stroke: '#d1d5db',
-      strokeWidth: 1,
+      stroke: strokeColor,
+      strokeWidth: defaultStrokeWidth,
       cursor: 'pointer',
     };
   };
@@ -66,20 +84,20 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
   const getTextStyle = (player: Player | null, canClick: boolean) => {
     if (!player) {
       return {
-        fill: '#9ca3af',
+        fill: disabledTextColor,
         text: '待定',
       };
     }
 
     if (!canClick) {
       return {
-        fill: '#9ca3af',
+        fill: disabledTextColor,
         text: player.name,
       };
     }
 
     return {
-      fill: '#000000',
+      fill: textColor,
       text: player.name,
     };
   };
@@ -90,9 +108,6 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
   const player1TextStyle = getTextStyle(match.player1, canClickPlayer1);
   const player2TextStyle = getTextStyle(match.player2, canClickPlayer2);
 
-  // 橫向佈局：兩個選手左右並排，而不是上下排列
-  const halfWidth = boxWidth / 2;
-
   return (
     <Group>
       {/* 整個比賽框的外框 - 確保四邊都有完整邊框 */}
@@ -102,8 +117,8 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
         width={boxWidth}
         height={boxHeight}
         fill="transparent"
-        stroke="#d1d5db"
-        strokeWidth={1}
+        stroke={strokeColor}
+        strokeWidth={outerStrokeWidth}
         cornerRadius={0}
       />
 
@@ -111,7 +126,7 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
       <Rect
         x={x}
         y={y}
-        width={halfWidth}
+        width={halfBoxWidth}
         height={boxHeight}
         fill={player1Style.fill}
         stroke="transparent"
@@ -139,39 +154,46 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
       {/* 選手1獲勝時的內框高亮 */}
       {match.winner?.id === match.player1?.id && (
         <Rect
-          x={x + 1}
-          y={y + 1}
-          width={halfWidth - 2}
-          height={boxHeight - 2}
+          x={x + defaultStrokeWidth}
+          y={y + defaultStrokeWidth}
+          width={halfBoxWidth - defaultStrokeWidth * 2}
+          height={boxHeight - defaultStrokeWidth * 2}
           fill="transparent"
-          stroke="#f97316"
-          strokeWidth={2}
+          stroke={highlightColor}
+          strokeWidth={winnerStrokeWidth}
         />
       )}
 
-      <Text
-        x={x}
-        y={y + (boxHeight - 12) / 2}
-        text={player1TextStyle.text}
-        fontSize={12}
-        fill={player1TextStyle.fill}
-        width={halfWidth}
-        onClick={handlePlayer1Click}
-        onTap={handlePlayer1Click}
-        ellipsis
-        wrap="none"
-        align="center"
-        verticalAlign="middle"
-      />
+      {Array.from(player1TextStyle.text).map((text: string, index: number) => (
+        <Text
+          key={text}
+          x={x}
+          y={y + halfBoxWidth / 2 + index * (playerNameFontSize + 2)}
+          text={text}
+          fontSize={playerNameFontSize}
+          fill={player1TextStyle.fill}
+          width={halfBoxWidth}
+          onClick={handlePlayer1Click}
+          onTap={handlePlayer1Click}
+          ellipsis
+          wrap="none"
+          align="center"
+          verticalAlign="middle"
+        />
+      ))}
 
       {/* VS 分隔線 */}
-      <Line points={[x + halfWidth, y + 1, x + halfWidth, y + boxHeight - 1]} stroke="#d1d5db" strokeWidth={1} />
+      <Line
+        points={[x + halfBoxWidth, y + defaultStrokeWidth, x + halfBoxWidth, y + boxHeight - defaultStrokeWidth]}
+        stroke={strokeColor}
+        strokeWidth={defaultStrokeWidth}
+      />
 
       {/* 選手2框（右側）- 不要外邊框，避免重複 */}
       <Rect
-        x={x + halfWidth}
+        x={x + halfBoxWidth}
         y={y}
-        width={halfWidth}
+        width={halfBoxWidth}
         height={boxHeight}
         fill={player2Style.fill}
         stroke="transparent"
@@ -199,34 +221,42 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
       {/* 選手2獲勝時的內框高亮 */}
       {match.winner?.id === match.player2?.id && (
         <Rect
-          x={x + halfWidth + 1}
-          y={y + 1}
-          width={halfWidth - 2}
-          height={boxHeight - 2}
+          x={x + halfBoxWidth + defaultStrokeWidth}
+          y={y + defaultStrokeWidth}
+          width={halfBoxWidth - defaultStrokeWidth * 2}
+          height={boxHeight - defaultStrokeWidth * 2}
           fill="transparent"
-          stroke="#f97316"
-          strokeWidth={2}
+          stroke={highlightColor}
+          strokeWidth={winnerStrokeWidth}
         />
       )}
 
-      <Text
-        x={x + halfWidth}
-        y={y + (boxHeight - 12) / 2}
-        text={player2TextStyle.text}
-        fontSize={12}
-        fill={player2TextStyle.fill}
-        width={halfWidth}
-        onClick={handlePlayer2Click}
-        onTap={handlePlayer2Click}
-        ellipsis
-        wrap="none"
-        align="center"
-        verticalAlign="middle"
-      />
+      {Array.from(player2TextStyle.text).map((text: string, index: number) => (
+        <Text
+          key={text}
+          x={x + halfBoxWidth}
+          y={y + halfBoxWidth / 2 + index * (playerNameFontSize + 2)}
+          text={text}
+          fontSize={playerNameFontSize}
+          fill={player2TextStyle.fill}
+          width={halfBoxWidth}
+          onClick={handlePlayer2Click}
+          onTap={handlePlayer2Click}
+          ellipsis
+          wrap="none"
+          align="center"
+          verticalAlign="middle"
+        />
+      ))}
 
       {/* 如果比賽無法進行，顯示鎖定圖標 */}
       {!canMatchProceed && match.round > 1 && (
-        <Text x={x + boxWidth - 20} y={y + boxHeight / 2 - 8} text="🔒" fontSize={16} />
+        <Text
+          x={x + boxWidth - lockIconOffsetX}
+          y={y + boxHeight / 2 - lockIconOffsetY}
+          text="🔒"
+          fontSize={lockIconFontSize}
+        />
       )}
     </Group>
   );

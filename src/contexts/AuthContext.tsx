@@ -17,6 +17,7 @@ interface AuthContextProps {
   isAuthenticated: boolean;
   token: string | null;
   user: UserProps | null;
+  isLoading: boolean;
   login: ({ token }: LoginProps) => Promise<void>;
   logout: () => void;
 }
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProps | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleAuthError = useCallback(
     (errorMessage: string) => {
@@ -50,11 +52,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
     setIsAuthenticated(false);
     setToken(null);
     setUser(null);
+    setIsLoading(false);
   }, []);
 
   const login = useCallback(
     async ({ token }: LoginProps) => {
       try {
+        setIsLoading(true);
         const { user: userData }: TokenProps = await verifyToken({ token });
 
         if (typeof window !== 'undefined') {
@@ -68,6 +72,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
         console.error('Login failed:', error);
         handleAuthError('登入失敗，請重新登入');
         logout();
+      } finally {
+        setIsLoading(false);
       }
     },
     [logout, handleAuthError]
@@ -101,10 +107,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
 
   useEffect(() => {
     const initAuth = async () => {
-      if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined') {
+        setIsLoading(false);
+        return;
+      }
 
       const storedToken = localStorage.getItem('token');
-      if (!storedToken) return;
+      if (!storedToken) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const { user: userData }: TokenProps = await verifyToken({ token: storedToken });
@@ -119,6 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
           handleAuthError('驗證失敗，請重新登入');
           logout();
         }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -131,6 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }): ReactNode =
         isAuthenticated,
         token,
         user,
+        isLoading,
         login,
         logout,
       }}

@@ -37,7 +37,7 @@ const Header = ({ children }: { children: ReactNode }) => {
               height={180}
               className="max-h-[30px] w-auto"
               placeholder="blur"
-              blurDataURL="/logo.png"
+              blurDataURL="/assets/logo.png"
             />
           </Link>
 

@@ -74,7 +74,7 @@ export const generateToken = async ({ user, manage, isRegister = false }: Genera
     })
       .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
       .setIssuedAt(now)
-      .setExpirationTime(now + 3600) // 1小時後過期
+      .setExpirationTime(now + 3600 * 24) // 1小時*24後過期
       .sign(secretKey);
 
     return token;

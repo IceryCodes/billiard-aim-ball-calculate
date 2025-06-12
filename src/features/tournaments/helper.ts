@@ -1,5 +1,6 @@
 import {
   AnnouncementMessage,
+  DrawingUpdateMessage,
   MatchUpdateMessage,
   PlayerUpdateCompleteMessage,
   PlayerUpdateSingleMessage,
@@ -9,9 +10,6 @@ import {
 } from '@/domains/realtime';
 import { RealtimeMessageType } from '@/domains/tournament';
 
-// 從 realtime 域導入具體的訊息類型和聯合類型
-
-// Type guard functions - 使用枚舉類型
 export const isPlayerUpdateComplete = (message: RealtimeMessage): message is PlayerUpdateCompleteMessage => {
   return message.type === RealtimeMessageType.PLAYER_UPDATE && 'players' in (message.data || {});
 };
@@ -38,4 +36,8 @@ export const isAnnouncement = (message: RealtimeMessage): message is Announcemen
 
 export const isTestUpdate = (message: RealtimeMessage): message is TestUpdateMessage => {
   return message.type === RealtimeMessageType.TEST_UPDATE && 'message' in message;
+};
+
+export const isDrawingUpdate = (message: RealtimeMessage): message is DrawingUpdateMessage => {
+  return message.type === RealtimeMessageType.DRAWING_UPDATE && 'drawingData' in (message.data || {});
 };

@@ -9,6 +9,21 @@ import {
   TournamentType,
 } from '@/domains/tournament';
 
+
+// 繪圖相關介面
+export interface DrawingLine {
+  id: string;
+  points: number[];
+  strokeWidth: number;
+  stroke: string;
+  timestamp: number;
+}
+
+export interface DrawingData {
+  lines: DrawingLine[];
+  lastUpdated: number;
+}
+
 // 組件 Props 介面
 export interface EditablePlayerProps {
   player: Player;
@@ -37,6 +52,8 @@ export interface SingleEliminationKonvaProps {
   matches: Match[];
   isEditMode: boolean;
   onMatchUpdate?: (matches: Match[]) => void;
+  drawingData?: DrawingData;
+  onDrawingUpdate?: (drawingData: DrawingData) => void;
 }
 
 // 狀態欄組件介面
@@ -59,6 +76,8 @@ export interface TournamentDisplayProps {
   tournamentData: TournamentProps;
   onMatchUpdate?: (matches: Match[]) => void;
   isEditMode?: boolean;
+  drawingData?: DrawingData;
+  onDrawingUpdate?: (drawingData: DrawingData) => void;
 }
 
 // 響應式警告組件介面
@@ -100,4 +119,6 @@ export interface UseTournamentStateReturn {
   handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
+  drawingData: DrawingData;
+  handleDrawingUpdate: (drawingData: DrawingData) => Promise<void>;
 }

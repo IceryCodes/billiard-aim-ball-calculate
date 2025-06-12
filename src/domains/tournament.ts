@@ -11,7 +11,6 @@ export enum PlayerCount {
   ONE_HUNDRED_AND_TWENTY_EIGHT = 128,
 }
 
-// 新增的enum定義
 export enum UserType {
   EDITOR = 'editor',
   VIEWER = 'viewer',
@@ -32,6 +31,7 @@ export enum RealtimeMessageType {
   ANNOUNCEMENT = 'announcement',
   TEST_UPDATE = 'testUpdate',
   REFRESH_REQUEST = 'refreshRequest',
+  DRAWING_UPDATE = 'drawingUpdate',
 }
 
 export enum BroadcastTestType {
@@ -45,6 +45,21 @@ export enum TournamentAction {
   PLAYER_COUNT_CHANGED = 'player_count_changed',
   TOURNAMENT_TYPE_CHANGED = 'tournament_type_changed',
   MATCH_RESULT_UPDATED = 'match_result_updated',
+  DRAWING_UPDATED = 'drawing_updated',
+}
+
+// 繪圖相關介面
+export interface DrawingLine {
+  id: string;
+  points: number[];
+  strokeWidth: number;
+  stroke: string;
+  timestamp: number;
+}
+
+export interface DrawingData {
+  lines: DrawingLine[];
+  lastUpdated: number;
 }
 
 // 基礎類型定義
@@ -91,6 +106,7 @@ export interface TournamentProps {
   customLink: string;
   tags: string[];
   tournament: TournamentState;
+  drawingData?: DrawingData;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -154,18 +170,27 @@ export interface RefreshRequestMessage extends BaseRealtimeMessage {
   type: RealtimeMessageType.REFRESH_REQUEST;
 }
 
+export interface DrawingUpdateMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.DRAWING_UPDATE;
+  data: {
+    drawingData: DrawingData;
+    action: TournamentAction;
+  };
+}
+
 export type RealtimeMessage =
   | PlayerUpdateMessage
   | MatchUpdateMessage
   | TournamentUpdatedMessage
   | AnnouncementMessage
   | TestUpdateMessage
-  | RefreshRequestMessage;
+  | RefreshRequestMessage
+  | DrawingUpdateMessage;
 
 // 廣播更新數據
 export interface BroadcastUpdateData {
   type: RealtimeMessageType;
-  data?: Record<string, unknown>;
+  data?: Record<string, string | number | boolean | object>;
   message?: string;
   action?: TournamentAction;
   fromUserId?: string;
