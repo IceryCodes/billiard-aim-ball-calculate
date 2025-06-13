@@ -78,6 +78,7 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
         isEditMode={false}
         drawingData={drawingData}
         onDrawingUpdate={undefined}
+        connectionQuality={connectionQuality}
       />
 
       <div className="w-full">
