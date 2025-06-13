@@ -54,54 +54,78 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
   onCancelEdit,
 }) => {
   const canMatchProceed = match.round === 1 || (match.player1 !== null && match.player2 !== null);
-  const canClickPlayer1 = match.player1 !== null && canMatchProceed;
-  const canClickPlayer2 = match.player2 !== null && canMatchProceed;
+
+  // 判斷是否為空籤（選手姓名為空或null）
+  const isPlayer1Empty = !match.player1 || !match.player1.name || match.player1.name.trim() === '';
+  const isPlayer2Empty = !match.player2 || !match.player2.name || match.player2.name.trim() === '';
+
+  // 在非編輯模式下，空籤不能點擊
+  const canClickPlayer1 = !isPlayer1Empty && canMatchProceed && editMode !== EditMode.PLAYER_EDIT;
+  const canClickPlayer2 = !isPlayer2Empty && canMatchProceed && editMode !== EditMode.PLAYER_EDIT;
 
   // 修正後的選手1單擊處理
   const handlePlayer1Click = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT && match.player1) {
+    if (editMode === EditMode.PLAYER_EDIT) {
       // 在編輯模式下，單擊不應該觸發選擇獲勝者
       return;
     }
 
-    if (canClickPlayer1 && match.player1) {
+    // 空籤不能被選為獲勝者
+    if (!isPlayer1Empty && canClickPlayer1 && match.player1) {
       onPlayerClick(match.id, match.player1);
     }
-  }, [match.id, match.player1, onPlayerClick, canClickPlayer1, editMode]);
+  }, [match.id, match.player1, onPlayerClick, canClickPlayer1, editMode, isPlayer1Empty]);
 
   // 修正後的選手2單擊處理
   const handlePlayer2Click = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT && match.player2) {
+    if (editMode === EditMode.PLAYER_EDIT) {
       // 在編輯模式下，單擊不應該觸發選擇獲勝者
       return;
     }
 
-    if (canClickPlayer2 && match.player2) {
+    // 空籤不能被選為獲勝者
+    if (!isPlayer2Empty && canClickPlayer2 && match.player2) {
       onPlayerClick(match.id, match.player2);
     }
-  }, [match.id, match.player2, onPlayerClick, canClickPlayer2, editMode]);
+  }, [match.id, match.player2, onPlayerClick, canClickPlayer2, editMode, isPlayer2Empty]);
 
   // 修正後的選手1雙擊處理
   const handlePlayer1DoubleClick = useCallback(() => {
-    // 在編輯模式下，允許編輯任何選手
-    if (editMode === EditMode.PLAYER_EDIT && match.player1) {
-      onPlayerDoubleClick(match.player1);
+    // 只有在編輯模式下才能雙擊編輯（包括空籤）
+    if (editMode === EditMode.PLAYER_EDIT) {
+      // 如果是空籤，創建一個臨時的 player 物件來編輯
+      // 使用負數作為臨時 ID，避免與正常 ID 衝突
+      const playerToEdit = match.player1 || {
+        id: -Math.abs(parseInt(match.id) * 10 + 1),
+        name: '',
+      };
+      onPlayerDoubleClick(playerToEdit);
     }
-  }, [match.player1, onPlayerDoubleClick, editMode]);
+  }, [match.player1, match.id, onPlayerDoubleClick, editMode]);
 
   // 修正後的選手2雙擊處理
   const handlePlayer2DoubleClick = useCallback(() => {
-    // 在編輯模式下，允許編輯任何選手
-    if (editMode === EditMode.PLAYER_EDIT && match.player2) {
-      onPlayerDoubleClick(match.player2);
+    // 只有在編輯模式下才能雙擊編輯（包括空籤）
+    if (editMode === EditMode.PLAYER_EDIT) {
+      // 如果是空籤，創建一個臨時的 player 物件來編輯
+      // 使用負數作為臨時 ID，避免與正常 ID 衝突
+      const playerToEdit = match.player2 || {
+        id: -Math.abs(parseInt(match.id) * 10 + 2),
+        name: '',
+      };
+      onPlayerDoubleClick(playerToEdit);
     }
-  }, [match.player2, onPlayerDoubleClick, editMode]);
+  }, [match.player2, match.id, onPlayerDoubleClick, editMode]);
 
   // 判斷是否在編輯狀態
   const isEditingPlayer1 =
-    playerEditState.isEditing && match.player1 !== null && playerEditState.playerId === match.player1.id;
+    playerEditState.isEditing &&
+    ((match.player1 !== null && playerEditState.playerId === match.player1.id) ||
+      playerEditState.playerId === -Math.abs(parseInt(match.id) * 10 + 1));
   const isEditingPlayer2 =
-    playerEditState.isEditing && match.player2 !== null && playerEditState.playerId === match.player2.id;
+    playerEditState.isEditing &&
+    ((match.player2 !== null && playerEditState.playerId === match.player2.id) ||
+      playerEditState.playerId === -Math.abs(parseInt(match.id) * 10 + 2));
 
   // 渲染編輯中的視覺提示
   const renderEditingIndicator = (inputX: number, inputY: number, width: number) => {
@@ -210,7 +234,17 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     }
   }, [playerEditState, onEditStateChange, onConfirmEdit, onCancelEdit]);
 
-  const getPlayerBoxStyle = (player: Player | null, isWinner: boolean, canClick: boolean) => {
+  const getPlayerBoxStyle = (player: Player | null, isWinner: boolean, canClick: boolean, isEmpty: boolean) => {
+    // 空籤在非編輯模式下顯示為灰色，不能點擊
+    if (isEmpty && editMode !== EditMode.PLAYER_EDIT) {
+      return {
+        fill: '#f5f5f5',
+        stroke: '#d0d0d0',
+        strokeWidth: defaultStrokeWidth,
+        cursor: 'default',
+      };
+    }
+
     if (!player) {
       return {
         fill: emptySlotColor,
@@ -222,6 +256,14 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
 
     // 在編輯模式下，所有選手都應該可以編輯，不管是否獲勝
     if (editMode === EditMode.PLAYER_EDIT) {
+      if (isEmpty) {
+        return {
+          fill: '#f8f8f8',
+          stroke: strokeColor,
+          strokeWidth: defaultStrokeWidth,
+          cursor: 'text',
+        };
+      }
       if (isWinner) {
         return {
           fill: winnerHighlightColor,
@@ -265,7 +307,21 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     };
   };
 
-  const getTextStyle = (player: Player | null, canClick: boolean) => {
+  const getTextStyle = (player: Player | null, canClick: boolean, isEmpty: boolean) => {
+    // 空籤顯示為「空籤」且為灰色文字
+    if (isEmpty) {
+      if (editMode === EditMode.PLAYER_EDIT) {
+        return {
+          fill: '#999',
+          text: player?.name || '空籤',
+        };
+      }
+      return {
+        fill: '#999',
+        text: '空籤',
+      };
+    }
+
     if (!player) {
       return {
         fill: disabledTextColor,
@@ -298,15 +354,17 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
   const player1Style = getPlayerBoxStyle(
     match.player1,
     !!(match.winner && match.player1 && match.winner.id === match.player1.id),
-    canClickPlayer1
+    canClickPlayer1,
+    isPlayer1Empty
   );
   const player2Style = getPlayerBoxStyle(
     match.player2,
     !!(match.winner && match.player2 && match.winner.id === match.player2.id),
-    canClickPlayer2
+    canClickPlayer2,
+    isPlayer2Empty
   );
-  const player1TextStyle = getTextStyle(match.player1, canClickPlayer1);
-  const player2TextStyle = getTextStyle(match.player2, canClickPlayer2);
+  const player1TextStyle = getTextStyle(match.player1, canClickPlayer1, isPlayer1Empty);
+  const player2TextStyle = getTextStyle(match.player2, canClickPlayer2, isPlayer2Empty);
 
   return (
     <Group>
@@ -349,18 +407,29 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         strokeWidth={0}
         onClick={(e) => {
           if (playerEditState.isEditing) {
-            // 如果正在編輯中，點擊編輯框不應該觸發背景點擊
             e.evt.stopPropagation();
+            return;
+          }
+          // 空籤在非編輯模式下不能點擊
+          if (editMode !== EditMode.PLAYER_EDIT && isPlayer1Empty) {
             return;
           }
           handlePlayer1Click();
         }}
         onDblClick={(e) => {
-          e.evt.preventDefault();
-          e.evt.stopPropagation();
-          handlePlayer1DoubleClick();
+          // 只有在編輯模式下才處理雙擊事件
+          if (editMode === EditMode.PLAYER_EDIT) {
+            e.evt.preventDefault();
+            e.evt.stopPropagation();
+            handlePlayer1DoubleClick();
+          }
         }}
-        onTap={handlePlayer1Click}
+        onTap={() => {
+          if (editMode !== EditMode.PLAYER_EDIT && isPlayer1Empty) {
+            return;
+          }
+          handlePlayer1Click();
+        }}
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
           if (stage && isEditMode) {
@@ -376,7 +445,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       />
 
       {/* 選手1文字或編輯指示 */}
-      {isEditingPlayer1 && match.player1
+      {isEditingPlayer1
         ? renderEditingIndicator(x, y, halfBoxWidth)
         : Array.from(player1TextStyle.text).map((text: string, index: number) => (
             <Text
@@ -387,13 +456,31 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
               fontSize={playerNameFontSize}
               fill={player1TextStyle.fill}
               width={halfBoxWidth}
-              onClick={handlePlayer1Click}
-              onDblClick={(e) => {
-                e.evt.preventDefault();
-                e.evt.stopPropagation();
-                handlePlayer1DoubleClick();
+              onClick={(e) => {
+                if (editMode === EditMode.PLAYER_EDIT) {
+                  e.evt.stopPropagation();
+                  return;
+                }
+                if (!isPlayer1Empty) {
+                  handlePlayer1Click();
+                }
               }}
-              onTap={handlePlayer1Click}
+              onDblClick={(e) => {
+                // 只有在編輯模式下才處理雙擊事件
+                if (editMode === EditMode.PLAYER_EDIT) {
+                  e.evt.preventDefault();
+                  e.evt.stopPropagation();
+                  handlePlayer1DoubleClick();
+                }
+              }}
+              onTap={() => {
+                if (editMode === EditMode.PLAYER_EDIT) {
+                  return;
+                }
+                if (!isPlayer1Empty) {
+                  handlePlayer1Click();
+                }
+              }}
               ellipsis
               wrap="none"
               align="center"
@@ -420,18 +507,29 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         strokeWidth={0}
         onClick={(e) => {
           if (playerEditState.isEditing) {
-            // 如果正在編輯中，點擊編輯框不應該觸發背景點擊
             e.evt.stopPropagation();
+            return;
+          }
+          // 空籤在非編輯模式下不能點擊
+          if (editMode !== EditMode.PLAYER_EDIT && isPlayer2Empty) {
             return;
           }
           handlePlayer2Click();
         }}
         onDblClick={(e) => {
-          e.evt.preventDefault();
-          e.evt.stopPropagation();
-          handlePlayer2DoubleClick();
+          // 只有在編輯模式下才處理雙擊事件
+          if (editMode === EditMode.PLAYER_EDIT) {
+            e.evt.preventDefault();
+            e.evt.stopPropagation();
+            handlePlayer2DoubleClick();
+          }
         }}
-        onTap={handlePlayer2Click}
+        onTap={() => {
+          if (editMode !== EditMode.PLAYER_EDIT && isPlayer2Empty) {
+            return;
+          }
+          handlePlayer2Click();
+        }}
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
           if (stage) {
@@ -447,7 +545,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       />
 
       {/* 選手2文字或編輯指示 */}
-      {isEditingPlayer2 && match.player2
+      {isEditingPlayer2
         ? renderEditingIndicator(x + halfBoxWidth, y, halfBoxWidth)
         : Array.from(player2TextStyle.text).map((text: string, index: number) => (
             <Text
@@ -458,13 +556,31 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
               fontSize={playerNameFontSize}
               fill={player2TextStyle.fill}
               width={halfBoxWidth}
-              onClick={handlePlayer2Click}
-              onDblClick={(e) => {
-                e.evt.preventDefault();
-                e.evt.stopPropagation();
-                handlePlayer2DoubleClick();
+              onClick={(e) => {
+                if (editMode === EditMode.PLAYER_EDIT) {
+                  e.evt.stopPropagation();
+                  return;
+                }
+                if (!isPlayer2Empty) {
+                  handlePlayer2Click();
+                }
               }}
-              onTap={handlePlayer2Click}
+              onDblClick={(e) => {
+                // 只有在編輯模式下才處理雙擊事件
+                if (editMode === EditMode.PLAYER_EDIT) {
+                  e.evt.preventDefault();
+                  e.evt.stopPropagation();
+                  handlePlayer2DoubleClick();
+                }
+              }}
+              onTap={() => {
+                if (editMode === EditMode.PLAYER_EDIT) {
+                  return;
+                }
+                if (!isPlayer2Empty) {
+                  handlePlayer2Click();
+                }
+              }}
               ellipsis
               wrap="none"
               align="center"
