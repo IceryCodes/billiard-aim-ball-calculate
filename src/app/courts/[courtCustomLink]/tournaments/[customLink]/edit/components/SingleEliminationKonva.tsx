@@ -12,6 +12,7 @@ import { QRCodeCanvas } from '../../components/shared/TournamentShared';
 import {
   boxHeight,
   boxWidth,
+  canvasBackgroundColor,
   canvasBottomPadding,
   canvasLeftPadding,
   canvasRightPadding,
@@ -23,15 +24,22 @@ import {
   championStrokeWidth,
   championTextPaddingX,
   championTextWidth,
+  championTitleBackgroundColor,
   championToFinalGap,
   championTopMargin,
   connectionLineColor,
   connectionLineWidth,
   crownIconFontSize,
   crownIconOffsetX,
+  debugInfoBackgroundColor,
+  debugInfoTextColor,
   drawingLineCap,
   drawingLineJoin,
   DrawingMode,
+  drawingModeIndicatorBackgroundColor,
+  drawingModeIndicatorBorderColor,
+  drawingModeIndicatorDotColor,
+  drawingModeIndicatorTextColor,
   drawingStrokeColor,
   drawingStrokeWidth,
   EditMode,
@@ -51,7 +59,9 @@ import {
   qrCodeOffsetY,
   qrCodeSize,
   roundHeight,
+  roundTitleBackgroundColor,
   roundTitleFontSize,
+  roundTitleTextColor,
   sceneHeightExtra,
   strokeColor,
   textColor,
@@ -629,7 +639,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     }, [generateSingleEliminationMatches, players, matches.length, onMatchUpdate]);
 
     return (
-      <div ref={containerRef} className="w-full h-full relative">
+      <div ref={containerRef} className="w-full h-full relative" style={{ backgroundColor: canvasBackgroundColor }}>
         <Stage
           width={stageConfig.width}
           height={stageConfig.height}
@@ -664,7 +674,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                     y={titleY}
                     width={titleWidth}
                     height={headerHeight}
-                    fill="rgba(255, 255, 255, 0.9)"
+                    fill={roundTitleBackgroundColor}
                     stroke={strokeColor}
                     strokeWidth={1}
                     cornerRadius={4}
@@ -676,7 +686,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                     fontSize={roundTitleFontSize}
                     fontFamily="Arial"
                     fontStyle="bold"
-                    fill="#374151"
+                    fill={roundTitleTextColor}
                     width={titleWidth - titlePadding * 2}
                     align="center"
                     verticalAlign="middle"
@@ -693,7 +703,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                 y={0}
                 width={titleWidth}
                 height={headerHeight}
-                fill="rgba(255, 215, 0, 0.2)"
+                fill={championTitleBackgroundColor}
                 stroke={highlightColor}
                 strokeWidth={championStrokeWidth - 1}
                 cornerRadius={4}
@@ -705,7 +715,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                 fontSize={roundTitleFontSize}
                 fontFamily="Arial"
                 fontStyle="bold"
-                fill={highlightColor}
+                fill={roundTitleTextColor}
                 width={titleWidth - titlePadding * 2}
                 align="center"
                 verticalAlign="middle"
@@ -845,20 +855,8 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
             }).flat()}
           </Layer>
 
-          {/* 繪圖層 - 關鍵修正！ */}
+          {/* 繪圖層 */}
           <Layer ref={drawingLayerRef} listening={false}>
-            {/* 測試線條 - 用於驗證繪圖層是否工作 */}
-            {/* <Line
-              points={[50, 50, 200, 200]}
-              stroke="#ff0000"
-              strokeWidth={3}
-              tension={0.5}
-              lineCap="round"
-              lineJoin="round"
-            /> */}
-
-            {/* 強化的調試信息 */}
-
             {/* 已完成的繪圖線條 */}
             {localDrawingData.lines.map((line: DrawingLine, index: number) => {
               // 驗證線條數據有效性
@@ -898,17 +896,36 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
         {/* 繪圖模式指示器 */}
         {drawingMode === DrawingMode.DRAWING && (
-          <div className="absolute top-4 left-4 z-10 bg-red-100 border border-red-300 rounded-lg px-3 py-2">
+          <div
+            className="absolute top-4 left-4 z-10 rounded-lg px-3 py-2"
+            style={{
+              backgroundColor: drawingModeIndicatorBackgroundColor,
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: drawingModeIndicatorBorderColor,
+            }}
+          >
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-red-700 text-sm font-medium">繪圖模式</span>
+              <div
+                className="w-3 h-3 rounded-full animate-pulse"
+                style={{ backgroundColor: drawingModeIndicatorDotColor }}
+              ></div>
+              <span className="text-sm font-medium" style={{ color: drawingModeIndicatorTextColor }}>
+                繪圖模式
+              </span>
             </div>
           </div>
         )}
 
         {/* 調試信息顯示 */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="absolute bottom-4 left-4 z-10 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+          <div
+            className="absolute bottom-4 left-4 z-10 p-2 rounded text-xs"
+            style={{
+              backgroundColor: debugInfoBackgroundColor,
+              color: debugInfoTextColor,
+            }}
+          >
             <div>本地線條: {localDrawingData.lines.length}</div>
             <div>外部線條: {drawingData?.lines?.length || 0}</div>
           </div>

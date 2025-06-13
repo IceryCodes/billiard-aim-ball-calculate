@@ -1,13 +1,12 @@
-import { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
 
-import { BroadcastTestType, Player, PlayerCount, ToastType, TournamentType } from '@/domains/tournament';
-import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
+import { BroadcastTestType, ToastType, TournamentType } from '@/domains/tournament';
+import { composeStatusDisplay } from '@/features/tournaments/helper';
 
 import { DrawingMode, EditMode } from '../../edit/components/constants';
-import EditablePlayer from '../../edit/components/EditablePlayer';
 import {
   ConnectionQualityType,
   ResponsiveWarningProps,
@@ -70,34 +69,7 @@ export const TournamentStatusBar = ({
 }: TournamentStatusBarProps): ReactElement => {
   const bgColor = isEditMode ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200';
 
-  const getStatusDisplay = () => {
-    if (!isConnected) {
-      return {
-        icon: '❌',
-        text: isEditMode ? '即時廣播已斷開' : '即時更新已斷開',
-        color: 'text-red-600',
-        dotColor: 'bg-red-500',
-      };
-    }
-
-    if (connectionQuality === 'poor') {
-      return {
-        icon: '⚠️',
-        text: isEditMode ? '即時廣播連線不穩' : '即時更新連線不穩',
-        color: 'text-yellow-600',
-        dotColor: 'bg-yellow-500',
-      };
-    }
-
-    return {
-      icon: '🔄',
-      text: isEditMode ? '即時廣播已啟用' : '即時更新已啟用',
-      color: isEditMode ? 'text-blue-700' : 'text-green-600',
-      dotColor: 'bg-green-500',
-    };
-  };
-
-  const statusDisplay = getStatusDisplay();
+  const statusDisplay = composeStatusDisplay({ isConnected, connectionQuality, isEditMode });
 
   return (
     <div className={`w-full ${bgColor} border-b px-2 sm:px-4 py-2 mb-2 sm:mb-4`}>
@@ -252,7 +224,7 @@ export const TournamentDisplay = ({
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-3 sm:px-6 pt-3 sm:pt-4 pb-2 gap-2 sm:gap-0">
             <h3 className="text-base sm:text-lg font-semibold text-background">
-              {tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表
+              {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${tournament.players.length}人)`}
             </h3>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
@@ -366,7 +338,7 @@ export const TournamentDisplay = ({
             <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
               {isMobile
                 ? `${title}`
-                : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表`}
+                : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${tournament.players.length}人)`}
             </h3>
 
             <div className="flex items-center space-x-2 sm:space-x-3">
@@ -467,68 +439,18 @@ export const ResponsiveWarning = ({ windowWidth }: ResponsiveWarningProps): Reac
 };
 
 export const TournamentControls = ({
-  tournament,
   isConnected,
   onlineCount,
-  onPlayerCountChange,
-  onTournamentTypeChange,
-  onPlayerNameChange,
-  onDragStart,
   onTestBroadcast,
+  connectionQuality,
 }: TournamentControlsProps): ReactElement => {
+  const statusDisplay = useMemo(
+    () => composeStatusDisplay({ isConnected, connectionQuality, isEditMode: true }),
+    [connectionQuality, isConnected]
+  );
+
   return (
     <div className="w-full mx-auto px-2 sm:px-0">
-      <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mb-4 sm:mb-6">
-        <div className="grid grid-cols-1 gap-6 sm:gap-8">
-          <div>
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-background">賽程類型</h3>
-            <div className="flex space-x-2 sm:space-x-4">
-              <Button
-                onClick={() => onTournamentTypeChange(TournamentType.SINGLE)}
-                text="單敗淘汰"
-                buttonStyle={
-                  tournament.tournamentType === TournamentType.SINGLE ? ButtonStyleType.Active : ButtonStyleType.Disabled
-                }
-              />
-              <Button
-                onClick={() => onTournamentTypeChange(TournamentType.DOUBLE)}
-                text="雙敗淘汰"
-                buttonStyle={
-                  tournament.tournamentType === TournamentType.DOUBLE ? ButtonStyleType.Active : ButtonStyleType.Disabled
-                }
-              />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-background">參賽人數</h3>
-            <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2">
-              {Object.values(PlayerCount)
-                .filter((value) => typeof value === 'number')
-                .map((count) => (
-                  <Button
-                    key={count}
-                    onClick={() => onPlayerCountChange(count as PlayerCount)}
-                    text={count.toString()}
-                    buttonStyle={tournament.playerCount === count ? ButtonStyleType.Active : ButtonStyleType.Disabled}
-                  />
-                ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-background">
-          參賽選手 ({tournament.players.length} 人)
-        </h3>
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {tournament.players.map((player: Player) => (
-            <EditablePlayer key={player.id} player={player} onNameChange={onPlayerNameChange} onDragStart={onDragStart} />
-          ))}
-        </div>
-      </div>
-
       <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mt-4 sm:mt-6">
         <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-background">即時廣播控制</h3>
 
@@ -536,8 +458,8 @@ export const TournamentControls = ({
           <div className="bg-gray-50 p-3 rounded">
             <div className="text-xs sm:text-sm text-gray-600 mb-1">連線狀態</div>
             <div className={`flex items-center space-x-2 ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="font-medium text-background text-sm">{isConnected ? '✅ 已連線' : '❌ 未連線'}</span>
+              <div className={`w-2 h-2 rounded-full ${statusDisplay.dotColor}`}></div>
+              <span className={`${statusDisplay.color} font-medium`}>{statusDisplay.text}</span>
             </div>
           </div>
 

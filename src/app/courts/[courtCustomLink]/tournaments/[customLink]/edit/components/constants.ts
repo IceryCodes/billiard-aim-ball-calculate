@@ -35,7 +35,6 @@ export const championToFinalGap = championBoxHeight;
 // 連接線相關
 export const connectionLineWidth = 2;
 export const championConnectionLineWidth = 3;
-export const connectionLineColor = '#f97316';
 
 // QR Code 相關
 export const qrCodeSize = 150;
@@ -56,15 +55,57 @@ export const winnerStrokeWidth = 2;
 export const championStrokeWidth = 3;
 export const outerStrokeWidth = 1;
 
-// 顏色常數
+// ====== 顏色常數 ======
+// Canvas 背景色
+export const canvasBackgroundColor = '#363636';
+
+// 基礎顏色
 export const strokeColor = '#d1d5db';
 export const highlightColor = '#f97316';
+export const textColor = '#000000';
+
+// 連接線顏色
+export const connectionLineColor = '#f97316';
+
+// 背景顏色
 export const winnerHighlightColor = '#fef3c7';
 export const championBackgroundColor = '#ffd700';
 export const emptySlotColor = '#f9fafb';
 export const disabledColor = '#f3f4f6';
-export const textColor = '#000000';
+
+// 文字顏色
 export const disabledTextColor = '#9ca3af';
+
+// 編輯相關顏色
+export const editInputBorderColor = '#3b82f6';
+export const editInputBackgroundColor = '#ffffff';
+export const editingIndicatorBackgroundColor = '#e3f2fd';
+export const editingIndicatorBorderColor = '#2196f3';
+export const editingTextColor = '#1976d2';
+
+// 標題相關顏色
+export const roundTitleBackgroundColor = 'rgba(255, 255, 255, 0.9)';
+export const roundTitleTextColor = '#374151';
+export const championTitleBackgroundColor = '#FFD700';
+
+// 選手框顏色
+export const playerBoxBackgroundColor = 'white';
+export const emptyPlayerBoxBackgroundColor = '#f5f5f5';
+export const emptyPlayerBoxStrokeColor = '#d0d0d0';
+export const editableEmptyPlayerBoxBackgroundColor = '#f8f8f8';
+
+// 繪圖相關顏色
+export const drawingStrokeColor = '#ef4444';
+
+// 繪圖模式指示器顏色
+export const drawingModeIndicatorBackgroundColor = 'rgb(254 226 226)'; // bg-red-100
+export const drawingModeIndicatorBorderColor = 'rgb(252 165 165)'; // border-red-300
+export const drawingModeIndicatorDotColor = 'rgb(239 68 68)'; // bg-red-500
+export const drawingModeIndicatorTextColor = 'rgb(185 28 28)'; // text-red-700
+
+// 調試信息顏色
+export const debugInfoBackgroundColor = 'rgba(0, 0, 0, 0.75)';
+export const debugInfoTextColor = 'white';
 
 // ====== 動態計算輔助常數 ======
 export const matchHeight = boxHeight;
@@ -117,11 +158,8 @@ export const drawingLayerName = 'drawing';
 
 // 繪圖樣式
 export const drawingStrokeWidth = 3;
-export const drawingStrokeColor = '#ef4444';
 export const drawingLineCap = 'round' as const;
 export const drawingLineJoin = 'round' as const;
 
 export const editInputFontSize = 14;
 export const editInputPadding = 4;
-export const editInputBorderColor = '#3b82f6';
-export const editInputBackgroundColor = '#ffffff';

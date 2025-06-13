@@ -5,7 +5,6 @@ import {
   PlayerCount,
   ToastNotification,
   TournamentProps,
-  TournamentState,
   TournamentType,
 } from '@/domains/tournament';
 
@@ -95,6 +94,7 @@ export interface TournamentDisplayProps {
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
   onPlayerNameEdit?: (playerId: number, newName: string) => void;
+  connectionQuality: ConnectionQualityType;
 }
 
 // 響應式警告組件介面
@@ -104,14 +104,10 @@ export interface ResponsiveWarningProps {
 
 // 編輯控制組件介面
 export interface TournamentControlsProps {
-  tournament: TournamentState;
   isConnected: boolean;
   onlineCount: number;
-  onPlayerCountChange: (count: PlayerCount) => void;
-  onTournamentTypeChange: (type: TournamentType) => void;
-  onPlayerNameChange: (id: number, name: string) => void;
-  onDragStart: (player: Player) => void;
   onTestBroadcast: (testType: BroadcastTestType) => void;
+  connectionQuality: ConnectionQualityType;
 }
 
 // Hook 參數介面

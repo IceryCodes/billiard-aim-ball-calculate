@@ -10,7 +10,13 @@ import {
   defaultStrokeWidth,
   disabledColor,
   disabledTextColor,
+  editableEmptyPlayerBoxBackgroundColor,
+  editingIndicatorBackgroundColor,
+  editingIndicatorBorderColor,
+  editingTextColor,
   EditMode,
+  emptyPlayerBoxBackgroundColor,
+  emptyPlayerBoxStrokeColor,
   emptySlotColor,
   halfBoxWidth,
   highlightColor,
@@ -18,6 +24,7 @@ import {
   lockIconOffsetX,
   lockIconOffsetY,
   outerStrokeWidth,
+  playerBoxBackgroundColor,
   playerNameFontSize,
   strokeColor,
   textColor,
@@ -139,8 +146,8 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
           y={inputY}
           width={width}
           height={boxHeight}
-          fill="#e3f2fd"
-          stroke="#2196f3"
+          fill={editingIndicatorBackgroundColor}
+          stroke={editingIndicatorBorderColor}
           strokeWidth={2}
           cornerRadius={2}
         />
@@ -153,7 +160,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
             y={inputY + boxHeight / 4 + index * (playerNameFontSize + 2)}
             text={char === ' ' ? '·' : char} // 空格顯示為中點
             fontSize={playerNameFontSize}
-            fill="#1976d2"
+            fill={editingTextColor}
             width={width}
             align="center"
             fontStyle="bold"
@@ -166,7 +173,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
           y={inputY + boxHeight / 4 + displayText.length * (playerNameFontSize + 2)}
           width={2}
           height={playerNameFontSize}
-          fill="#1976d2"
+          fill={editingTextColor}
         />
       </Group>
     );
@@ -238,8 +245,8 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     // 空籤在非編輯模式下顯示為灰色，不能點擊
     if (isEmpty && editMode !== EditMode.PLAYER_EDIT) {
       return {
-        fill: '#f5f5f5',
-        stroke: '#d0d0d0',
+        fill: emptyPlayerBoxBackgroundColor,
+        stroke: emptyPlayerBoxStrokeColor,
         strokeWidth: defaultStrokeWidth,
         cursor: 'default',
       };
@@ -258,7 +265,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     if (editMode === EditMode.PLAYER_EDIT) {
       if (isEmpty) {
         return {
-          fill: '#f8f8f8',
+          fill: editableEmptyPlayerBoxBackgroundColor,
           stroke: strokeColor,
           strokeWidth: defaultStrokeWidth,
           cursor: 'text',
@@ -273,7 +280,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         };
       }
       return {
-        fill: 'white',
+        fill: playerBoxBackgroundColor,
         stroke: strokeColor,
         strokeWidth: defaultStrokeWidth,
         cursor: 'text',
@@ -300,7 +307,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     }
 
     return {
-      fill: 'white',
+      fill: playerBoxBackgroundColor,
       stroke: strokeColor,
       strokeWidth: defaultStrokeWidth,
       cursor: 'pointer',
@@ -312,12 +319,12 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     if (isEmpty) {
       if (editMode === EditMode.PLAYER_EDIT) {
         return {
-          fill: '#999',
+          fill: disabledTextColor,
           text: player?.name || '空籤',
         };
       }
       return {
-        fill: '#999',
+        fill: disabledTextColor,
         text: '空籤',
       };
     }
