@@ -1,12 +1,12 @@
 'use client';
 
-import { ReactElement, useCallback, useState } from 'react';
+import { ReactElement, useState } from 'react';
 
 import Link from 'next/link';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { getPageUrlByType, PageType } from '@/domains/interface';
-import { Player, TournamentProps, UpdateTournamentDto } from '@/domains/tournament';
+import { TournamentProps, UpdateTournamentDto } from '@/domains/tournament';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Card from '@/global-components/Card';
@@ -18,7 +18,6 @@ import {
   TournamentContentFormatter,
   TournamentControls,
   TournamentDisplay,
-  TournamentStatusBar,
   TournamentToast,
 } from '../../components/shared/TournamentShared';
 
@@ -53,12 +52,11 @@ const TournamentBracket = ({
     isConnected,
     onlineCount,
     handlePlayerNameChange,
-    handlePlayerCountChange,
-    handleTournamentTypeChange,
     handleMatchUpdate,
     handleTestBroadcast,
     drawingData,
     handleDrawingUpdate,
+    connectionQuality,
   } = useTournamentState({
     tournamentData,
     updateTournament,
@@ -66,27 +64,14 @@ const TournamentBracket = ({
     isEditMode: true,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleDragStart = useCallback((player: Player) => {
-    // 拖拽邏輯
-  }, []);
-
   if (authLoading) return <span>載入中...</span>;
 
   return (
     <section className="flex flex-col items-center gap-y-4">
-      {/* 狀態欄 */}
-      <TournamentStatusBar
-        isConnected={isConnected}
-        onlineCount={onlineCount}
-        isEditMode={true}
-        tournamentTitle={tournamentData.title}
-      />
-
       {/* Toast 通知 */}
       <TournamentToast toast={toast} />
 
-      <section className="flex flex-col items-center mt-[20px] mb-[30px] gap-4">
+      <section className="flex flex-col items-center mt-[20px] gap-4">
         <div className="flex flex-row items-center gap-4">
           <Link
             title={tournamentData.title}
@@ -108,20 +93,18 @@ const TournamentBracket = ({
           isEditMode={true}
           drawingData={drawingData}
           onDrawingUpdate={handleDrawingUpdate}
-        />
-
-        {/* 編輯控制面板 */}
-        <TournamentControls
-          tournament={currentTournament.tournament}
-          isConnected={isConnected}
-          onlineCount={onlineCount}
-          onPlayerCountChange={handlePlayerCountChange}
-          onTournamentTypeChange={handleTournamentTypeChange}
-          onPlayerNameChange={handlePlayerNameChange}
-          onDragStart={handleDragStart}
-          onTestBroadcast={handleTestBroadcast}
+          onPlayerNameEdit={handlePlayerNameChange}
+          connectionQuality={connectionQuality}
         />
       </div>
+
+      {/* 編輯控制面板 */}
+      <TournamentControls
+        isConnected={isConnected}
+        onlineCount={onlineCount}
+        onTestBroadcast={handleTestBroadcast}
+        connectionQuality={connectionQuality}
+      />
 
       <Card>{<TournamentContentFormatter content={tournamentData.content} />}</Card>
 

@@ -5,9 +5,10 @@ import {
   PlayerCount,
   ToastNotification,
   TournamentProps,
-  TournamentState,
   TournamentType,
 } from '@/domains/tournament';
+
+import { EditMode } from './constants';
 
 // 繪圖相關介面
 export interface DrawingLine {
@@ -53,6 +54,20 @@ export interface SingleEliminationKonvaProps {
   onMatchUpdate?: (matches: Match[]) => void;
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
+  editMode?: EditMode;
+  onPlayerNameEdit?: (playerId: number, newName: string) => void;
+}
+
+export interface PlayerEditState {
+  playerId: number | null;
+  tempName: string;
+  isEditing: boolean;
+}
+
+export enum ConnectionQualityType {
+  GOOD = 'good',
+  POOR = 'poor',
+  DISCONNECTED = 'disconnected',
 }
 
 // 狀態欄組件介面
@@ -63,6 +78,7 @@ export interface TournamentStatusBarProps {
   isEditMode?: boolean;
   tournamentTitle?: string;
   reconnect?: () => void;
+  connectionQuality: ConnectionQualityType;
 }
 
 // Toast 組件介面
@@ -77,6 +93,8 @@ export interface TournamentDisplayProps {
   isEditMode?: boolean;
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
+  onPlayerNameEdit?: (playerId: number, newName: string) => void;
+  connectionQuality: ConnectionQualityType;
 }
 
 // 響應式警告組件介面
@@ -86,14 +104,10 @@ export interface ResponsiveWarningProps {
 
 // 編輯控制組件介面
 export interface TournamentControlsProps {
-  tournament: TournamentState;
   isConnected: boolean;
   onlineCount: number;
-  onPlayerCountChange: (count: PlayerCount) => void;
-  onTournamentTypeChange: (type: TournamentType) => void;
-  onPlayerNameChange: (id: number, name: string) => void;
-  onDragStart: (player: Player) => void;
   onTestBroadcast: (testType: BroadcastTestType) => void;
+  connectionQuality: ConnectionQualityType;
 }
 
 // Hook 參數介面
@@ -120,4 +134,5 @@ export interface UseTournamentStateReturn {
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
   drawingData: DrawingData;
   handleDrawingUpdate: (drawingData: DrawingData) => Promise<void>;
+  connectionQuality: ConnectionQualityType;
 }
