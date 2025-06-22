@@ -1,16 +1,14 @@
 import { ReactNode } from 'react';
 
-import { Control, Controller } from 'react-hook-form';
-
-import { UpdatePlayerProps } from '@/domains/player';
+import { Control, Controller, FieldPath, FieldValues } from 'react-hook-form';
 
 import FieldErrorlabel from '../FieldErrorlabel';
 import { AutoCompleteType, Input, InputStyleType } from '../inputs/Input';
 
-interface FormFieldProps {
-  control: Control<UpdatePlayerProps, unknown>;
+interface FormFieldProps<T extends FieldValues> {
+  control: Control<T>;
   titleText: string;
-  fieldName: keyof UpdatePlayerProps;
+  fieldName: FieldPath<T>;
   placeholder: string;
   col: number;
   type?: InputStyleType;
@@ -18,7 +16,7 @@ interface FormFieldProps {
   disabled?: boolean;
 }
 
-export const FormField = ({
+export const FormField = <T extends FieldValues>({
   control,
   titleText,
   fieldName,
@@ -27,7 +25,7 @@ export const FormField = ({
   type = InputStyleType.Text,
   autoComplete,
   disabled = false,
-}: FormFieldProps): ReactNode => (
+}: FormFieldProps<T>): ReactNode => (
   <div className={`flex flex-col col-span-${col}`}>
     <label>{titleText}</label>
     <Controller

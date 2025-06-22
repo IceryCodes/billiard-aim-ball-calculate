@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 import TournamentList from '@/app/tournaments/components/TournamentList';
 import { useCourtQuery } from '@/features/courts/hooks/useCourtQuery';
 
-const Page = (): ReactNode => {
+const CourtTournamentList = (): ReactNode => {
   const params = useParams();
   const courtCustomLink: string = params?.courtCustomLink as string;
 
@@ -18,4 +18,4 @@ const Page = (): ReactNode => {
   return <TournamentList courtId={court?._id} courtName={court?.title} />;
 };
 
-export default Page;
+export default CourtTournamentList;

@@ -60,6 +60,10 @@ interface RulesProps {
   coachs: ArraySchema<string[] | undefined, AnyObject, '', ''>;
   companyName: StringSchema<string, AnyObject>;
 
+  court: StringSchema<string | undefined, AnyObject>;
+  courtTitle: StringSchema<string | undefined, AnyObject>;
+  courtCustomLink: StringSchema<string | undefined, AnyObject>;
+
   // feedback
   message: StringSchema<string, AnyObject>;
 
@@ -192,6 +196,11 @@ const rules: RulesProps = {
     .required('駐場教練名稱是必填項目'),
   companyName: string().required('Google名稱是必填項目'),
 
+  // tournament
+  court: string(),
+  courtTitle: string(),
+  courtCustomLink: string(),
+
   // feedback
   message: string().required('回饋是必填項目'),
 
@@ -248,6 +257,16 @@ export const courtValidationSchema = object({
   smoke: rules.smoke.default(false),
   coachs: rules.coachs.default([]),
   companyName: rules.companyName.default(''),
+}).required();
+
+export const tournamentValidationSchema = object({
+  title: rules.title.default(''),
+  excerpt: rules.excerpt.default(''),
+  content: rules.content.default(''),
+  customLink: rules.customLink.default(''),
+  court: rules.court.default(''),
+  courtTitle: rules.courtTitle.default(''),
+  courtCustomLink: rules.courtCustomLink.default(''),
 }).required();
 
 export const adminValidationSchema = object({

@@ -14,11 +14,13 @@ import DeleteCourtContent from '@/global-components/admin/DeleteCourtContent';
 import ManageRegisterButton from '@/global-components/admin/ManageRegisterButton';
 import Breadcrumb from '@/global-components/Breadcrumb';
 import Card from '@/global-components/Card';
+import { TournamentForm, TournamentFormMode } from '@/global-components/forms/TournamentForm';
 import GoogleMapComponentNew from '@/global-components/google-map/GoogleMapComponentNew';
 import GooglePhotoCarousel from '@/global-components/GooglePhotoCarousel';
 import GoogleReviews from '@/global-components/GoogleReviews';
 import Tab from '@/global-components/tabs/Tab';
 import Tag from '@/global-components/tags/Tag';
+import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 import AdminProtected from '@/hooks/utils/protections/components/useAdminProtected';
 import ConvertLink, { LinkType } from '@/utils/links';
 
@@ -121,7 +123,7 @@ const CourtContent = (): ReactNode => {
   return (
     <div className="container mx-auto p-6">
       <div className="relative w-full">
-        <SidebarLayout pageId={_id.toString()} county={county}>
+        <SidebarLayout pageId={_id} county={county}>
           <div className="flex flex-col gap-y-6">
             <Image
               src={
@@ -151,6 +153,10 @@ const CourtContent = (): ReactNode => {
                     afterDelete={() => router.push(getPageUrlByType(PageType.COURTS))}
                   />
                 </AdminProtected>
+
+                <ManagerCourtProtected pageId={_id}>
+                  <TournamentForm mode={TournamentFormMode.Create} />
+                </ManagerCourtProtected>
               </div>
               <div className="flex items-center">
                 {
