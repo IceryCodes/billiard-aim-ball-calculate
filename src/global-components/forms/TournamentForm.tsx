@@ -27,6 +27,7 @@ export enum TournamentFormMode {
 
 interface TournamentFormProps {
   mode: TournamentFormMode;
+  title?: string;
   tournament?: TournamentProps;
   onSuccess?: () => void;
 }
@@ -41,7 +42,7 @@ const defaultTournament: CreateTournamentProps = {
   courtCustomLink: '',
 };
 
-export const TournamentForm = ({ mode, tournament, onSuccess }: TournamentFormProps) => {
+export const TournamentForm = ({ mode, title, tournament, onSuccess }: TournamentFormProps) => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const params = useParams();
@@ -60,6 +61,7 @@ export const TournamentForm = ({ mode, tournament, onSuccess }: TournamentFormPr
   const {
     control,
     handleSubmit,
+    setValue,
     reset,
     formState: { isDirty, errors },
   } = useForm<CreateTournamentProps>({
@@ -88,8 +90,8 @@ export const TournamentForm = ({ mode, tournament, onSuccess }: TournamentFormPr
         const result =
           mode === TournamentFormMode.Edit && tournament
             ? await updateTournament({
-                ...formattedData,
                 ...tournament,
+                ...formattedData,
               })
             : await createTournament(formattedData);
 
@@ -191,22 +193,22 @@ export const TournamentForm = ({ mode, tournament, onSuccess }: TournamentFormPr
 
   useEffect(() => {
     if (!isLoading && !court && !isError) notFound();
-  }, [isLoading, court, isError]);
+  }, [isLoading, court, isError, setValue]);
 
   if (isLoading) return <></>;
   if (isError) return <></>;
   if (!court) return <></>;
 
   return (
-    <>
+    <span className="flex gap-x-2 cursor-pointer hover:text-link transition" onClick={() => setDisplay(true)}>
+      {title}
       <svg
-        onClick={() => setDisplay(true)}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-6 h-6 cursor-pointer hover:text-link transition"
+        className="w-6 h-6"
       >
         {mode === TournamentFormMode.Create ? (
           <>
@@ -219,8 +221,7 @@ export const TournamentForm = ({ mode, tournament, onSuccess }: TournamentFormPr
         )}
       </svg>
 
-      {/* 簡化的 form，移除 useMemo */}
       {form}
-    </>
+    </span>
   );
 };

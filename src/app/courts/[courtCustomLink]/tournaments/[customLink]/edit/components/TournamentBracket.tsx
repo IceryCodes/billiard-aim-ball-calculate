@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactElement, useState } from 'react';
+import { ReactElement } from 'react';
 
 import Link from 'next/link';
 
@@ -8,28 +8,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { TournamentProps, UpdateTournamentDto } from '@/domains/tournament';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
-import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
-import Card from '@/global-components/Card';
-import Popup from '@/global-components/Popup';
+import { TournamentForm, TournamentFormMode } from '@/global-components/forms/TournamentForm';
+import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 
 import {
   ResponsiveWarning,
-  TournamentContentFormatter,
   TournamentControls,
   TournamentDisplay,
   TournamentToast,
 } from '../../components/shared/TournamentShared';
-
-const Tips = (): ReactElement => (
-  <section className="min-w-80 flex flex-col gap-y-4">
-    <p>在參賽選手區塊連點選手名稱可編輯</p>
-    <p>在賽程表區塊點擊比賽框中的選手選擇獲勝者</p>
-    <p>點擊「✏️ 繪圖」按鈕開始繪畫，再次點擊結束繪畫模式</p>
-    <p>使用「🗑️ 清除」按鈕可以清除所有繪圖內容</p>
-    <p className="text-blue-600">💡 所有編輯和繪圖都會即時同步給觀看者</p>
-  </section>
-);
 
 interface TournamentBracketProps {
   tournamentData: TournamentProps;
@@ -42,7 +30,6 @@ const TournamentBracket = ({
   updateTournament,
   refetchTournament,
 }: TournamentBracketProps): ReactElement => {
-  const [showTips, setShowTips] = useState<boolean>(false);
   const { isLoading: authLoading } = useAuth();
 
   const {
@@ -79,7 +66,9 @@ const TournamentBracket = ({
           >
             <h1 className="text-2xl font-bold">{tournamentData.title}</h1>
           </Link>
-          <Button onClick={() => setShowTips(true)} text="說明" buttonStyle={ButtonStyleType.Active} />
+          <ManagerCourtProtected pageId={tournamentData.court}>
+            <TournamentForm mode={TournamentFormMode.Edit} tournament={tournamentData} onSuccess={refetchTournament} />
+          </ManagerCourtProtected>
         </div>
       </section>
 
@@ -105,12 +94,6 @@ const TournamentBracket = ({
         onTestBroadcast={handleTestBroadcast}
         connectionQuality={connectionQuality}
       />
-
-      <Card>{<TournamentContentFormatter content={tournamentData.content} />}</Card>
-
-      <Popup title={`${PageType.TOURNAMENTS}說明`} display={showTips} onClose={() => setShowTips(false)}>
-        <Tips />
-      </Popup>
     </section>
   );
 };

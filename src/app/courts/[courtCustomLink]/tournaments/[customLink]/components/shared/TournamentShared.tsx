@@ -3,8 +3,11 @@ import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
 
+import { PageType } from '@/domains/interface';
 import { BroadcastTestType, ToastType, TournamentType } from '@/domains/tournament';
 import { composeStatusDisplay } from '@/features/tournaments/helper';
+import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
+import Popup from '@/global-components/Popup';
 
 import { DrawingMode, EditMode } from '../../edit/components/constants';
 import {
@@ -442,12 +445,24 @@ export const ResponsiveWarning = ({ windowWidth }: ResponsiveWarningProps): Reac
   );
 };
 
+const Tips = (): ReactElement => (
+  <section className="min-w-80 flex flex-col gap-y-4">
+    <p>在參賽選手區塊連點選手名稱可編輯</p>
+    <p>在賽程表區塊點擊比賽框中的選手選擇獲勝者</p>
+    <p>點擊「✏️ 繪圖」按鈕開始繪畫，再次點擊結束繪畫模式</p>
+    <p>使用「🗑️ 清除」按鈕可以清除所有繪圖內容</p>
+    <p className="text-blue-600">💡 所有編輯和繪圖都會即時同步給觀看者</p>
+  </section>
+);
+
 export const TournamentControls = ({
   isConnected,
   onlineCount,
   onTestBroadcast,
   connectionQuality,
 }: TournamentControlsProps): ReactElement => {
+  const [showTips, setShowTips] = useState<boolean>(false);
+
   const statusDisplay = useMemo(
     () => composeStatusDisplay({ isConnected, connectionQuality, isEditMode: true }),
     [connectionQuality, isConnected]
@@ -456,7 +471,10 @@ export const TournamentControls = ({
   return (
     <div className="w-full mx-auto px-2 sm:px-0">
       <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mt-4 sm:mt-6">
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-background">即時廣播控制</h3>
+        <div className="flex gap-x-2 items-center mb-3 sm:mb-4">
+          <h3 className="text-base sm:text-lg font-semibold text-background">即時廣播控制</h3>
+          <Button onClick={() => setShowTips(true)} text="說明" buttonStyle={ButtonStyleType.Active} />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
           <div className="bg-gray-50 p-3 rounded">
@@ -501,6 +519,10 @@ export const TournamentControls = ({
 
         {!isConnected && <p className="text-red-600 text-xs sm:text-sm mt-2">⚠️ 即時廣播未連線，編輯不會即時同步</p>}
       </div>
+
+      <Popup title={`${PageType.TOURNAMENTS}說明`} display={showTips} onClose={() => setShowTips(false)}>
+        <Tips />
+      </Popup>
     </div>
   );
 };
