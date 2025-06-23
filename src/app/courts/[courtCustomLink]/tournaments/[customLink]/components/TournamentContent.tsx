@@ -11,7 +11,7 @@ const TournamentContent = (): ReactNode => {
   const params = useParams();
   const paramsId: string = params?.customLink as string;
 
-  const { data: { tournament } = {}, isLoading, isError } = useTournamentQuery({ customLink: paramsId });
+  const { data: { tournament } = {}, isLoading, isError, refetch } = useTournamentQuery({ customLink: paramsId });
 
   useEffect(() => {
     if (!isLoading && !tournament && !isError) notFound();
@@ -20,7 +20,7 @@ const TournamentContent = (): ReactNode => {
   if (isError) return <span>搜尋時發生錯誤</span>;
   if (!tournament) return <span>沒有符合的球場賽程資料</span>;
 
-  return <TournamentBoard tournamentData={tournament} />;
+  return <TournamentBoard tournamentData={tournament} refetch={refetch} />;
 };
 
 export default TournamentContent;

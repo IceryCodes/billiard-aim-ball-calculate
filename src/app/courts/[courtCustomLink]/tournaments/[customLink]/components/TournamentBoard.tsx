@@ -1,13 +1,14 @@
 'use client';
 
-import { ReactElement } from 'react';
+import { ReactElement, useCallback } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { TournamentProps } from '@/domains/tournament';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
-import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
+import DeleteTournamentContent from '@/global-components/buttons/DeleteTournamentButton';
+import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
 import Card from '@/global-components/Card';
 import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
@@ -21,9 +22,10 @@ import {
 
 interface TournamentBoardProps {
   tournamentData: TournamentProps;
+  refetch: () => void;
 }
 
-const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement => {
+const TournamentBoard = ({ tournamentData, refetch }: TournamentBoardProps): ReactElement => {
   const router = useRouter();
 
   const {
@@ -40,6 +42,10 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
     tournamentData,
     isEditMode: false,
   });
+
+  const onDelete = useCallback(() => {
+    router.push(`${getPageUrlByType(PageType.COURTS)}/${tournamentData.courtCustomLink}`);
+  }, [router, tournamentData.courtCustomLink]);
 
   return (
     <section className="flex flex-col items-center gap-y-4">
@@ -60,15 +66,8 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
         <div className="flex flex-row items-center gap-4">
           <h1 className="text-2xl font-bold">{currentTournament.title}</h1>
           <ManagerCourtProtected pageId={currentTournament.customLink}>
-            <Button
-              onClick={() =>
-                router.push(
-                  `${getPageUrlByType(PageType.COURTS)}/${currentTournament.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${currentTournament.customLink}/edit`
-                )
-              }
-              text="編輯"
-              buttonStyle={ButtonStyleType.Active}
-            />
+            <TournamentFormButton mode={TournamentFormMode.Edit} tournament={tournamentData} onSuccess={refetch} />
+            <DeleteTournamentContent _id={tournamentData._id} tournamentTitle={tournamentData.title} onSuccess={onDelete} />
           </ManagerCourtProtected>
         </div>
       </section>
@@ -84,7 +83,7 @@ const TournamentBoard = ({ tournamentData }: TournamentBoardProps): ReactElement
       <div className="w-full">
         <ResponsiveWarning windowWidth={windowWidth} />
 
-        <Card>{<TournamentContentFormatter content={currentTournament.content} />}</Card>
+        {!!currentTournament.content && <Card>{<TournamentContentFormatter content={currentTournament.content} />}</Card>}
       </div>
     </section>
   );

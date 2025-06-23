@@ -1,4 +1,10 @@
-import { CreateTournamentProps, GetTournamentDto, GetTournamentsDto, UpdateTournamentDto } from '@/domains/tournament';
+import {
+  CreateTournamentProps,
+  DeleteTournamentDto,
+  GetTournamentDto,
+  GetTournamentsDto,
+  UpdateTournamentDto,
+} from '@/domains/tournament';
 import { apiOrigin, logApiError } from '@/utils/api';
 
 import { GetTournamentReturnType, GetTournamentsReturnType, TournamentUpdateReturnType } from './interfaces';
@@ -78,6 +84,25 @@ export const createTournament = async (tournament: CreateTournamentProps): Promi
     };
   } catch (error) {
     const message = '新增球場賽程資料失敗!';
+    logApiError({ error, message });
+
+    return {
+      message,
+    };
+  }
+};
+
+export const deleteTournament = async ({ _id }: DeleteTournamentDto): Promise<TournamentUpdateReturnType> => {
+  try {
+    const { data } = await apiOrigin.delete(`/delete-tournament`, {
+      data: { _id },
+    });
+
+    return {
+      message: data.message,
+    };
+  } catch (error) {
+    const message = '刪除球場賽程資料失敗!';
     logApiError({ error, message });
 
     return {

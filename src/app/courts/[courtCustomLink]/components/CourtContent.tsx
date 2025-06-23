@@ -13,8 +13,8 @@ import { useGoogleInfosMutation } from '@/features/google/hooks/useGoogleInfosMu
 import DeleteCourtContent from '@/global-components/admin/DeleteCourtContent';
 import ManageRegisterButton from '@/global-components/admin/ManageRegisterButton';
 import Breadcrumb from '@/global-components/Breadcrumb';
+import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
 import Card from '@/global-components/Card';
-import { TournamentForm, TournamentFormMode } from '@/global-components/forms/TournamentForm';
 import GoogleMapComponentNew from '@/global-components/google-map/GoogleMapComponentNew';
 import GooglePhotoCarousel from '@/global-components/GooglePhotoCarousel';
 import GoogleReviews from '@/global-components/GoogleReviews';
@@ -155,7 +155,7 @@ const CourtContent = (): ReactNode => {
                 </AdminProtected>
 
                 <ManagerCourtProtected pageId={_id}>
-                  <TournamentForm mode={TournamentFormMode.Create} />
+                  <TournamentFormButton mode={TournamentFormMode.Create} />
                 </ManagerCourtProtected>
               </div>
               <div className="flex items-center">

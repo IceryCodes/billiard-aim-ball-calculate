@@ -1,13 +1,15 @@
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
 
-import { PageType } from '@/domains/interface';
+import { getPageUrlByType, PageType } from '@/domains/interface';
 import { BroadcastTestType, ToastType, TournamentType } from '@/domains/tournament';
 import { composeStatusDisplay } from '@/features/tournaments/helper';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
 import Popup from '@/global-components/Popup';
+import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
 import { DrawingMode, EditMode } from '../../edit/components/constants';
 import {
@@ -149,6 +151,8 @@ export const TournamentDisplay = ({
   onDrawingUpdate,
   onPlayerNameEdit,
 }: TournamentDisplayProps): ReactElement => {
+  const router = useRouter();
+
   const { tournament, courtTitle, title } = tournamentData;
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -228,11 +232,36 @@ export const TournamentDisplay = ({
   return (
     <>
       <div className="w-full mx-auto">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className={`${isEditMode ? 'bg-link' : 'bg-foreground'} rounded-lg shadow-md overflow-hidden`}>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-3 sm:px-6 pt-3 sm:pt-4 pb-2 gap-2 sm:gap-0">
-            <h3 className="text-base sm:text-lg font-semibold text-background">
-              {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
-            </h3>
+            <div className="flex gap-x-2 items-center">
+              <h3 className="text-base sm:text-lg font-semibold text-background">
+                {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
+              </h3>
+              {!isEditMode && (
+                <ManagerCourtProtected pageId={tournamentData.courtCustomLink}>
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `${getPageUrlByType(PageType.COURTS)}/${tournamentData.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${tournamentData.customLink}/edit`
+                      )
+                    }
+                    element={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-6 h-6 cursor-pointer hover:text-link transition text-background"
+                      >
+                        <path d="M3 17.25V21h3.75l11.39-11.39-3.75-3.75L3 17.25zM16 3l5 5-2 2-5-5 2-2z" />
+                      </svg>
+                    }
+                  />
+                </ManagerCourtProtected>
+              )}
+            </div>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
               {isMobile ? (
@@ -341,12 +370,40 @@ export const TournamentDisplay = ({
 
       {isFullscreen && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
-          <div className="bg-white border-b px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center">
-            <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
-              {isMobile
-                ? `${title}`
-                : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
-            </h3>
+          <div
+            className={`${isEditMode ? 'bg-link' : 'bg-foreground'} border-b px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center`}
+          >
+            <div className="flex gap-x-2 items-center">
+              <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
+                {isMobile
+                  ? `${title}`
+                  : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
+              </h3>
+              .........
+              {!isEditMode && (
+                <ManagerCourtProtected pageId={tournamentData.courtCustomLink}>
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `${getPageUrlByType(PageType.COURTS)}/${tournamentData.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${tournamentData.customLink}/edit`
+                      )
+                    }
+                    element={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-6 h-6 cursor-pointer hover:text-link transition text-background"
+                      >
+                        <path d="M3 17.25V21h3.75l11.39-11.39-3.75-3.75L3 17.25zM16 3l5 5-2 2-5-5 2-2z" />
+                      </svg>
+                    }
+                  />
+                </ManagerCourtProtected>
+              )}
+            </div>
 
             <div className="flex items-center space-x-2 sm:space-x-3">
               {!isMobile && (

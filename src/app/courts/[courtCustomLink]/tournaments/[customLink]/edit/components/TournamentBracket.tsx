@@ -8,8 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { TournamentProps, UpdateTournamentDto } from '@/domains/tournament';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
-import { TournamentForm, TournamentFormMode } from '@/global-components/forms/TournamentForm';
-import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
+import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 
 import {
@@ -66,9 +65,7 @@ const TournamentBracket = ({
           >
             <h1 className="text-2xl font-bold">{tournamentData.title}</h1>
           </Link>
-          <ManagerCourtProtected pageId={tournamentData.court}>
-            <TournamentForm mode={TournamentFormMode.Edit} tournament={tournamentData} onSuccess={refetchTournament} />
-          </ManagerCourtProtected>
+          <TournamentFormButton mode={TournamentFormMode.Edit} tournament={tournamentData} onSuccess={refetchTournament} />
         </div>
       </section>
 

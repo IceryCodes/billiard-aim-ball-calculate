@@ -42,7 +42,7 @@ const defaultTournament: CreateTournamentProps = {
   courtCustomLink: '',
 };
 
-export const TournamentForm = ({ mode, title, tournament, onSuccess }: TournamentFormProps) => {
+export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: TournamentFormProps) => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const params = useParams();
@@ -191,6 +191,8 @@ export const TournamentForm = ({ mode, title, tournament, onSuccess }: Tournamen
     ]
   );
 
+  const onClick = useCallback(() => setDisplay(true), []);
+
   useEffect(() => {
     if (!isLoading && !court && !isError) notFound();
   }, [isLoading, court, isError, setValue]);
@@ -200,15 +202,20 @@ export const TournamentForm = ({ mode, title, tournament, onSuccess }: Tournamen
   if (!court) return <></>;
 
   return (
-    <span className="flex gap-x-2 cursor-pointer hover:text-link transition" onClick={() => setDisplay(true)}>
-      {title}
+    <>
+      {title && (
+        <span className="cursor-pointer hover:text-link transition" onClick={onClick}>
+          {title}
+        </span>
+      )}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="w-6 h-6"
+        className="w-6 h-6 cursor-pointer hover:text-link transition"
+        onClick={onClick}
       >
         {mode === TournamentFormMode.Create ? (
           <>
@@ -222,6 +229,6 @@ export const TournamentForm = ({ mode, title, tournament, onSuccess }: Tournamen
       </svg>
 
       {form}
-    </span>
+    </>
   );
 };

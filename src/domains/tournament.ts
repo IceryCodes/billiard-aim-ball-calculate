@@ -220,3 +220,5 @@ export interface TournamentHookActions {
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
 }
+
+export type DeleteTournamentDto = Pick<TournamentProps, '_id'>;
