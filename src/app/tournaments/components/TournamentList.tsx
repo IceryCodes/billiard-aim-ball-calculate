@@ -4,6 +4,8 @@ import { ReactNode } from 'react';
 import { PageType } from '@/domains/interface';
 import { TournamentProps } from '@/domains/tournament';
 import { useTournamentsQuery } from '@/features/tournaments/hooks/useTournamentsQuery';
+import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
+import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
 import TournamentListItemCard from './TournamentListItemCard';
 
@@ -19,6 +21,7 @@ const TournamentList = ({ courtId = '', courtName = '' }: TournamentListProps): 
     data: { tournaments = [] } = {},
     isLoading,
     isError,
+    refetch,
   } = useTournamentsQuery({
     court: courtId,
     page: 1,
@@ -27,8 +30,13 @@ const TournamentList = ({ courtId = '', courtName = '' }: TournamentListProps): 
 
   return (
     <div className="container mx-auto p-6 flex flex-col gap-y-4">
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+      <div className="flex items-center gap-x-4">
         <h1 className="text-2xl font-bold">{`${courtName}${PageType.TOURNAMENTS}`}</h1>
+        {!!courtId && (
+          <ManagerCourtProtected pageId={courtId}>
+            <TournamentFormButton mode={TournamentFormMode.Create} onSuccess={refetch} />
+          </ManagerCourtProtected>
+        )}
       </div>
 
       {/* Loading overlay */}
@@ -45,7 +53,7 @@ const TournamentList = ({ courtId = '', courtName = '' }: TournamentListProps): 
           {!tournaments.length && <label>沒有符合的球場賽程資料</label>}
           {tournaments.map(({ _id, title, featuredImg, excerpt, courtCustomLink, customLink, tags }: TournamentProps) => (
             <TournamentListItemCard
-              key={_id.toString()}
+              key={_id}
               image={featuredImg ? featuredImg : process.env.NEXT_PUBLIC_FEATURED_IMAGE}
               title={title}
               excerpt={excerpt}

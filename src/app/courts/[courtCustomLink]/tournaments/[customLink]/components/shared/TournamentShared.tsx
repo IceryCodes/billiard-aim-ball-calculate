@@ -1,10 +1,19 @@
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
 
+import { getPageUrlByType, PageType } from '@/domains/interface';
 import { BroadcastTestType, ToastType, TournamentType } from '@/domains/tournament';
 import { composeStatusDisplay } from '@/features/tournaments/helper';
+import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
+import DeleteTournamentContent from '@/global-components/buttons/DeleteTournamentButton';
+import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
+import Card from '@/global-components/Card';
+import Popup from '@/global-components/Popup';
+import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
 import { DrawingMode, EditMode } from '../../edit/components/constants';
 import {
@@ -19,8 +28,33 @@ import SingleEliminationKonva, { SingleEliminationKonvaRef } from '../../edit/co
 
 // QR Code Image Hook
 const useQRCodeImage = (url: string, size = 100) => {
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
-  const [image] = useImage(qrCodeUrl, 'anonymous');
+  const [qrDataURL, setQrDataURL] = useState<string>('');
+
+  useEffect(() => {
+    if (!url) return;
+
+    const generateQR = async () => {
+      try {
+        const dataURL = await QRCode.toDataURL(url, {
+          width: size,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF',
+          },
+          errorCorrectionLevel: 'M',
+        });
+        setQrDataURL(dataURL);
+      } catch (error) {
+        console.error('QR Code generation failed:', error);
+        setQrDataURL('');
+      }
+    };
+
+    generateQR();
+  }, [url, size]);
+
+  const [image] = useImage(qrDataURL, 'anonymous');
   return image;
 };
 
@@ -63,56 +97,84 @@ export const TournamentStatusBar = ({
   onlineCount,
   lastUpdateTime,
   isEditMode = false,
-  tournamentTitle,
+  tournament,
   reconnect,
+  refetch,
   connectionQuality = ConnectionQualityType.DISCONNECTED,
 }: TournamentStatusBarProps): ReactElement => {
-  const bgColor = isEditMode ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200';
+  const router = useRouter();
 
   const statusDisplay = composeStatusDisplay({ isConnected, connectionQuality, isEditMode });
 
+  const redirectToCourt = useCallback(() => {
+    router.push(`${getPageUrlByType(PageType.COURTS)}/${tournament.courtCustomLink}`);
+  }, [router, tournament.courtCustomLink]);
+
   return (
-    <div className={`w-full ${bgColor} border-b px-2 sm:px-4 py-2 mb-2 sm:mb-4`}>
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs sm:text-sm gap-2 sm:gap-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${statusDisplay.dotColor}`}></div>
-            <span className={`${statusDisplay.color} font-medium`}>{statusDisplay.text}</span>
+    <Card className="w-full">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-row items-center justify-between gap-x-4">
+          <div>
+            <div className="flex flex-row items-center gap-x-2">
+              <h1 className="text-2xl font-bold">{tournament.title}</h1>
+              <ManagerCourtProtected pageId={tournament.customLink}>
+                <TournamentFormButton mode={TournamentFormMode.Edit} tournament={tournament} onSuccess={refetch} />
+                <DeleteTournamentContent
+                  _id={tournament._id}
+                  tournamentTitle={tournament.title}
+                  onSuccess={redirectToCourt}
+                />
+              </ManagerCourtProtected>
+            </div>
 
-            {/* 連線品質指示器 */}
-            {isConnected && connectionQuality === 'poor' && (
-              <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-1 rounded">連線不穩</span>
-            )}
-
-            {!isConnected && reconnect && (
-              <button
-                onClick={reconnect}
-                className="text-blue-600 hover:text-blue-800 underline text-xs bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
-              >
-                重新連線
-              </button>
-            )}
+            <div className="space-x-2">
+              <span>撞球場地:</span>
+              <span className="truncate hover:text-link cursor-pointer" onClick={redirectToCourt}>
+                {tournament.courtTitle}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4">
-            {onlineCount > 0 && (
-              <div className="flex items-center space-x-1">
-                <span className="text-gray-400">👁️</span>
-                <span className={isEditMode ? 'text-blue-700' : 'text-gray-600'}>
-                  {isEditMode ? `${onlineCount} 人正在觀看您的編輯` : `${onlineCount} 人在線`}
-                </span>
-              </div>
-            )}
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${statusDisplay.dotColor}`}></div>
+                <span className={`${statusDisplay.color} font-medium`}>{statusDisplay.text}</span>
 
-            {lastUpdateTime && !isEditMode && <div className="text-gray-400 text-xs">最後更新: {lastUpdateTime}</div>}
+                {/* 連線品質指示器 */}
+                {isConnected && connectionQuality === 'poor' && (
+                  <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-1 rounded">連線不穩</span>
+                )}
+
+                {!isConnected && reconnect && (
+                  <button
+                    onClick={reconnect}
+                    className="text-blue-600 hover:text-blue-800 underline text-xs bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
+                  >
+                    重新連線
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4 items-center">
+                {onlineCount > 0 && (
+                  <span>👁️ {isEditMode ? `${onlineCount} 人正在觀看您的編輯` : `${onlineCount} 人在線`}</span>
+                )}
+              </div>
+            </div>
+            <span>最後更新: {lastUpdateTime}</span>
           </div>
         </div>
 
-        {isEditMode && tournamentTitle && (
-          <div className="text-gray-600 text-xs sm:text-sm truncate max-w-full sm:max-w-none">賽程: {tournamentTitle}</div>
+        {!!tournament.excerpt && (
+          <blockquote className="border-l-4 border-link pl-4 italic">
+            {<TournamentContentFormatter content={tournament.excerpt} />}
+          </blockquote>
         )}
+
+        {!!tournament.content && <section>{<TournamentContentFormatter content={tournament.content} />}</section>}
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -146,12 +208,18 @@ export const TournamentDisplay = ({
   onDrawingUpdate,
   onPlayerNameEdit,
 }: TournamentDisplayProps): ReactElement => {
+  const router = useRouter();
+
   const { tournament, courtTitle, title } = tournamentData;
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [drawingMode, setDrawingMode] = useState<DrawingMode>(DrawingMode.NORMAL);
   const [editMode, setEditMode] = useState<EditMode>(EditMode.NORMAL);
   const konvaRef = useRef<SingleEliminationKonvaRef>(null);
+
+  const validPlayersCount = useMemo(() => {
+    return tournament.players.filter((player) => !!player.name).length;
+  }, [tournament.players]);
 
   const toggleEditMode = useCallback(() => {
     const newMode = editMode === EditMode.NORMAL ? EditMode.PLAYER_EDIT : EditMode.NORMAL;
@@ -221,11 +289,36 @@ export const TournamentDisplay = ({
   return (
     <>
       <div className="w-full mx-auto">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className={`${isEditMode ? 'bg-link' : 'bg-foreground'} rounded-lg shadow-md overflow-hidden`}>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-3 sm:px-6 pt-3 sm:pt-4 pb-2 gap-2 sm:gap-0">
-            <h3 className="text-base sm:text-lg font-semibold text-background">
-              {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${tournament.players.length}人)`}
-            </h3>
+            <div className="flex gap-x-2 items-center">
+              <h3 className="text-base sm:text-lg font-semibold text-background">
+                {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
+              </h3>
+              {!isEditMode && (
+                <ManagerCourtProtected pageId={tournamentData.courtCustomLink}>
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `${getPageUrlByType(PageType.COURTS)}/${tournamentData.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${tournamentData.customLink}/edit`
+                      )
+                    }
+                    element={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-6 h-6 cursor-pointer hover:text-link transition text-background"
+                      >
+                        <path d="M3 17.25V21h3.75l11.39-11.39-3.75-3.75L3 17.25zM16 3l5 5-2 2-5-5 2-2z" />
+                      </svg>
+                    }
+                  />
+                </ManagerCourtProtected>
+              )}
+            </div>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
               {isMobile ? (
@@ -334,12 +427,40 @@ export const TournamentDisplay = ({
 
       {isFullscreen && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
-          <div className="bg-white border-b px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center">
-            <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
-              {isMobile
-                ? `${title}`
-                : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${tournament.players.length}人)`}
-            </h3>
+          <div
+            className={`${isEditMode ? 'bg-link' : 'bg-foreground'} border-b px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center`}
+          >
+            <div className="flex gap-x-2 items-center">
+              <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
+                {isMobile
+                  ? `${title}`
+                  : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
+              </h3>
+              .........
+              {!isEditMode && (
+                <ManagerCourtProtected pageId={tournamentData.courtCustomLink}>
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `${getPageUrlByType(PageType.COURTS)}/${tournamentData.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${tournamentData.customLink}/edit`
+                      )
+                    }
+                    element={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-6 h-6 cursor-pointer hover:text-link transition text-background"
+                      >
+                        <path d="M3 17.25V21h3.75l11.39-11.39-3.75-3.75L3 17.25zM16 3l5 5-2 2-5-5 2-2z" />
+                      </svg>
+                    }
+                  />
+                </ManagerCourtProtected>
+              )}
+            </div>
 
             <div className="flex items-center space-x-2 sm:space-x-3">
               {!isMobile && (
@@ -438,12 +559,24 @@ export const ResponsiveWarning = ({ windowWidth }: ResponsiveWarningProps): Reac
   );
 };
 
+const Tips = (): ReactElement => (
+  <section className="min-w-80 flex flex-col gap-y-4">
+    <p>在參賽選手區塊連點選手名稱可編輯</p>
+    <p>在賽程表區塊點擊比賽框中的選手選擇獲勝者</p>
+    <p>點擊「✏️ 繪圖」按鈕開始繪畫，再次點擊結束繪畫模式</p>
+    <p>使用「🗑️ 清除」按鈕可以清除所有繪圖內容</p>
+    <p className="text-blue-600">💡 所有編輯和繪圖都會即時同步給觀看者</p>
+  </section>
+);
+
 export const TournamentControls = ({
   isConnected,
   onlineCount,
   onTestBroadcast,
   connectionQuality,
 }: TournamentControlsProps): ReactElement => {
+  const [showTips, setShowTips] = useState<boolean>(false);
+
   const statusDisplay = useMemo(
     () => composeStatusDisplay({ isConnected, connectionQuality, isEditMode: true }),
     [connectionQuality, isConnected]
@@ -452,7 +585,10 @@ export const TournamentControls = ({
   return (
     <div className="w-full mx-auto px-2 sm:px-0">
       <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mt-4 sm:mt-6">
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-background">即時廣播控制</h3>
+        <div className="flex gap-x-2 items-center mb-3 sm:mb-4">
+          <h3 className="text-base sm:text-lg font-semibold text-background">即時廣播控制</h3>
+          <Button onClick={() => setShowTips(true)} text="說明" buttonStyle={ButtonStyleType.Active} />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
           <div className="bg-gray-50 p-3 rounded">
@@ -497,6 +633,10 @@ export const TournamentControls = ({
 
         {!isConnected && <p className="text-red-600 text-xs sm:text-sm mt-2">⚠️ 即時廣播未連線，編輯不會即時同步</p>}
       </div>
+
+      <Popup title={`${PageType.TOURNAMENTS}說明`} display={showTips} onClose={() => setShowTips(false)}>
+        <Tips />
+      </Popup>
     </div>
   );
 };

@@ -1,8 +1,7 @@
-import { useMemo } from 'react';
-
 import { useQuery } from '@tanstack/react-query';
 
 import { GetCourtDto } from '@/domains/court';
+import { requestLimit } from '@/features/helper';
 import { useQueryCallback } from '@/hooks/utils/useQueryCallback';
 import { courtQueryKeys, getCourt } from '@/services/court';
 import { GetCourtReturnType } from '@/services/interfaces';
@@ -13,7 +12,7 @@ interface UseCourtQueryProps extends QueryBaseProps<GetCourtReturnType>, GetCour
 export const useCourtQuery = ({
   onSuccess,
   onError,
-  enabled,
+  enabled = true,
   queryPrefixKey = [],
   customLink,
 }: UseCourtQueryProps): QueryBaseReturnType<GetCourtReturnType> => {
@@ -21,18 +20,19 @@ export const useCourtQuery = ({
     queryKey: [...queryPrefixKey, courtQueryKeys.getCourt, customLink],
     queryFn: () => getCourt({ customLink }),
     enabled: Boolean(customLink) && enabled,
+    ...requestLimit,
   });
 
   const { isFetching, isError, error, data, refetch } = queryResult;
+
   useQueryCallback({ ...queryResult, onSuccess, onError });
 
-  return useMemo(() => {
-    return {
-      isLoading: isFetching,
-      isError,
-      error,
-      refetch,
-      data,
-    };
-  }, [isFetching, isError, data, error, refetch]);
+  // 直接返回，不使用 useMemo
+  return {
+    isLoading: isFetching,
+    isError,
+    error,
+    refetch,
+    data,
+  };
 };

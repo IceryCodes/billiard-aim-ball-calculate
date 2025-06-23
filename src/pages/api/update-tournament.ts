@@ -5,6 +5,7 @@ import { TournamentDBProps } from '@/domains/tournament';
 import { getTournamentsCollection } from '@/lib/mongodb';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
+import { isManagerToken } from '@/utils/token';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<TournamentUpdateReturnType>) => {
   if (req.method !== 'PATCH') {
@@ -42,11 +43,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TournamentUpdat
       return res.status(HttpStatus.NotFound).json({ message: '球場賽程資料不存在!' });
     }
 
-    // const isManager = await isManagerToken({
-    //   authHeader: req.headers.authorization,
-    //   pageId: tournamentId.toString(),
-    // });
-    // if (!isManager) return res.status(HttpStatus.Forbidden).json({ message: '沒有管理權限!' });
+    const isManager = await isManagerToken({
+      authHeader: req.headers.authorization,
+      pageId: tournamentId,
+    });
+    if (!isManager) return res.status(HttpStatus.Forbidden).json({ message: '沒有管理權限!' });
 
     // Update the tournament information
     const result = await tournamentsCollection.updateOne(

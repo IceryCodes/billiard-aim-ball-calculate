@@ -74,11 +74,12 @@ export enum ConnectionQualityType {
 export interface TournamentStatusBarProps {
   isConnected: boolean;
   onlineCount: number;
+  tournament: TournamentProps;
+  refetch: () => void;
+  connectionQuality: ConnectionQualityType;
   lastUpdateTime?: string;
   isEditMode?: boolean;
-  tournamentTitle?: string;
   reconnect?: () => void;
-  connectionQuality: ConnectionQualityType;
 }
 
 // Toast 組件介面

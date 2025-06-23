@@ -117,6 +117,11 @@ export interface TournamentDBProps extends Omit<TournamentProps, '_id' | 'courtC
 
 export type UpdateTournamentDto = TournamentProps;
 
+export type CreateTournamentProps = Omit<
+  TournamentProps,
+  '_id' | 'createdAt' | 'updatedAt' | 'featuredImg' | 'tags' | 'tournament' | 'drawingData'
+>;
+
 // Toast 相關類型
 export interface ToastNotification {
   message: string;
@@ -215,3 +220,5 @@ export interface TournamentHookActions {
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
 }
+
+export type DeleteTournamentDto = Pick<TournamentProps, '_id'>;

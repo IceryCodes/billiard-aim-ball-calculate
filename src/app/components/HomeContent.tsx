@@ -3,13 +3,11 @@ import { AiFillCopyrightCircle } from 'react-icons/ai';
 const HomeContent = () => {
   return (
     <section className="flex flex-col items-center">
-      <section className="flex flex-col items-center mt-[20px] mb-[30px] gap-4">
-        <div className="flex flex-row items-center gap-4">
-          <h1 className="text-2xl font-bold">{process.env.NEXT_PUBLIC_SITENAME}</h1>
-        </div>
+      <section className="flex flex-col items-center mt-[20px]">
+        <h1 className="text-2xl font-bold">{process.env.NEXT_PUBLIC_SITENAME}</h1>
       </section>
 
-      <section className="h-80 flex items-center">
+      <section className="min-h-[calc(100vh-250px)] flex items-center">
         <label>嗯......就無聊</label>
       </section>
 
