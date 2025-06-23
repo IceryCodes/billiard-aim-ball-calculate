@@ -28,12 +28,6 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'api.qrserver.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: '**.icery.tw',
         port: '',
         pathname: '/**',

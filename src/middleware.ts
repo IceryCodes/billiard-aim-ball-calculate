@@ -71,15 +71,25 @@ const securityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Content-Security-Policy': [
     "default-src 'self'",
+    // Scripts - 添加缺失的域名
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-scripts.com https://*.googleapis.com https://*.gstatic.com https://*.google-analytics.com https://*.googletagmanager.com",
-    "style-src 'self' 'unsafe-inline' https://*.googleapis.com",
-    `img-src 'self' data: blob: https://*.icery.tw https://*.googleapis.com https://*.gstatic.com https://*.ggpht.com https://*.google-analytics.com https://*.googletagmanager.com`,
-    "font-src 'self' https://*.gstatic.com",
-    "connect-src 'self' * data: blob: https://*.icery.tw https://*.googleapis.com https://*.gstatic.com https://maps.googleapis.com https://*.google.com https://google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com  wss://*.workers.dev wss://*.icery.workers.dev ws://*.workers.dev ws://*.icery.workers.dev",
+    // Styles - 添加缺失的域名
+    "style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com",
+    // Images - 修正並添加缺失的域名
+    `img-src 'self' data: blob: https://*.icery.tw https://*.googleapis.com https://*.gstatic.com https://*.ggpht.com https://*.google-analytics.com https://*.googletagmanager.com https://lh3.googleusercontent.com https://maps.gstatic.com https://maps.googleapis.com`,
+    // Fonts
+    "font-src 'self' https://*.gstatic.com https://*.googleapis.com",
+    // Connect - 修正並添加缺失的域名
+    "connect-src 'self' * data: blob: https://*.icery.tw https://*.googleapis.com https://*.gstatic.com https://maps.googleapis.com https://*.google.com https://google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com wss://*.workers.dev wss://*.icery.workers.dev ws://*.workers.dev ws://*.icery.workers.dev",
+    // Workers
     "worker-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com",
+    // Child sources
     "child-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com",
-    "frame-src 'self' https://www.youtube.com https://*.googleapis.com https://*.gstatic.com",
+    // Frames - 添加 Google Maps 相關域名
+    "frame-src 'self' https://www.youtube.com https://*.googleapis.com https://*.gstatic.com https://maps.googleapis.com https://www.google.com",
+    // Manifest
     "manifest-src 'self' https://*.googleapis.com https://*.gstatic.com",
+    // Media
     "media-src 'self' https://*.googleapis.com https://*.gstatic.com",
   ].join('; '),
 };

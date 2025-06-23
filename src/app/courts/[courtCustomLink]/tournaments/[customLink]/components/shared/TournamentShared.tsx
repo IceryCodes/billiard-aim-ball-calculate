@@ -1,6 +1,7 @@
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
 
@@ -8,6 +9,9 @@ import { getPageUrlByType, PageType } from '@/domains/interface';
 import { BroadcastTestType, ToastType, TournamentType } from '@/domains/tournament';
 import { composeStatusDisplay } from '@/features/tournaments/helper';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
+import DeleteTournamentContent from '@/global-components/buttons/DeleteTournamentButton';
+import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
+import Card from '@/global-components/Card';
 import Popup from '@/global-components/Popup';
 import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
@@ -24,8 +28,33 @@ import SingleEliminationKonva, { SingleEliminationKonvaRef } from '../../edit/co
 
 // QR Code Image Hook
 const useQRCodeImage = (url: string, size = 100) => {
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
-  const [image] = useImage(qrCodeUrl, 'anonymous');
+  const [qrDataURL, setQrDataURL] = useState<string>('');
+
+  useEffect(() => {
+    if (!url) return;
+
+    const generateQR = async () => {
+      try {
+        const dataURL = await QRCode.toDataURL(url, {
+          width: size,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF',
+          },
+          errorCorrectionLevel: 'M',
+        });
+        setQrDataURL(dataURL);
+      } catch (error) {
+        console.error('QR Code generation failed:', error);
+        setQrDataURL('');
+      }
+    };
+
+    generateQR();
+  }, [url, size]);
+
+  const [image] = useImage(qrDataURL, 'anonymous');
   return image;
 };
 
@@ -68,56 +97,84 @@ export const TournamentStatusBar = ({
   onlineCount,
   lastUpdateTime,
   isEditMode = false,
-  tournamentTitle,
+  tournament,
   reconnect,
+  refetch,
   connectionQuality = ConnectionQualityType.DISCONNECTED,
 }: TournamentStatusBarProps): ReactElement => {
-  const bgColor = isEditMode ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200';
+  const router = useRouter();
 
   const statusDisplay = composeStatusDisplay({ isConnected, connectionQuality, isEditMode });
 
+  const redirectToCourt = useCallback(() => {
+    router.push(`${getPageUrlByType(PageType.COURTS)}/${tournament.courtCustomLink}`);
+  }, [router, tournament.courtCustomLink]);
+
   return (
-    <div className={`w-full ${bgColor} border-b px-2 sm:px-4 py-2 mb-2 sm:mb-4`}>
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs sm:text-sm gap-2 sm:gap-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${statusDisplay.dotColor}`}></div>
-            <span className={`${statusDisplay.color} font-medium`}>{statusDisplay.text}</span>
+    <Card className="w-full">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-row items-center justify-between gap-x-4">
+          <div>
+            <div className="flex flex-row items-center gap-x-2">
+              <h1 className="text-2xl font-bold">{tournament.title}</h1>
+              <ManagerCourtProtected pageId={tournament.customLink}>
+                <TournamentFormButton mode={TournamentFormMode.Edit} tournament={tournament} onSuccess={refetch} />
+                <DeleteTournamentContent
+                  _id={tournament._id}
+                  tournamentTitle={tournament.title}
+                  onSuccess={redirectToCourt}
+                />
+              </ManagerCourtProtected>
+            </div>
 
-            {/* 連線品質指示器 */}
-            {isConnected && connectionQuality === 'poor' && (
-              <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-1 rounded">連線不穩</span>
-            )}
-
-            {!isConnected && reconnect && (
-              <button
-                onClick={reconnect}
-                className="text-blue-600 hover:text-blue-800 underline text-xs bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
-              >
-                重新連線
-              </button>
-            )}
+            <div className="space-x-2">
+              <span>撞球場地:</span>
+              <span className="truncate hover:text-link cursor-pointer" onClick={redirectToCourt}>
+                {tournament.courtTitle}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4">
-            {onlineCount > 0 && (
-              <div className="flex items-center space-x-1">
-                <span className="text-gray-400">👁️</span>
-                <span className={isEditMode ? 'text-blue-700' : 'text-gray-600'}>
-                  {isEditMode ? `${onlineCount} 人正在觀看您的編輯` : `${onlineCount} 人在線`}
-                </span>
-              </div>
-            )}
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${statusDisplay.dotColor}`}></div>
+                <span className={`${statusDisplay.color} font-medium`}>{statusDisplay.text}</span>
 
-            {lastUpdateTime && !isEditMode && <div className="text-gray-400 text-xs">最後更新: {lastUpdateTime}</div>}
+                {/* 連線品質指示器 */}
+                {isConnected && connectionQuality === 'poor' && (
+                  <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-1 rounded">連線不穩</span>
+                )}
+
+                {!isConnected && reconnect && (
+                  <button
+                    onClick={reconnect}
+                    className="text-blue-600 hover:text-blue-800 underline text-xs bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
+                  >
+                    重新連線
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4 items-center">
+                {onlineCount > 0 && (
+                  <span>👁️ {isEditMode ? `${onlineCount} 人正在觀看您的編輯` : `${onlineCount} 人在線`}</span>
+                )}
+              </div>
+            </div>
+            <span>最後更新: {lastUpdateTime}</span>
           </div>
         </div>
 
-        {isEditMode && tournamentTitle && (
-          <div className="text-gray-600 text-xs sm:text-sm truncate max-w-full sm:max-w-none">賽程: {tournamentTitle}</div>
+        {!!tournament.excerpt && (
+          <blockquote className="border-l-4 border-link pl-4 italic">
+            {<TournamentContentFormatter content={tournament.excerpt} />}
+          </blockquote>
         )}
+
+        {!!tournament.content && <section>{<TournamentContentFormatter content={tournament.content} />}</section>}
       </div>
-    </div>
+    </Card>
   );
 };
 
