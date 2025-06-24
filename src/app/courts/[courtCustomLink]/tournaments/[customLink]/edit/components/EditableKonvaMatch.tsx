@@ -184,7 +184,21 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!playerEditState.isEditing) return;
 
-      // 阻止默認行為
+      // 允許 Ctrl+V、Ctrl+C、Ctrl+X、Ctrl+A 等常用組合鍵通過
+      if (e.ctrlKey || e.metaKey) {
+        // 處理貼上操作
+        if (e.key === 'v' || e.key === 'V') {
+          // 不阻止預設行為，讓瀏覽器處理貼上
+          // 我們會在 paste 事件中處理
+          return;
+        }
+        // 允許其他 Ctrl 組合鍵（複製、剪下、全選等）
+        if (['c', 'C', 'x', 'X', 'a', 'A', 'z', 'Z', 'y', 'Y'].includes(e.key)) {
+          return;
+        }
+      }
+
+      // 阻止其他按鍵的預設行為
       e.preventDefault();
 
       if (e.key === 'Enter') {
@@ -215,6 +229,28 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       }
     };
 
+    // 處理貼上事件
+    const handlePaste = (e: ClipboardEvent) => {
+      if (!playerEditState.isEditing) return;
+
+      e.preventDefault();
+
+      // 獲取剪貼簿內容
+      const pastedText = e.clipboardData?.getData('text') || '';
+
+      // 過濾掉不可見字符，只保留可見文字
+      const cleanText = pastedText.replace(/[\r\n\t]/g, '').trim();
+
+      if (cleanText) {
+        // 將現有文字與貼上的文字合併，但限制總長度
+        const newName = (playerEditState.tempName + cleanText).slice(0, 8);
+        onEditStateChange({
+          ...playerEditState,
+          tempName: newName,
+        });
+      }
+    };
+
     // 處理點擊外部區域自動確認
     const handleClickOutside = (e: MouseEvent) => {
       if (!playerEditState.isEditing) return;
@@ -230,12 +266,14 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
 
     if (playerEditState.isEditing) {
       document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('paste', handlePaste);
       document.addEventListener('mousedown', handleClickOutside);
       // 聚焦到 body 確保能接收鍵盤事件
       document.body.focus();
 
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('paste', handlePaste);
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }

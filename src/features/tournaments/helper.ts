@@ -1,3 +1,5 @@
+import { Collection } from 'mongodb';
+
 import { ConnectionQualityType } from '@/app/courts/[courtCustomLink]/tournaments/[customLink]/edit/components/interfaces';
 import {
   AnnouncementMessage,
@@ -9,7 +11,14 @@ import {
   TestUpdateMessage,
   TournamentUpdatedMessage,
 } from '@/domains/realtime';
-import { Match, Player, RealtimeMessageType, TournamentState, TournamentType } from '@/domains/tournament';
+import {
+  Match,
+  Player,
+  RealtimeMessageType,
+  TournamentDBProps,
+  TournamentState,
+  TournamentType,
+} from '@/domains/tournament';
 
 interface ComposeStatusDisplayProps {
   isConnected: boolean;
@@ -71,7 +80,7 @@ export const composeStatusDisplay = ({ isConnected, connectionQuality, isEditMod
   return {
     icon: '🔄',
     text: isEditMode ? '即時廣播已啟用' : '即時更新已啟用',
-    color: isEditMode ? 'text-blue-700' : 'text-green-600',
+    color: isEditMode ? 'text-blue-600' : 'text-green-600',
     dotColor: 'bg-green-500',
   };
 };
@@ -86,6 +95,41 @@ export const generateRandomCode = (length = 4): string => {
   }
 
   return result;
+};
+
+export const generateUniqueCustomLink = async (
+  tournamentsCollection: Collection<TournamentDBProps>,
+  providedCustomLink?: string,
+  maxAttempts = 10
+): Promise<string> => {
+  let customLink = providedCustomLink;
+  let attempts = 0;
+
+  // 如果使用者有提供 customLink，先檢查是否已存在
+  if (customLink) {
+    const existingTournament = await tournamentsCollection.findOne({ customLink });
+    if (!existingTournament) {
+      return customLink; // 使用者提供的 customLink 是唯一的，直接使用
+    }
+    // 如果已存在，則拋出錯誤或生成新的（這裡選擇拋出錯誤）
+    throw new Error(`自訂連結 "${customLink}" 已存在，請使用其他名稱`);
+  }
+
+  // 生成隨機 customLink 直到找到唯一的
+  while (attempts < maxAttempts) {
+    customLink = generateRandomCode();
+
+    const existingTournament = await tournamentsCollection.findOne({ customLink });
+
+    if (!existingTournament) {
+      return customLink; // 找到唯一的 customLink
+    }
+
+    attempts++;
+  }
+
+  // 如果達到最大嘗試次數仍未找到唯一的 customLink
+  throw new Error(`無法生成唯一的連結代碼，請稍後再試（已嘗試 ${maxAttempts} 次）`);
 };
 
 export const generateTournament = ({

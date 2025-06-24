@@ -60,6 +60,7 @@ interface RulesProps {
   coachs: ArraySchema<string[] | undefined, AnyObject, '', ''>;
   companyName: StringSchema<string, AnyObject>;
 
+  tournamentTitle: StringSchema<string, AnyObject>;
   court: StringSchema<string | undefined, AnyObject>;
   courtTitle: StringSchema<string | undefined, AnyObject>;
   courtCustomLink: StringSchema<string | undefined, AnyObject>;
@@ -197,6 +198,10 @@ const rules: RulesProps = {
   companyName: string().required('Google名稱是必填項目'),
 
   // tournament
+  tournamentTitle: string()
+    .min(2, '標題至少需要2個字')
+    .matches(/^[a-zA-Z0-9\u4e00-\u9fff\s\\/\\[\]\\-]+$/, '標題只能包含中英文、數字、空格、方括號、斜線和連字符')
+    .required('名稱是必填項目'),
   court: string(),
   courtTitle: string(),
   courtCustomLink: string(),
@@ -260,7 +265,7 @@ export const courtValidationSchema = object({
 }).required();
 
 export const tournamentValidationSchema = object({
-  title: rules.title.default(''),
+  title: rules.tournamentTitle.default(''),
   excerpt: rules.excerpt.default(''),
   content: rules.content.default(''),
   customLink: rules.customLink.default(''),
