@@ -2,7 +2,7 @@ import { Collection } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { TournamentDBProps, TournamentType } from '@/domains/tournament';
-import { generateRandomCode, generateTournament } from '@/features/tournaments/helper';
+import { generateTournament, generateUniqueCustomLink } from '@/features/tournaments/helper';
 import { getTournamentsCollection } from '@/lib/mongodb';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
@@ -21,9 +21,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TournamentUpdat
   try {
     const tournamentsCollection: Collection<TournamentDBProps> = await getTournamentsCollection();
 
+    let uniqueCustomLink: string;
+    try {
+      uniqueCustomLink = await generateUniqueCustomLink(
+        tournamentsCollection,
+        req.body.customLink // 使用者提供的 customLink（如果有的話）
+      );
+    } catch (error) {
+      // 如果是因為 customLink 重複造成的錯誤，回傳具體錯誤訊息
+      if (error instanceof Error) {
+        return res.status(HttpStatus.BadRequest).json({ message: error.message });
+      }
+      throw error; // 其他錯誤繼續拋出
+    }
+
     const newTournament: TournamentDBProps = {
       ...req.body,
-      customLink: req.body.customLink || generateRandomCode(),
+      customLink: req.body.customLink || uniqueCustomLink,
       featuredImg: req.body.featuredImg || '',
       tags: req.body.tags || [],
       tournament: req.body.tournament || generateTournament({ playerCount: 32, tournamentType: TournamentType.SINGLE }),
