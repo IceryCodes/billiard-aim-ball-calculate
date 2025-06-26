@@ -48,6 +48,7 @@ export const playerNameFontSize = 18;
 export const championNameFontSize = 20;
 export const lockIconFontSize = 16;
 export const crownIconFontSize = 16;
+export const gamesFontSize = 16;
 
 // 邊框相關
 export const defaultStrokeWidth = 1;

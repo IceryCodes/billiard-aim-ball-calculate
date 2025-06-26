@@ -36,6 +36,18 @@ import {
 } from './constants';
 import { PlayerEditState } from './interfaces';
 
+// 添加遊戲局數相關的常數
+const gamesBoxWidth = 50;
+const gamesBoxHeight = 30;
+const gamesBoxMarginTop = 5;
+const gamesFontSize = 16;
+const gamesBoxBackgroundColor = '#f0f0f0';
+const gamesBoxBorderColor = '#d0d0d0';
+const gamesBoxTextColor = '#333333';
+const editableGamesBoxBackgroundColor = '#ffffff';
+const editingGamesBoxBorderColor = '#2196f3';
+const editingGamesBoxBackgroundColor = '#e3f2fd';
+
 interface EditableKonvaMatchProps {
   match: Match;
   x: number;
@@ -47,6 +59,7 @@ interface EditableKonvaMatchProps {
   onPlayerDoubleClick: (player: Player) => void;
   onConfirmEdit: (newValue: string) => void;
   onCancelEdit: () => void;
+  onGamesEdit?: (playerId: number, newGames: number) => void;
 }
 
 interface PlayerTextEditorProps {
@@ -56,6 +69,16 @@ interface PlayerTextEditorProps {
   width: number;
   height: number;
   onConfirm: (value: string) => void;
+  onCancel: () => void;
+}
+
+interface GamesEditorProps {
+  initialValue: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  onConfirm: (value: number) => void;
   onCancel: () => void;
 }
 
@@ -74,12 +97,10 @@ const PlayerTextEditor: React.FC<PlayerTextEditorProps> = ({ initialValue, x, y,
 
     const timer = setTimeout(() => {
       input.focus();
-      // 只在第一次聚焦時選取文字，之後就不再選取
       if (!hasFocused && initialValue) {
         input.select();
         setHasFocused(true);
       } else {
-        // 將游標移到文字末尾
         input.setSelectionRange(input.value.length, input.value.length);
       }
     }, 50);
@@ -116,10 +137,10 @@ const PlayerTextEditor: React.FC<PlayerTextEditorProps> = ({ initialValue, x, y,
       <div
         style={{
           position: 'fixed',
-          left: x - 50, // 向左擴展 10px
-          top: y, // 向上擴展 5px
-          width: width + 100, // 寬度增加 20px
-          height, // 高度增加 10px
+          left: x - 50,
+          top: y,
+          width: width + 100,
+          height,
           zIndex: 10000,
           pointerEvents: 'auto',
         }}
@@ -140,10 +161,10 @@ const PlayerTextEditor: React.FC<PlayerTextEditorProps> = ({ initialValue, x, y,
           style={{
             width: '100%',
             height: '100%',
-            fontSize: `${Math.min(playerNameFontSize + 2, 20)}px`, // 稍微增大字體
+            fontSize: `${Math.min(playerNameFontSize + 2, 20)}px`,
             border: `2px solid ${editingIndicatorBorderColor}`,
-            borderRadius: '4px', // 稍微圓角
-            padding: '6px 8px', // 增加內邊距
+            borderRadius: '4px',
+            padding: '6px 8px',
             margin: '0',
             background: editingIndicatorBackgroundColor,
             outline: 'none',
@@ -152,9 +173,103 @@ const PlayerTextEditor: React.FC<PlayerTextEditorProps> = ({ initialValue, x, y,
             fontWeight: 'bold',
             boxSizing: 'border-box',
             fontFamily: 'Arial, sans-serif',
-            // 確保文字不會被截斷
             overflow: 'visible',
             whiteSpace: 'nowrap',
+          }}
+        />
+      </div>
+    </Html>
+  );
+};
+
+const GamesEditor: React.FC<GamesEditorProps> = ({ initialValue, x, y, width, height, onConfirm, onCancel }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState(initialValue.toString());
+
+  useEffect(() => {
+    setValue(initialValue.toString());
+  }, [initialValue]);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const timer = setTimeout(() => {
+      input.focus();
+      input.select();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const numValue = parseInt(value) || 7;
+        onConfirm(Math.max(1, Math.min(99, numValue))); // 限制範圍 1-99
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+
+    // 添加 onBlur 事件處理，與 PlayerTextEditor 保持一致
+    const handleBlur = () => {
+      setTimeout(() => {
+        const numValue = parseInt(value) || 7;
+        onConfirm(Math.max(1, Math.min(99, numValue)));
+      }, 100);
+    };
+
+    input.addEventListener('keydown', handleKeyDown);
+    input.addEventListener('blur', handleBlur); // 添加 blur 事件監聽
+
+    return () => {
+      clearTimeout(timer);
+      input.removeEventListener('keydown', handleKeyDown);
+      input.removeEventListener('blur', handleBlur); // 清理 blur 事件監聽
+    };
+  }, [value, onConfirm, onCancel]);
+
+  return (
+    <Html>
+      <div
+        style={{
+          position: 'fixed',
+          left: x,
+          top: y,
+          width,
+          height,
+          zIndex: 10000,
+          pointerEvents: 'auto',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <input
+          ref={inputRef}
+          type="number"
+          min="1"
+          max="99"
+          value={value}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            if (newValue.length <= 2) {
+              setValue(newValue);
+            }
+          }}
+          style={{
+            width: '100%',
+            height: '100%',
+            fontSize: `${gamesFontSize}px`,
+            border: `2px solid ${editingGamesBoxBorderColor}`,
+            borderRadius: '4px',
+            padding: '4px',
+            margin: '0',
+            background: editingGamesBoxBackgroundColor,
+            outline: 'none',
+            textAlign: 'center',
+            color: editingTextColor,
+            fontWeight: 'bold',
+            boxSizing: 'border-box',
+            fontFamily: 'Arial, sans-serif',
           }}
         />
       </div>
@@ -173,12 +288,13 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
   onPlayerDoubleClick,
   onConfirmEdit,
   onCancelEdit,
+  onGamesEdit,
 }) => {
-  const canMatchProceed = match.round === 1 || (match.player1 !== null && match.player2 !== null);
+  const [editingGames, setEditingGames] = useState<{ playerId: number; side: 'left' | 'right' } | null>(null);
 
+  const canMatchProceed = match.round === 1 || (match.player1 !== null && match.player2 !== null);
   const isPlayer1Empty = !match.player1 || !match.player1.name || match.player1.name.trim() === '';
   const isPlayer2Empty = !match.player2 || !match.player2.name || match.player2.name.trim() === '';
-
   const canClickPlayer1 = !isPlayer1Empty && canMatchProceed && editMode !== EditMode.PLAYER_EDIT;
   const canClickPlayer2 = !isPlayer2Empty && canMatchProceed && editMode !== EditMode.PLAYER_EDIT;
 
@@ -201,6 +317,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       const playerToEdit = match.player1 || {
         id: -Math.abs(parseInt(match.id) * 10 + 1),
         name: '',
+        games: 7,
       };
       onPlayerDoubleClick(playerToEdit);
     }
@@ -211,10 +328,37 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       const playerToEdit = match.player2 || {
         id: -Math.abs(parseInt(match.id) * 10 + 2),
         name: '',
+        games: 7,
       };
       onPlayerDoubleClick(playerToEdit);
     }
   }, [match.player2, match.id, onPlayerDoubleClick, editMode]);
+
+  const handleGames1DoubleClick = useCallback(() => {
+    if (editMode === EditMode.PLAYER_EDIT && match.player1 && onGamesEdit) {
+      setEditingGames({ playerId: match.player1.id, side: 'left' });
+    }
+  }, [editMode, match.player1, onGamesEdit]);
+
+  const handleGames2DoubleClick = useCallback(() => {
+    if (editMode === EditMode.PLAYER_EDIT && match.player2 && onGamesEdit) {
+      setEditingGames({ playerId: match.player2.id, side: 'right' });
+    }
+  }, [editMode, match.player2, onGamesEdit]);
+
+  const handleGamesConfirm = useCallback(
+    (newGames: number) => {
+      if (editingGames && onGamesEdit) {
+        onGamesEdit(editingGames.playerId, newGames);
+      }
+      setEditingGames(null);
+    },
+    [editingGames, onGamesEdit]
+  );
+
+  const handleGamesCancel = useCallback(() => {
+    setEditingGames(null);
+  }, []);
 
   const isEditingPlayer1 =
     playerEditState.isEditing &&
@@ -224,6 +368,9 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     playerEditState.isEditing &&
     ((match.player2 !== null && playerEditState.playerId === match.player2.id) ||
       playerEditState.playerId === -Math.abs(parseInt(match.id) * 10 + 2));
+
+  const isEditingGames1 = editingGames?.side === 'left';
+  const isEditingGames2 = editingGames?.side === 'right';
 
   const getPlayerBoxStyle = (player: Player | null, isWinner: boolean, canClick: boolean, isEmpty: boolean) => {
     if (isEmpty && editMode !== EditMode.PLAYER_EDIT) {
@@ -367,6 +514,9 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       stage.container().style.cursor = 'default';
     }
   }, []);
+
+  // 只在第一輪顯示遊戲局數框
+  const showGamesBox = match.round === 1;
 
   return (
     <Group>
@@ -554,6 +704,95 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
             listening={editMode === EditMode.PLAYER_EDIT}
           />
         ))}
+
+      {/* 遊戲局數框 - 只在第一輪顯示 */}
+      {showGamesBox && (
+        <Group>
+          {/* 左側選手遊戲局數框 */}
+          <Rect
+            x={x + (halfBoxWidth - gamesBoxWidth) / 2}
+            y={y + boxHeight + gamesBoxMarginTop}
+            width={gamesBoxWidth}
+            height={gamesBoxHeight}
+            fill={editMode === EditMode.PLAYER_EDIT ? editableGamesBoxBackgroundColor : gamesBoxBackgroundColor}
+            stroke={gamesBoxBorderColor}
+            strokeWidth={1}
+            cornerRadius={4}
+            onDblClick={handleGames1DoubleClick}
+            onMouseEnter={(e: KonvaEventObject<MouseEvent>) =>
+              handleMouseEnter(e, editMode === EditMode.PLAYER_EDIT ? 'text' : 'default')
+            }
+            onMouseLeave={handleMouseLeave}
+          />
+
+          {isEditingGames1 && match.player1 ? (
+            <GamesEditor
+              initialValue={match.player1.games || 7}
+              x={x + (halfBoxWidth - gamesBoxWidth) / 2}
+              y={y + boxHeight + gamesBoxMarginTop}
+              width={gamesBoxWidth}
+              height={gamesBoxHeight}
+              onConfirm={handleGamesConfirm}
+              onCancel={handleGamesCancel}
+            />
+          ) : (
+            <Text
+              x={x + (halfBoxWidth - gamesBoxWidth) / 2}
+              y={y + boxHeight + gamesBoxMarginTop}
+              width={gamesBoxWidth}
+              height={gamesBoxHeight}
+              text={(match.player1?.games || 7).toString()}
+              fontSize={gamesFontSize}
+              fill={gamesBoxTextColor}
+              align="center"
+              verticalAlign="middle"
+              onDblClick={handleGames1DoubleClick}
+            />
+          )}
+
+          {/* 右側選手遊戲局數框 */}
+          <Rect
+            x={x + halfBoxWidth + (halfBoxWidth - gamesBoxWidth) / 2}
+            y={y + boxHeight + gamesBoxMarginTop}
+            width={gamesBoxWidth}
+            height={gamesBoxHeight}
+            fill={editMode === EditMode.PLAYER_EDIT ? editableGamesBoxBackgroundColor : gamesBoxBackgroundColor}
+            stroke={gamesBoxBorderColor}
+            strokeWidth={1}
+            cornerRadius={4}
+            onDblClick={handleGames2DoubleClick}
+            onMouseEnter={(e: KonvaEventObject<MouseEvent>) =>
+              handleMouseEnter(e, editMode === EditMode.PLAYER_EDIT ? 'text' : 'default')
+            }
+            onMouseLeave={handleMouseLeave}
+          />
+
+          {isEditingGames2 && match.player2 ? (
+            <GamesEditor
+              initialValue={match.player2.games || 7}
+              x={x + halfBoxWidth + (halfBoxWidth - gamesBoxWidth) / 2}
+              y={y + boxHeight + gamesBoxMarginTop}
+              width={gamesBoxWidth}
+              height={gamesBoxHeight}
+              onConfirm={handleGamesConfirm}
+              onCancel={handleGamesCancel}
+            />
+          ) : (
+            <Text
+              x={x + halfBoxWidth + (halfBoxWidth - gamesBoxWidth) / 2}
+              y={y + boxHeight + gamesBoxMarginTop}
+              width={gamesBoxWidth}
+              height={gamesBoxHeight}
+              text={(match.player2?.games || 7).toString()}
+              fontSize={gamesFontSize}
+              fill={gamesBoxTextColor}
+              align="center"
+              verticalAlign="middle"
+              onDblClick={handleGames2DoubleClick}
+            />
+          )}
+        </Group>
+      )}
 
       {match.winner && match.player1 && match.winner.id === match.player1.id && (
         <Rect

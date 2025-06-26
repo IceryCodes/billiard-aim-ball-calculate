@@ -66,6 +66,7 @@ export interface DrawingData {
 export interface Player {
   id: number;
   name: string;
+  games: number;
 }
 
 export interface Match {

@@ -114,6 +114,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       onDrawingUpdate,
       editMode = EditMode.NORMAL,
       onPlayerNameEdit,
+      onPlayerGamesEdit,
     },
     ref
   ) => {
@@ -145,6 +146,19 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       height: sceneHeight,
       scale: 1,
     });
+
+    const handlePlayerGamesEdit = useCallback(
+      (playerId: number, newGames: number) => {
+        if (!onPlayerNameEdit) return; // 可以重用同一個回調或創建新的
+
+        // 這裡需要更新 players 數組中對應 player 的 games 值
+        // 實際實現會依賴於父組件如何處理這個更新
+        if (onPlayerGamesEdit) {
+          onPlayerGamesEdit(playerId, newGames);
+        }
+      },
+      [onPlayerGamesEdit, onPlayerNameEdit]
+    );
 
     const handlePlayerDoubleClick = useCallback(
       (player: Player) => {
@@ -729,6 +743,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                     playerEditState={playerEditState}
                     onConfirmEdit={confirmPlayerEdit}
                     onCancelEdit={cancelPlayerEdit}
+                    onGamesEdit={handlePlayerGamesEdit}
                   />
                 );
               })}

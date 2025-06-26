@@ -148,6 +148,7 @@ export const generateTournament = ({
   const players: Player[] = Array.from({ length: playerCount }, (_, index) => ({
     id: index + 1,
     name: '',
+    games: 7,
   }));
 
   const matches: Match[] = [];

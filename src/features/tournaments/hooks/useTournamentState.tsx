@@ -323,6 +323,79 @@ export const useTournamentState = ({
     [currentTournament, updateTournament, broadcastUpdate, refetchTournament, showToast]
   );
 
+  const handlePlayerGamesChange = useCallback(
+    async (id: number, games: number): Promise<void> => {
+      if (!updateTournament || !refetchTournament) return;
+
+      // 完全複製 handlePlayerNameChange 的邏輯，只是改成更新 games 欄位
+      const updatedPlayers = currentTournament.tournament.players.map((player) =>
+        player.id === id ? { ...player, games } : player
+      );
+
+      const updatedMatches = currentTournament.tournament.matches.map((match) => ({
+        ...match,
+        player1: match.player1?.id === id ? { ...match.player1, games } : match.player1,
+        player2: match.player2?.id === id ? { ...match.player2, games } : match.player2,
+        winner: match.winner?.id === id ? { ...match.winner, games } : match.winner,
+      }));
+
+      // 立即更新本地狀態
+      setCurrentTournament((prev) => ({
+        ...prev,
+        tournament: {
+          ...prev.tournament,
+          players: updatedPlayers,
+          matches: updatedMatches,
+        },
+      }));
+
+      const updatedTournamentData = {
+        ...currentTournament,
+        tournament: {
+          ...currentTournament.tournament,
+          players: updatedPlayers,
+          matches: updatedMatches,
+        },
+        updatedAt: new Date(),
+      };
+
+      try {
+        await updateTournament(updatedTournamentData);
+
+        const broadcastData: BroadcastUpdateData = {
+          type: RealtimeMessageType.PLAYER_UPDATE,
+          data: {
+            playerId: id,
+            players: updatedPlayers,
+            matches: updatedMatches,
+            action: TournamentAction.PLAYER_NAME_CHANGED, // 重用相同的 action
+          },
+          action: TournamentAction.PLAYER_NAME_CHANGED,
+        };
+
+        const success = await broadcastUpdate(broadcastData);
+
+        // 確保數據庫和本地狀態同步
+        setTimeout(() => {
+          refetchTournament();
+        }, 100);
+
+        showToast(
+          success ? '✅ 選手遊戲局數已更新並同步' : '⚠️ 選手遊戲局數已更新（同步可能延遲）',
+          success ? ToastType.SUCCESS : ToastType.WARNING
+        );
+      } catch (error) {
+        console.error('❌ 更新選手遊戲局數失敗:', error);
+        showToast('❌ 更新失敗', ToastType.ERROR);
+        // 如果更新失敗，回滾本地狀態
+        setTimeout(() => {
+          refetchTournament();
+        }, 100);
+      }
+    },
+    [currentTournament, updateTournament, broadcastUpdate, refetchTournament, showToast]
+  );
+
   const handlePlayerCountChange = useCallback(
     async (count: PlayerCount): Promise<void> => {
       if (!updateTournament || !refetchTournament) return;
@@ -539,6 +612,7 @@ export const useTournamentState = ({
     connectionQuality,
     reconnect,
     handlePlayerNameChange,
+    handlePlayerGamesChange,
     handlePlayerCountChange,
     handleTournamentTypeChange,
     handleMatchUpdate,

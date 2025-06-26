@@ -207,6 +207,7 @@ export const TournamentDisplay = ({
   drawingData,
   onDrawingUpdate,
   onPlayerNameEdit,
+  onPlayerGamesEdit,
 }: TournamentDisplayProps): ReactElement => {
   const router = useRouter();
 
@@ -409,6 +410,7 @@ export const TournamentDisplay = ({
                 onDrawingUpdate={onDrawingUpdate}
                 editMode={editMode}
                 onPlayerNameEdit={onPlayerNameEdit}
+                onPlayerGamesEdit={onPlayerGamesEdit}
               />
             )}
 

@@ -56,6 +56,7 @@ export interface SingleEliminationKonvaProps {
   onDrawingUpdate?: (drawingData: DrawingData) => void;
   editMode?: EditMode;
   onPlayerNameEdit?: (playerId: number, newName: string) => void;
+  onPlayerGamesEdit?: (playerId: number, newGames: number) => void;
 }
 
 export interface PlayerEditState {
@@ -95,6 +96,7 @@ export interface TournamentDisplayProps {
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
   onPlayerNameEdit?: (playerId: number, newName: string) => void;
+  onPlayerGamesEdit?: (playerId: number, newGames: number) => void;
   connectionQuality: ConnectionQualityType;
 }
 
@@ -130,6 +132,7 @@ export interface UseTournamentStateReturn {
   reconnect: () => void;
   handlePlayerNameChange: (id: number, name: string) => Promise<void>;
   handlePlayerCountChange: (count: PlayerCount) => Promise<void>;
+  handlePlayerGamesChange: (playerId: number, newGames: number) => Promise<void>;
   handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
