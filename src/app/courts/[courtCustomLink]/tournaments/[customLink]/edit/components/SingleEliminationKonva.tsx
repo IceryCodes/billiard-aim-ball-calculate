@@ -2,6 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
+import { FiberProvider } from 'its-fine';
 import Konva from 'konva';
 import { Group, Layer, Line, Rect, Stage, Text } from 'react-konva';
 
@@ -121,7 +122,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     const containerRef = useRef<HTMLDivElement>(null);
     const drawingLayerRef = useRef<Konva.Layer>(null);
 
-    // 繪圖狀態
     const [drawingMode, setDrawingMode] = useState<DrawingMode>(DrawingMode.NORMAL);
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentLine, setCurrentLine] = useState<DrawingLine | null>(null);
@@ -135,7 +135,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       isEditing: false,
     });
 
-    // 定義虛擬場景尺寸
     const firstRoundMatches = players.length / 2;
     const matchesAreaWidth = firstRoundMatches * playerSpacing;
     const sceneWidth = titleWidth + canvasLeftPadding + matchesAreaWidth + canvasRightPadding;
@@ -147,7 +146,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       scale: 1,
     });
 
-    // 處理選手框雙擊編輯
     const handlePlayerDoubleClick = useCallback(
       (player: Player) => {
         if (currentEditMode !== EditMode.PLAYER_EDIT || !isEditMode) return;
@@ -161,19 +159,20 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       [currentEditMode, isEditMode]
     );
 
-    // 確認編輯
-    const confirmPlayerEdit = useCallback(() => {
-      if (!playerEditState.isEditing || !playerEditState.playerId || !onPlayerNameEdit) return;
+    const confirmPlayerEdit = useCallback(
+      (newName: string) => {
+        if (!playerEditState.isEditing || !playerEditState.playerId || !onPlayerNameEdit) return;
 
-      onPlayerNameEdit(playerEditState.playerId, playerEditState.tempName);
-      setPlayerEditState({
-        playerId: null,
-        tempName: '',
-        isEditing: false,
-      });
-    }, [onPlayerNameEdit, playerEditState]);
+        onPlayerNameEdit(playerEditState.playerId, newName);
+        setPlayerEditState({
+          playerId: null,
+          tempName: '',
+          isEditing: false,
+        });
+      },
+      [onPlayerNameEdit, playerEditState]
+    );
 
-    // 取消編輯
     const cancelPlayerEdit = useCallback(() => {
       setPlayerEditState({
         playerId: null,
@@ -181,24 +180,23 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         isEditing: false,
       });
     }, []);
+
     const handleKeyDown = useCallback(
       (e: KeyboardEvent) => {
         if (!playerEditState.isEditing) return;
 
         if (e.key === 'Enter') {
-          confirmPlayerEdit();
+          confirmPlayerEdit(playerEditState.tempName);
         } else if (e.key === 'Escape') {
           cancelPlayerEdit();
         }
       },
-      [playerEditState.isEditing, confirmPlayerEdit, cancelPlayerEdit]
+      [playerEditState.isEditing, playerEditState.tempName, confirmPlayerEdit, cancelPlayerEdit]
     );
 
-    // 設定編輯模式
     const handleSetEditMode = useCallback(
       (mode: EditMode) => {
         setCurrentEditMode(mode);
-        // 如果切換到非編輯模式，取消當前編輯
         if (mode !== EditMode.PLAYER_EDIT) {
           cancelPlayerEdit();
         }
@@ -206,21 +204,17 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       [cancelPlayerEdit]
     );
 
-    // 鍵盤事件監聽
     useEffect(() => {
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
 
-    // 同步外部編輯模式
     useEffect(() => {
       setCurrentEditMode(editMode);
     }, [editMode]);
 
-    // 修正的同步邏輯
     useEffect(() => {
       if (drawingData) {
-        // 確保同步所有外部數據，不只是時間戳不同的
         if (
           drawingData.lastUpdated !== localDrawingData.lastUpdated ||
           drawingData.lines.length !== localDrawingData.lines.length
@@ -298,7 +292,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       }
     }, [onDrawingUpdate]);
 
-    // 繪圖事件處理
     const handleMouseDown = useCallback((): void => {
       if (drawingMode !== DrawingMode.DRAWING || !isEditMode) return;
 
@@ -639,298 +632,285 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     }, [generateSingleEliminationMatches, players, matches.length, onMatchUpdate]);
 
     return (
-      <div ref={containerRef} className="w-full h-full relative" style={{ backgroundColor: canvasBackgroundColor }}>
-        <Stage
-          width={stageConfig.width}
-          height={stageConfig.height}
-          ref={stageRef}
-          onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMousemove={handleMouseMove}
-          onMouseup={handleMouseUp}
-          onClick={handleStageClick}
-          draggable={drawingMode === DrawingMode.NORMAL && currentEditMode === EditMode.NORMAL}
-        >
-          {/* 主要內容層 */}
-          <Layer name={mainLayerName}>
-            <QRCodeCanvas x={qrCodePosition.x} y={qrCodePosition.y} size={qrCodeSize} />
+      <FiberProvider>
+        <div ref={containerRef} className="w-full h-full relative" style={{ backgroundColor: canvasBackgroundColor }}>
+          <Stage
+            width={stageConfig.width}
+            height={stageConfig.height}
+            ref={stageRef}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMousemove={handleMouseMove}
+            onMouseup={handleMouseUp}
+            onClick={handleStageClick}
+            draggable={drawingMode === DrawingMode.NORMAL && currentEditMode === EditMode.NORMAL}
+          >
+            <Layer name={mainLayerName}>
+              <QRCodeCanvas x={qrCodePosition.x} y={qrCodePosition.y} size={qrCodeSize} />
 
-            {/* 輪次標題 */}
-            {Array.from({ length: rounds }, (_, roundIndex: number) => {
-              const roundNumber: number = roundIndex + 1;
-              const titleY: number =
-                headerHeight +
-                (rounds - roundNumber) * roundHeight +
-                canvasBottomPadding -
-                boxHeight +
-                boxHeight / 2 -
-                titlePadding +
-                roundHeight / 2;
+              {Array.from({ length: rounds }, (_, roundIndex: number) => {
+                const roundNumber: number = roundIndex + 1;
+                const titleY: number =
+                  headerHeight +
+                  (rounds - roundNumber) * roundHeight +
+                  canvasBottomPadding -
+                  boxHeight +
+                  boxHeight / 2 -
+                  titlePadding +
+                  roundHeight / 2;
 
-              return (
-                <Group key={`title-group-${roundNumber}`}>
-                  <Rect
-                    x={0}
-                    y={titleY}
-                    width={titleWidth}
-                    height={headerHeight}
-                    fill={roundTitleBackgroundColor}
-                    stroke={strokeColor}
-                    strokeWidth={1}
-                    cornerRadius={4}
-                  />
-                  <Text
-                    x={titlePadding}
-                    y={titleY + titlePadding}
-                    text={getRoundName(roundNumber, rounds)}
-                    fontSize={roundTitleFontSize}
-                    fontFamily="Arial"
-                    fontStyle="bold"
-                    fill={roundTitleTextColor}
-                    width={titleWidth - titlePadding * 2}
-                    align="center"
-                    verticalAlign="middle"
-                    wrap="none"
-                  />
-                </Group>
-              );
-            })}
+                return (
+                  <Group key={`title-group-${roundNumber}`}>
+                    <Rect
+                      x={0}
+                      y={titleY}
+                      width={titleWidth}
+                      height={headerHeight}
+                      fill={roundTitleBackgroundColor}
+                      stroke={strokeColor}
+                      strokeWidth={1}
+                      cornerRadius={4}
+                    />
+                    <Text
+                      x={titlePadding}
+                      y={titleY + titlePadding}
+                      text={getRoundName(roundNumber, rounds)}
+                      fontSize={roundTitleFontSize}
+                      fontFamily="Arial"
+                      fontStyle="bold"
+                      fill={roundTitleTextColor}
+                      width={titleWidth - titlePadding * 2}
+                      align="center"
+                      verticalAlign="middle"
+                      wrap="none"
+                    />
+                  </Group>
+                );
+              })}
 
-            {/* 冠軍標題 */}
-            <Group>
-              <Rect
-                x={0}
-                y={0}
-                width={titleWidth}
-                height={headerHeight}
-                fill={championTitleBackgroundColor}
-                stroke={highlightColor}
-                strokeWidth={championStrokeWidth - 1}
-                cornerRadius={4}
-              />
-              <Text
-                x={titlePadding}
-                y={titlePadding}
-                text="🏆 冠軍"
-                fontSize={roundTitleFontSize}
-                fontFamily="Arial"
-                fontStyle="bold"
-                fill={roundTitleTextColor}
-                width={titleWidth - titlePadding * 2}
-                align="center"
-                verticalAlign="middle"
-                wrap="none"
-              />
-            </Group>
-
-            {/* 比賽框 */}
-            {matches.map((match: Match) => {
-              const pos: Position = getMatchPosition(match.round, match.matchIndex);
-              return (
-                <EditableKonvaMatch
-                  key={match.id}
-                  match={match}
-                  x={pos.x}
-                  y={pos.y + championToFinalGap}
-                  onPlayerClick={advanceWinner}
-                  onPlayerDoubleClick={handlePlayerDoubleClick}
-                  isEditMode={isEditMode && drawingMode === DrawingMode.NORMAL}
-                  editMode={currentEditMode}
-                  playerEditState={playerEditState}
-                  onEditStateChange={setPlayerEditState}
-                  onConfirmEdit={confirmPlayerEdit}
-                  onCancelEdit={cancelPlayerEdit}
-                />
-              );
-            })}
-
-            {/* 從決賽到冠軍的連接線 */}
-            {champion && (
-              <Line
-                points={[
-                  getMatchPosition(rounds, 0).x + boxWidth / 2,
-                  getMatchPosition(rounds, 0).y + championToFinalGap,
-                  getMatchPosition(rounds, 0).x + boxWidth / 2,
-                  championPosition.y,
-                ]}
-                stroke={connectionLineColor}
-                strokeWidth={championConnectionLineWidth}
-              />
-            )}
-
-            {/* 冠軍框 */}
-            {champion && (
               <Group>
                 <Rect
-                  x={championPosition.x}
+                  x={0}
                   y={0}
-                  width={championBoxWidth}
-                  height={championBoxHeight}
-                  fill={championBackgroundColor}
+                  width={titleWidth}
+                  height={headerHeight}
+                  fill={championTitleBackgroundColor}
                   stroke={highlightColor}
-                  strokeWidth={championStrokeWidth}
+                  strokeWidth={championStrokeWidth - 1}
                   cornerRadius={4}
                 />
                 <Text
-                  x={championPosition.x + championTextPaddingX}
-                  y={(championBoxHeight - championNameFontSize) / 2}
-                  text={champion.name}
-                  fontSize={championNameFontSize}
+                  x={titlePadding}
+                  y={titlePadding}
+                  text="🏆 冠軍"
+                  fontSize={roundTitleFontSize}
                   fontFamily="Arial"
                   fontStyle="bold"
-                  fill={textColor}
-                  width={championTextWidth}
-                  ellipsis
-                  wrap="none"
+                  fill={roundTitleTextColor}
+                  width={titleWidth - titlePadding * 2}
                   align="center"
                   verticalAlign="middle"
-                />
-                <Text
-                  x={championPosition.x + championBoxWidth - crownIconOffsetX}
-                  y={(championBoxHeight - crownIconFontSize) / 2}
-                  text="👑"
-                  fontSize={crownIconFontSize}
+                  wrap="none"
                 />
               </Group>
-            )}
 
-            {/* 連接線 */}
-            {Array.from({ length: rounds - 1 }, (_, roundIndex: number) => {
-              const currentRound: number = roundIndex + 1;
-              const nextRound: number = currentRound + 1;
-              const nextRoundMatches: Match[] = matches.filter((m: Match) => m.round === nextRound);
+              {matches.map((match: Match) => {
+                const pos: Position = getMatchPosition(match.round, match.matchIndex);
+                return (
+                  <EditableKonvaMatch
+                    key={match.id}
+                    match={match}
+                    x={pos.x}
+                    y={pos.y + championToFinalGap}
+                    onPlayerClick={advanceWinner}
+                    onPlayerDoubleClick={handlePlayerDoubleClick}
+                    isEditMode={isEditMode && drawingMode === DrawingMode.NORMAL}
+                    editMode={currentEditMode}
+                    playerEditState={playerEditState}
+                    onConfirmEdit={confirmPlayerEdit}
+                    onCancelEdit={cancelPlayerEdit}
+                  />
+                );
+              })}
 
-              return nextRoundMatches
-                .map((nextMatch: Match) => {
-                  const firstMatchIndex: number = nextMatch.matchIndex * 2;
-                  const secondMatchIndex: number = nextMatch.matchIndex * 2 + 1;
-
-                  const firstMatch: Match | undefined = matches.find(
-                    (m: Match) => m.round === currentRound && m.matchIndex === firstMatchIndex
-                  );
-                  const secondMatch: Match | undefined = matches.find(
-                    (m: Match) => m.round === currentRound && m.matchIndex === secondMatchIndex
-                  );
-
-                  if (!firstMatch?.winner || !secondMatch?.winner) return null;
-
-                  const firstPos: Position = getMatchPosition(currentRound, firstMatchIndex);
-                  const secondPos: Position = getMatchPosition(currentRound, secondMatchIndex);
-                  const nextPos: Position = getMatchPosition(nextRound, nextMatch.matchIndex);
-
-                  const firstMatchCenterX: number = firstPos.x + boxWidth / 2;
-                  const firstMatchTopY: number = firstPos.y + championToFinalGap;
-                  const secondMatchCenterX: number = secondPos.x + boxWidth / 2;
-                  const secondMatchTopY: number = secondPos.y + championToFinalGap;
-                  const nextMatchCenterX: number = nextPos.x + boxWidth / 2;
-                  const nextMatchBottomY: number = nextPos.y + boxHeight + championToFinalGap;
-                  const midY: number = (firstMatchTopY + nextMatchBottomY) / 2;
-
-                  return (
-                    <Group key={`connector-group-${currentRound}-${nextMatch.matchIndex}`}>
-                      <Line
-                        points={[firstMatchCenterX, firstMatchTopY, firstMatchCenterX, midY]}
-                        stroke={connectionLineColor}
-                        strokeWidth={connectionLineWidth}
-                      />
-                      <Line
-                        points={[secondMatchCenterX, secondMatchTopY, secondMatchCenterX, midY]}
-                        stroke={connectionLineColor}
-                        strokeWidth={connectionLineWidth}
-                      />
-                      <Line
-                        points={[firstMatchCenterX, midY, secondMatchCenterX, midY]}
-                        stroke={connectionLineColor}
-                        strokeWidth={connectionLineWidth}
-                      />
-                      <Line
-                        points={[nextMatchCenterX, midY, nextMatchCenterX, nextMatchBottomY]}
-                        stroke={connectionLineColor}
-                        strokeWidth={connectionLineWidth}
-                      />
-                    </Group>
-                  );
-                })
-                .filter((item): item is JSX.Element => item !== null);
-            }).flat()}
-          </Layer>
-
-          {/* 繪圖層 */}
-          <Layer ref={drawingLayerRef} listening={false}>
-            {/* 已完成的繪圖線條 */}
-            {localDrawingData.lines.map((line: DrawingLine, index: number) => {
-              // 驗證線條數據有效性
-              if (!line.points || line.points.length < 4) {
-                console.warn(`⚠️ [RENDER] 線條 ${index} 數據無效:`, line);
-                return null;
-              }
-
-              return (
+              {champion && (
                 <Line
-                  key={line.id}
-                  points={line.points}
-                  stroke={line.stroke}
-                  strokeWidth={line.strokeWidth}
+                  points={[
+                    getMatchPosition(rounds, 0).x + boxWidth / 2,
+                    getMatchPosition(rounds, 0).y + championToFinalGap,
+                    getMatchPosition(rounds, 0).x + boxWidth / 2,
+                    championPosition.y,
+                  ]}
+                  stroke={connectionLineColor}
+                  strokeWidth={championConnectionLineWidth}
+                />
+              )}
+
+              {champion && (
+                <Group>
+                  <Rect
+                    x={championPosition.x}
+                    y={0}
+                    width={championBoxWidth}
+                    height={championBoxHeight}
+                    fill={championBackgroundColor}
+                    stroke={highlightColor}
+                    strokeWidth={championStrokeWidth}
+                    cornerRadius={4}
+                  />
+                  <Text
+                    x={championPosition.x + championTextPaddingX}
+                    y={(championBoxHeight - championNameFontSize) / 2}
+                    text={champion.name}
+                    fontSize={championNameFontSize}
+                    fontFamily="Arial"
+                    fontStyle="bold"
+                    fill={textColor}
+                    width={championTextWidth}
+                    ellipsis
+                    wrap="none"
+                    align="center"
+                    verticalAlign="middle"
+                  />
+                  <Text
+                    x={championPosition.x + championBoxWidth - crownIconOffsetX}
+                    y={(championBoxHeight - crownIconFontSize) / 2}
+                    text="👑"
+                    fontSize={crownIconFontSize}
+                  />
+                </Group>
+              )}
+
+              {Array.from({ length: rounds - 1 }, (_, roundIndex: number) => {
+                const currentRound: number = roundIndex + 1;
+                const nextRound: number = currentRound + 1;
+                const nextRoundMatches: Match[] = matches.filter((m: Match) => m.round === nextRound);
+
+                return nextRoundMatches
+                  .map((nextMatch: Match) => {
+                    const firstMatchIndex: number = nextMatch.matchIndex * 2;
+                    const secondMatchIndex: number = nextMatch.matchIndex * 2 + 1;
+
+                    const firstMatch: Match | undefined = matches.find(
+                      (m: Match) => m.round === currentRound && m.matchIndex === firstMatchIndex
+                    );
+                    const secondMatch: Match | undefined = matches.find(
+                      (m: Match) => m.round === currentRound && m.matchIndex === secondMatchIndex
+                    );
+
+                    if (!firstMatch?.winner || !secondMatch?.winner) return null;
+
+                    const firstPos: Position = getMatchPosition(currentRound, firstMatchIndex);
+                    const secondPos: Position = getMatchPosition(currentRound, secondMatchIndex);
+                    const nextPos: Position = getMatchPosition(nextRound, nextMatch.matchIndex);
+
+                    const firstMatchCenterX: number = firstPos.x + boxWidth / 2;
+                    const firstMatchTopY: number = firstPos.y + championToFinalGap;
+                    const secondMatchCenterX: number = secondPos.x + boxWidth / 2;
+                    const secondMatchTopY: number = secondPos.y + championToFinalGap;
+                    const nextMatchCenterX: number = nextPos.x + boxWidth / 2;
+                    const nextMatchBottomY: number = nextPos.y + boxHeight + championToFinalGap;
+                    const midY: number = (firstMatchTopY + nextMatchBottomY) / 2;
+
+                    return (
+                      <Group key={`connector-group-${currentRound}-${nextMatch.matchIndex}`}>
+                        <Line
+                          points={[firstMatchCenterX, firstMatchTopY, firstMatchCenterX, midY]}
+                          stroke={connectionLineColor}
+                          strokeWidth={connectionLineWidth}
+                        />
+                        <Line
+                          points={[secondMatchCenterX, secondMatchTopY, secondMatchCenterX, midY]}
+                          stroke={connectionLineColor}
+                          strokeWidth={connectionLineWidth}
+                        />
+                        <Line
+                          points={[firstMatchCenterX, midY, secondMatchCenterX, midY]}
+                          stroke={connectionLineColor}
+                          strokeWidth={connectionLineWidth}
+                        />
+                        <Line
+                          points={[nextMatchCenterX, midY, nextMatchCenterX, nextMatchBottomY]}
+                          stroke={connectionLineColor}
+                          strokeWidth={connectionLineWidth}
+                        />
+                      </Group>
+                    );
+                  })
+                  .filter((item): item is JSX.Element => item !== null);
+              }).flat()}
+            </Layer>
+
+            <Layer ref={drawingLayerRef} listening={false}>
+              {localDrawingData.lines.map((line: DrawingLine) => {
+                if (!line.points || line.points.length < 4) {
+                  return null;
+                }
+
+                return (
+                  <Line
+                    key={line.id}
+                    points={line.points}
+                    stroke={line.stroke}
+                    strokeWidth={line.strokeWidth}
+                    tension={0.5}
+                    lineCap={drawingLineCap}
+                    lineJoin={drawingLineJoin}
+                    globalCompositeOperation="source-over"
+                  />
+                );
+              })}
+
+              {currentLine && (
+                <Line
+                  points={currentLine.points}
+                  stroke={currentLine.stroke}
+                  strokeWidth={currentLine.strokeWidth}
                   tension={0.5}
                   lineCap={drawingLineCap}
                   lineJoin={drawingLineJoin}
                   globalCompositeOperation="source-over"
                 />
-              );
-            })}
+              )}
+            </Layer>
+          </Stage>
 
-            {/* 當前正在繪製的線條 */}
-            {currentLine && (
-              <Line
-                points={currentLine.points}
-                stroke={currentLine.stroke}
-                strokeWidth={currentLine.strokeWidth}
-                tension={0.5}
-                lineCap={drawingLineCap}
-                lineJoin={drawingLineJoin}
-                globalCompositeOperation="source-over"
-              />
-            )}
-          </Layer>
-        </Stage>
-
-        {/* 繪圖模式指示器 */}
-        {drawingMode === DrawingMode.DRAWING && (
-          <div
-            className="absolute top-4 left-4 z-10 rounded-lg px-3 py-2"
-            style={{
-              backgroundColor: drawingModeIndicatorBackgroundColor,
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: drawingModeIndicatorBorderColor,
-            }}
-          >
-            <div className="flex items-center space-x-2">
-              <div
-                className="w-3 h-3 rounded-full animate-pulse"
-                style={{ backgroundColor: drawingModeIndicatorDotColor }}
-              ></div>
-              <span className="text-sm font-medium" style={{ color: drawingModeIndicatorTextColor }}>
-                繪圖模式
-              </span>
+          {drawingMode === DrawingMode.DRAWING && (
+            <div
+              className="absolute top-4 left-4 z-10 rounded-lg px-3 py-2"
+              style={{
+                backgroundColor: drawingModeIndicatorBackgroundColor,
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: drawingModeIndicatorBorderColor,
+              }}
+            >
+              <div className="flex items-center space-x-2">
+                <div
+                  className="w-3 h-3 rounded-full animate-pulse"
+                  style={{ backgroundColor: drawingModeIndicatorDotColor }}
+                ></div>
+                <span className="text-sm font-medium" style={{ color: drawingModeIndicatorTextColor }}>
+                  繪圖模式
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 調試信息顯示 */}
-        {process.env.NODE_ENV === 'development' && (
-          <div
-            className="absolute bottom-4 left-4 z-10 p-2 rounded text-xs"
-            style={{
-              backgroundColor: debugInfoBackgroundColor,
-              color: debugInfoTextColor,
-            }}
-          >
-            <div>本地線條: {localDrawingData.lines.length}</div>
-            <div>外部線條: {drawingData?.lines?.length || 0}</div>
-          </div>
-        )}
-      </div>
+          {process.env.NODE_ENV === 'development' && (
+            <div
+              className="absolute bottom-4 left-4 z-10 p-2 rounded text-xs"
+              style={{
+                backgroundColor: debugInfoBackgroundColor,
+                color: debugInfoTextColor,
+              }}
+            >
+              <div>本地線條: {localDrawingData.lines.length}</div>
+              <div>外部線條: {drawingData?.lines?.length || 0}</div>
+            </div>
+          )}
+        </div>
+      </FiberProvider>
     );
   }
 );
