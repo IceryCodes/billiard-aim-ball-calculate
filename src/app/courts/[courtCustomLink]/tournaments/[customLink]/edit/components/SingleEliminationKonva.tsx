@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, JSX, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import { FiberProvider } from 'its-fine';
 import Konva from 'konva';
