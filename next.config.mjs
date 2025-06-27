@@ -1,3 +1,9 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDir = path.dirname(currentFilePath);
+
 /** @type {import('next').NextConfig} */
 const baseUrl = process.env.BASE_URL;
 const baseUrlDev = process.env.BASE_URL_DEV;
@@ -51,7 +57,13 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   },
   webpack: (config, { isServer }) => {
-    // Fixes npm packages that depend on `net` module
+    // 修正路徑別名
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(currentDir, 'src'),
+    };
+
+    // 客戶端 fallbacks
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -60,15 +72,21 @@ const nextConfig = {
         tls: false,
         ws: false,
       };
-
-      config.module.rules.push({
-        test: /\.m?js$/,
-        resolve: {
-          fullySpecified: false,
-        },
-      });
-      config.externals = [...config.externals, { canvas: 'canvas' }];
     }
+
+    // ES 模組處理
+    config.module.rules.push({
+      test: /\.m?js$/,
+      resolve: {
+        fullySpecified: false,
+      },
+    });
+
+    // Canvas 外部模組（伺服器端）
+    if (isServer) {
+      config.externals = [...(config.externals || []), { canvas: 'canvas' }];
+    }
+
     return config;
   },
 };
