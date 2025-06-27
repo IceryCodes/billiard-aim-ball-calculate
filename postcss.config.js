@@ -4,7 +4,11 @@ module.exports = {
     autoprefixer: {},
     'postcss-nesting': {},
     'postcss-preset-env': {
-      features: { 'nesting-rules': false },
+      stage: 1,
+      features: {
+        'nesting-rules': false,
+        'custom-properties': false,
+      },
     },
   },
 };
