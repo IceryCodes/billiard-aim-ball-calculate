@@ -36,10 +36,10 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
   const { showToast } = useToast();
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_API_MAP_KEY,
-    libraries: GOOGLE_MAPS_LIBRARIES, // 使用靜態數組
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
-  const mapRef = useRef<google.maps.Map>();
+  const mapRef = useRef<google.maps.Map | undefined>(undefined);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [mapCenter, setMapCenter] = useState<Location | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<CourtProps | null>(null);
@@ -87,7 +87,8 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
   // 處理縮放等級改變
   const handleZoomChanged = useCallback(() => {
     if (!mapRef.current) return;
-    setCurrentZoom(mapRef.current.getZoom() || 14);
+    const zoom = mapRef.current.getZoom();
+    setCurrentZoom(zoom || 14);
   }, []);
 
   // 使用 useMemo 來記憶化 fetchData 函數
@@ -116,12 +117,14 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
   }, []);
 
   // 處理地圖載入
-  const onLoad = (map: google.maps.Map) => {
+  const onLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
-  };
+  }, []);
 
   // 處理地圖卸載
-  const onUnmount = () => (mapRef.current = undefined);
+  const onUnmount = useCallback(() => {
+    mapRef.current = undefined;
+  }, []);
 
   // 處理 fullDay 切換
   const handleFullDayChange = useCallback((checked: boolean) => {
@@ -140,6 +143,20 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
     setCountdown(3);
     isCountingRef.current = true;
   }, []);
+
+  // 處理 checkbox 變更
+  const handleCheckboxChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>, type: 'fullDay' | 'partner') => {
+      const checked = event.target.checked;
+
+      if (type === 'fullDay') {
+        handleFullDayChange(checked);
+      } else {
+        handlePartnerChange(checked);
+      }
+    },
+    [handleFullDayChange, handlePartnerChange]
+  );
 
   // 處理倒數計時
   useEffect(() => {
@@ -222,7 +239,7 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
                 <Input
                   type={InputStyleType.Checkbox}
                   checked={fullDay}
-                  onChange={(e) => handleFullDayChange(e.target.checked)}
+                  onChange={(e) => handleCheckboxChange(e, 'fullDay')}
                 />
                 <label className="text-foreground">24小時營業</label>
               </div>
@@ -230,7 +247,7 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
                 <Input
                   type={InputStyleType.Checkbox}
                   checked={partner}
-                  onChange={(e) => handlePartnerChange(e.target.checked)}
+                  onChange={(e) => handleCheckboxChange(e, 'partner')}
                 />
                 <label className="text-foreground">{`${process.env.NEXT_PUBLIC_SITENAME}合作夥伴`}</label>
               </div>
@@ -248,16 +265,10 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
       </div>
 
       {/* 使用者位置標記 */}
-      <MarkerF
-        position={userLocation}
-        // icon={{
-        //   url: '/assets/icon.png',
-        //   scaledSize: new google.maps.Size(30, 30),
-        // }}
-      />
+      <MarkerF position={userLocation} />
 
       {/* 撞球場地標記 */}
-      {courts.map((court: CourtProps, index: number) => {
+      {courts.map((court: CourtProps) => {
         // 檢查並交換座標順序
         const position = {
           lat: court.location.coordinates[1], // 使用第二個值作為緯度
@@ -265,9 +276,8 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
         };
 
         return (
-          <div key={index}>
+          <div key={court._id}>
             <MarkerF
-              key={court._id.toString()}
               position={position}
               icon={{
                 url: '/assets/icon.png',

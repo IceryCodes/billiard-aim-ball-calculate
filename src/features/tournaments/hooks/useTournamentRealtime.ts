@@ -129,205 +129,223 @@ export function useTournamentRealtime({
     setConnectionQuality(ConnectionQualityType.DISCONNECTED);
   }, [clearTimers]);
 
-  // 重連相關函數 - 使用 ref 避免循環依賴
-  const scheduleReconnectRef = useRef<() => void>();
-  const startHeartbeatRef = useRef<() => void>();
-  const connectInternalRef = useRef<() => void>();
+  // 定義回調函數類型
+  type ScheduleReconnectCallback = () => void;
+  type StartHeartbeatCallback = () => void;
+  type ConnectInternalCallback = () => void;
+
+  // 重連相關函數 - 使用明確的初始化函數
+  const scheduleReconnectRef = useRef<ScheduleReconnectCallback | null>(null);
+  const startHeartbeatRef = useRef<StartHeartbeatCallback | null>(null);
+  const connectInternalRef = useRef<ConnectInternalCallback | null>(null);
 
   // 重連邏輯
-  scheduleReconnectRef.current = useCallback(() => {
-    if (
-      !isMounted.current ||
-      !enabled ||
-      reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS ||
-      isReconnectingRef.current
-    ) {
-      return;
-    }
-
-    isReconnectingRef.current = true;
-    const delay = RECONNECT_DELAYS[Math.min(reconnectAttemptsRef.current, RECONNECT_DELAYS.length - 1)];
-
-    reconnectTimeoutRef.current = setTimeout(() => {
-      if (isMounted.current && enabled && !isConnected) {
-        reconnectAttemptsRef.current++;
-
-        // 清理當前連線
-        if (channelRef.current) {
-          channelRef.current.unsubscribe();
-          channelRef.current = null;
-        }
-
-        // 重新建立連線
-        connectInternalRef.current?.();
-      }
-      isReconnectingRef.current = false;
-    }, delay);
-  }, [enabled, isConnected]);
-
-  // 心跳檢測
-  startHeartbeatRef.current = useCallback(() => {
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current);
-    }
-
-    const sendHeartbeat = () => {
-      if (!channelRef.current || !isConnected || !isMounted.current) {
+  const initializeScheduleReconnect = useCallback(() => {
+    scheduleReconnectRef.current = () => {
+      if (
+        !isMounted.current ||
+        !enabled ||
+        reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS ||
+        isReconnectingRef.current
+      ) {
         return;
       }
 
-      const now = Date.now();
-      const timeSinceActivity = now - lastActivityRef.current;
-      const isUserIdle = timeSinceActivity > USER_ACTIVITY_TIMEOUT;
+      isReconnectingRef.current = true;
+      const delay = RECONNECT_DELAYS[Math.min(reconnectAttemptsRef.current, RECONNECT_DELAYS.length - 1)];
 
-      // 如果用戶閒置，降低心跳頻率
-      const heartbeatInterval = isUserIdle ? IDLE_HEARTBEAT_INTERVAL : HEARTBEAT_INTERVAL;
+      reconnectTimeoutRef.current = setTimeout(() => {
+        if (isMounted.current && enabled && !isConnected) {
+          reconnectAttemptsRef.current++;
 
-      try {
-        channelRef.current.send({
-          type: 'broadcast',
-          event: 'heartbeat',
-          payload: { timestamp: now, userId },
-        });
+          // 清理當前連線
+          if (channelRef.current) {
+            channelRef.current.unsubscribe();
+            channelRef.current = null;
+          }
 
-        lastHeartbeatRef.current = now;
-        consecutiveFailuresRef.current = 0;
-        updateConnectionQuality();
-      } catch (error) {
-        consecutiveFailuresRef.current++;
-        updateConnectionQuality();
-
-        if (consecutiveFailuresRef.current >= CONNECTION_QUALITY_THRESHOLD) {
-          console.warn('💓 [HEARTBEAT] 多次心跳失敗，可能需要重新連線');
-          scheduleReconnectRef.current?.();
+          // 重新建立連線
+          connectInternalRef.current?.();
         }
-      }
+        isReconnectingRef.current = false;
+      }, delay);
+    };
+  }, [enabled, isConnected]);
 
-      // 重新設定定時器
+  // 心跳檢測
+  const initializeStartHeartbeat = useCallback(() => {
+    startHeartbeatRef.current = () => {
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
       }
-      heartbeatRef.current = setTimeout(sendHeartbeat, heartbeatInterval);
-    };
 
-    // 立即發送第一次心跳
-    sendHeartbeat();
-  }, [isConnected, userId, updateConnectionQuality]);
-
-  // 連線邏輯
-  connectInternalRef.current = useCallback(() => {
-    if (!isMounted.current || !enabled || !tournamentId) {
-      return;
-    }
-
-    // 如果已經在連線中，不要重複連線
-    if (channelRef.current) {
-      return;
-    }
-
-    try {
-      const channelName = `tournament_${tournamentId}`;
-      const channel = supabase.channel(channelName, {
-        config: {
-          presence: {
-            key: userId,
-          },
-        },
-      });
-
-      channelRef.current = channel;
-
-      // 處理廣播訊息
-      channel.on('broadcast', { event: 'tournament_update' }, (payload: SupabaseBroadcastPayload) => {
-        if (!isMounted.current) return;
-
-        const message = payload.payload;
-
-        if (message.fromUserId === userId) {
+      const sendHeartbeat = () => {
+        if (!channelRef.current || !isConnected || !isMounted.current) {
           return;
         }
 
-        setLastMessage(message);
-        callbacksRef.current.onMessage?.(message);
-        updateActivity();
-      });
+        const now = Date.now();
+        const timeSinceActivity = now - lastActivityRef.current;
+        const isUserIdle = timeSinceActivity > USER_ACTIVITY_TIMEOUT;
 
-      // 處理心跳回應
-      channel.on('broadcast', { event: 'heartbeat' }, () => {
-        updateActivity();
-      });
+        // 如果用戶閒置，降低心跳頻率
+        const heartbeatInterval = isUserIdle ? IDLE_HEARTBEAT_INTERVAL : HEARTBEAT_INTERVAL;
 
-      // Presence 事件處理
-      channel.on('presence', { event: 'sync' }, () => {
-        if (!isMounted.current) return;
-        const presenceState = channel.presenceState() as PresenceState;
-        const userCount = Object.keys(presenceState).length;
-        setOnlineCount(userCount);
-        updateActivity();
-      });
+        try {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'heartbeat',
+            payload: { timestamp: now, userId },
+          });
 
-      channel.on('presence', { event: 'join' }, () => {
-        if (!isMounted.current) return;
-        const presenceState = channel.presenceState() as PresenceState;
-        setOnlineCount(Object.keys(presenceState).length);
-        updateActivity();
-      });
-
-      channel.on('presence', { event: 'leave' }, () => {
-        if (!isMounted.current) return;
-        const presenceState = channel.presenceState() as PresenceState;
-        setOnlineCount(Object.keys(presenceState).length);
-      });
-
-      // 訂閱狀態處理
-      channel.subscribe(async (status: SubscriptionStatus) => {
-        if (!isMounted.current) return;
-
-        if (status === 'SUBSCRIBED') {
-          setIsConnected(true);
-          reconnectAttemptsRef.current = 0;
+          lastHeartbeatRef.current = now;
           consecutiveFailuresRef.current = 0;
-          lastHeartbeatRef.current = Date.now();
-          isReconnectingRef.current = false;
-
-          const presenceData: PresenceData = {
-            userId,
-            userType: userId.startsWith('editor_') ? 'editor' : 'viewer',
-            joinTime: new Date().toISOString(),
-          };
-
-          await channel.track(presenceData);
-          callbacksRef.current.onConnect?.();
-
-          // 開始心跳檢測
-          startHeartbeatRef.current?.();
-        } else if (status === 'CHANNEL_ERROR') {
-          setIsConnected(false);
+          updateConnectionQuality();
+        } catch (error) {
           consecutiveFailuresRef.current++;
           updateConnectionQuality();
-          callbacksRef.current.onError?.(new Error('Channel error'));
-          scheduleReconnectRef.current?.();
-        } else if (status === 'TIMED_OUT') {
-          setIsConnected(false);
-          consecutiveFailuresRef.current++;
-          updateConnectionQuality();
-          callbacksRef.current.onError?.(new Error('Connection timeout'));
-          scheduleReconnectRef.current?.();
-        } else if (status === 'CLOSED') {
-          setIsConnected(false);
-          setConnectionQuality(ConnectionQualityType.DISCONNECTED);
-          callbacksRef.current.onDisconnect?.();
-          scheduleReconnectRef.current?.();
+
+          if (consecutiveFailuresRef.current >= CONNECTION_QUALITY_THRESHOLD) {
+            console.warn('💓 [HEARTBEAT] 多次心跳失敗，可能需要重新連線');
+            scheduleReconnectRef.current?.();
+          }
         }
-      });
-    } catch (error) {
-      setIsConnected(false);
-      setConnectionQuality(ConnectionQualityType.DISCONNECTED);
-      const errorMessage = error instanceof Error ? error : new Error('Unknown connection error');
-      callbacksRef.current.onError?.(errorMessage);
-      scheduleReconnectRef.current?.();
-    }
+
+        // 重新設定定時器
+        if (heartbeatRef.current) {
+          clearInterval(heartbeatRef.current);
+        }
+        heartbeatRef.current = setTimeout(sendHeartbeat, heartbeatInterval);
+      };
+
+      // 立即發送第一次心跳
+      sendHeartbeat();
+    };
+  }, [isConnected, userId, updateConnectionQuality]);
+
+  // 連線邏輯
+  const initializeConnectInternal = useCallback(() => {
+    connectInternalRef.current = () => {
+      if (!isMounted.current || !enabled || !tournamentId) {
+        return;
+      }
+
+      // 如果已經在連線中，不要重複連線
+      if (channelRef.current) {
+        return;
+      }
+
+      try {
+        const channelName = `tournament_${tournamentId}`;
+        const channel = supabase.channel(channelName, {
+          config: {
+            presence: {
+              key: userId,
+            },
+          },
+        });
+
+        channelRef.current = channel;
+
+        // 處理廣播訊息
+        channel.on('broadcast', { event: 'tournament_update' }, (payload: SupabaseBroadcastPayload) => {
+          if (!isMounted.current) return;
+
+          const message = payload.payload;
+
+          if (message.fromUserId === userId) {
+            return;
+          }
+
+          setLastMessage(message);
+          callbacksRef.current.onMessage?.(message);
+          updateActivity();
+        });
+
+        // 處理心跳回應
+        channel.on('broadcast', { event: 'heartbeat' }, () => {
+          updateActivity();
+        });
+
+        // Presence 事件處理
+        channel.on('presence', { event: 'sync' }, () => {
+          if (!isMounted.current) return;
+          const presenceState = channel.presenceState() as PresenceState;
+          const userCount = Object.keys(presenceState).length;
+          setOnlineCount(userCount);
+          updateActivity();
+        });
+
+        channel.on('presence', { event: 'join' }, () => {
+          if (!isMounted.current) return;
+          const presenceState = channel.presenceState() as PresenceState;
+          setOnlineCount(Object.keys(presenceState).length);
+          updateActivity();
+        });
+
+        channel.on('presence', { event: 'leave' }, () => {
+          if (!isMounted.current) return;
+          const presenceState = channel.presenceState() as PresenceState;
+          setOnlineCount(Object.keys(presenceState).length);
+        });
+
+        // 訂閱狀態處理
+        channel.subscribe(async (status: SubscriptionStatus) => {
+          if (!isMounted.current) return;
+
+          if (status === 'SUBSCRIBED') {
+            setIsConnected(true);
+            reconnectAttemptsRef.current = 0;
+            consecutiveFailuresRef.current = 0;
+            lastHeartbeatRef.current = Date.now();
+            isReconnectingRef.current = false;
+
+            const presenceData: PresenceData = {
+              userId,
+              userType: userId.startsWith('editor_') ? 'editor' : 'viewer',
+              joinTime: new Date().toISOString(),
+            };
+
+            await channel.track(presenceData);
+            callbacksRef.current.onConnect?.();
+
+            // 開始心跳檢測
+            startHeartbeatRef.current?.();
+          } else if (status === 'CHANNEL_ERROR') {
+            setIsConnected(false);
+            consecutiveFailuresRef.current++;
+            updateConnectionQuality();
+            callbacksRef.current.onError?.(new Error('Channel error'));
+            scheduleReconnectRef.current?.();
+          } else if (status === 'TIMED_OUT') {
+            setIsConnected(false);
+            consecutiveFailuresRef.current++;
+            updateConnectionQuality();
+            callbacksRef.current.onError?.(new Error('Connection timeout'));
+            scheduleReconnectRef.current?.();
+          } else if (status === 'CLOSED') {
+            setIsConnected(false);
+            setConnectionQuality(ConnectionQualityType.DISCONNECTED);
+            callbacksRef.current.onDisconnect?.();
+            scheduleReconnectRef.current?.();
+          }
+        });
+      } catch (error) {
+        setIsConnected(false);
+        setConnectionQuality(ConnectionQualityType.DISCONNECTED);
+        const errorMessage = error instanceof Error ? error : new Error('Unknown connection error');
+        callbacksRef.current.onError?.(errorMessage);
+        scheduleReconnectRef.current?.();
+      }
+    };
   }, [enabled, tournamentId, userId, updateActivity, updateConnectionQuality]);
+
+  // 初始化所有回調函數
+  useEffect(() => {
+    initializeScheduleReconnect();
+    initializeStartHeartbeat();
+    initializeConnectInternal();
+  }, [initializeScheduleReconnect, initializeStartHeartbeat, initializeConnectInternal]);
 
   // 手動重連函數
   const reconnect = useCallback(() => {
