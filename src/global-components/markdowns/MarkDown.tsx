@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 import Image from 'next/image';
 import type { Components } from 'react-markdown';
