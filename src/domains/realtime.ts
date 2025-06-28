@@ -1,4 +1,4 @@
-import { DrawingData, Match, Player, RealtimeMessageType, TournamentAction, TournamentState } from '@/domains/tournament';
+import { DrawingData, Gamer, Match, RealtimeMessageType, TournamentAction, TournamentState } from '@/domains/tournament';
 
 // WebSocket 訊息的基礎類型
 export interface BaseRealtimeMessage {
@@ -10,21 +10,21 @@ export interface BaseRealtimeMessage {
 }
 
 // 選手更新訊息 - 完整選手列表
-export interface PlayerUpdateCompleteMessage extends BaseRealtimeMessage {
-  type: RealtimeMessageType.PLAYER_UPDATE;
+export interface GamerUpdateCompleteMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.GAMER_UPDATE;
   data: {
-    players: Player[];
+    gamers: Gamer[];
     matches?: Match[];
     action?: TournamentAction;
   };
 }
 
 // 選手更新訊息 - 單個選手
-export interface PlayerUpdateSingleMessage extends BaseRealtimeMessage {
-  type: RealtimeMessageType.PLAYER_UPDATE;
+export interface GamerUpdateSingleMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.GAMER_UPDATE;
   data: {
-    playerId: number;
-    playerName: string;
+    gamerId: number;
+    gamerName: string;
     action?: TournamentAction;
   };
 }
@@ -79,8 +79,8 @@ export interface DrawingUpdateMessage extends BaseRealtimeMessage {
 
 // 聯合類型 - 所有可能的訊息類型
 export type RealtimeMessage =
-  | PlayerUpdateCompleteMessage
-  | PlayerUpdateSingleMessage
+  | GamerUpdateCompleteMessage
+  | GamerUpdateSingleMessage
   | MatchUpdateMessage
   | TournamentUpdatedMessage
   | AnnouncementMessage
@@ -104,11 +104,11 @@ export interface PresenceData {
 // 廣播更新資料類型
 export type BroadcastUpdateData =
   | {
-      type: RealtimeMessageType.PLAYER_UPDATE;
+      type: RealtimeMessageType.GAMER_UPDATE;
       data: {
-        playerId?: number;
-        playerName?: string;
-        players?: Player[];
+        gamerId?: number;
+        gamerName?: string;
+        gamers?: Gamer[];
         matches?: Match[];
         action?: TournamentAction;
         [key: string]: string | number | boolean | object | undefined;

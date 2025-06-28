@@ -4,21 +4,14 @@ import { ConnectionQualityType } from '@/app/courts/[courtCustomLink]/tournament
 import {
   AnnouncementMessage,
   DrawingUpdateMessage,
+  GamerUpdateCompleteMessage,
+  GamerUpdateSingleMessage,
   MatchUpdateMessage,
-  PlayerUpdateCompleteMessage,
-  PlayerUpdateSingleMessage,
   RealtimeMessage,
   TestUpdateMessage,
   TournamentUpdatedMessage,
 } from '@/domains/realtime';
-import {
-  Match,
-  Player,
-  RealtimeMessageType,
-  TournamentDBProps,
-  TournamentState,
-  TournamentType,
-} from '@/domains/tournament';
+import { Gamer, Match, RealtimeMessageType, TournamentDBProps, TournamentState, TournamentType } from '@/domains/tournament';
 
 interface ComposeStatusDisplayProps {
   isConnected: boolean;
@@ -26,15 +19,15 @@ interface ComposeStatusDisplayProps {
   isEditMode: boolean;
 }
 
-export const isPlayerUpdateComplete = (message: RealtimeMessage): message is PlayerUpdateCompleteMessage => {
-  return message.type === RealtimeMessageType.PLAYER_UPDATE && 'players' in (message.data || {});
+export const isGamerUpdateComplete = (message: RealtimeMessage): message is GamerUpdateCompleteMessage => {
+  return message.type === RealtimeMessageType.GAMER_UPDATE && 'gamers' in (message.data || {});
 };
 
-export const isPlayerUpdateSingle = (message: RealtimeMessage): message is PlayerUpdateSingleMessage => {
+export const isGamerUpdateSingle = (message: RealtimeMessage): message is GamerUpdateSingleMessage => {
   return (
-    message.type === RealtimeMessageType.PLAYER_UPDATE &&
-    'playerId' in (message.data || {}) &&
-    'playerName' in (message.data || {})
+    message.type === RealtimeMessageType.GAMER_UPDATE &&
+    'gamerId' in (message.data || {}) &&
+    'gamerName' in (message.data || {})
   );
 };
 
@@ -133,36 +126,36 @@ export const generateUniqueCustomLink = async (
 };
 
 export const generateTournament = ({
-  playerCount,
+  gamerCount,
   tournamentType,
 }: {
-  playerCount: number;
+  gamerCount: number;
   tournamentType: TournamentType;
 }): TournamentState => {
   // 檢查是否為2的冪次方
-  if (!Number.isInteger(Math.log2(playerCount))) {
+  if (!Number.isInteger(Math.log2(gamerCount))) {
     throw new Error('玩家數量必須是2的冪次方 (2, 4, 8, 16, 32, 64...)');
   }
 
   // 產生玩家
-  const players: Player[] = Array.from({ length: playerCount }, (_, index) => ({
+  const gamers: Gamer[] = Array.from({ length: gamerCount }, (_, index) => ({
     id: index + 1,
     name: '',
     games: 7,
   }));
 
   const matches: Match[] = [];
-  let currentRoundPlayers = playerCount;
+  let currentRoundGamers = gamerCount;
   let round = 1;
 
-  while (currentRoundPlayers > 1) {
-    const matchesInRound = currentRoundPlayers / 2;
+  while (currentRoundGamers > 1) {
+    const matchesInRound = currentRoundGamers / 2;
 
     for (let i = 0; i < matchesInRound; i++) {
       const match: Match = {
         id: `round${round}-match${i}`,
-        player1: null,
-        player2: null,
+        gamer1: null,
+        gamer2: null,
         winner: null,
         round,
         matchIndex: i,
@@ -170,20 +163,20 @@ export const generateTournament = ({
 
       // 第一輪直接分配玩家
       if (round === 1) {
-        match.player1 = players[i * 2];
-        match.player2 = players[i * 2 + 1];
+        match.gamer1 = gamers[i * 2];
+        match.gamer2 = gamers[i * 2 + 1];
       }
 
       matches.push(match);
     }
 
-    currentRoundPlayers = matchesInRound;
+    currentRoundGamers = matchesInRound;
     round++;
   }
 
   return {
-    playerCount,
-    players,
+    gamerCount,
+    gamers,
     matches,
     tournamentType,
   };

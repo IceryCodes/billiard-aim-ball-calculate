@@ -1,32 +1,31 @@
-// EditablePlayer.tsx - 可編輯選手組件
 import React, { KeyboardEvent, useCallback, useState } from 'react';
 
 import { Input } from '@/global-components/inputs/Input';
 
-import { EditablePlayerProps } from './interfaces';
+import { EditableGamerProps } from './interfaces';
 
-const EditablePlayer: React.FC<EditablePlayerProps> = ({ player, onNameChange, onDragStart, className = '' }) => {
+const EditableGamer: React.FC<EditableGamerProps> = ({ gamer, onNameChange, onDragStart, className = '' }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [tempName, setTempName] = useState(player.name);
+  const [tempName, setTempName] = useState(gamer.name);
 
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
-      onDragStart(player);
+      onDragStart(gamer);
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('application/json', JSON.stringify(player));
+      e.dataTransfer.setData('application/json', JSON.stringify(gamer));
     },
-    [onDragStart, player]
+    [onDragStart, gamer]
   );
 
   const handleDoubleClick = useCallback(() => {
     setIsEditing(true);
-    setTempName(player.name);
-  }, [player.name]);
+    setTempName(gamer.name);
+  }, [gamer.name]);
 
   const handleNameSubmit = useCallback(() => {
-    onNameChange(player.id, tempName);
+    onNameChange(gamer.id, tempName);
     setIsEditing(false);
-  }, [onNameChange, player.id, tempName]);
+  }, [onNameChange, gamer.id, tempName]);
 
   const handleKeyPress = useCallback(
     (e: KeyboardEvent) => {
@@ -34,10 +33,10 @@ const EditablePlayer: React.FC<EditablePlayerProps> = ({ player, onNameChange, o
         handleNameSubmit();
       } else if (e.key === 'Escape') {
         setIsEditing(false);
-        setTempName(player.name);
+        setTempName(gamer.name);
       }
     },
-    [handleNameSubmit, player.name]
+    [handleNameSubmit, gamer.name]
   );
 
   return (
@@ -57,11 +56,11 @@ const EditablePlayer: React.FC<EditablePlayerProps> = ({ player, onNameChange, o
         />
       ) : (
         <div className="px-4 py-2 flex justify-center items-center">
-          <span className="overflow-hidden text-ellipsis whitespace-nowrap">{player.name}</span>
+          <span className="overflow-hidden text-ellipsis whitespace-nowrap">{gamer.name}</span>
         </div>
       )}
     </div>
   );
 };
 
-export default EditablePlayer;
+export default EditableGamer;

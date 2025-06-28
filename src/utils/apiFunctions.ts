@@ -2,14 +2,14 @@ import CryptoJS from 'crypto-js';
 import { Collection, ObjectId, WithId } from 'mongodb';
 
 import { CourtDBProps } from '@/domains/court';
+import { GamerDBProps } from '@/domains/gamer';
 import { ManageDBProps, UserManageProps } from '@/domains/manage';
-import { PlayerDBProps } from '@/domains/player';
 import { UserProps, UserWithPasswordProps } from '@/domains/user';
 import {
   getCourtManagesCollection,
   getCourtsCollection,
-  getPlayerManagesCollection,
-  getPlayersCollection,
+  getGamerManagesCollection,
+  getGamersCollection,
   getUsersCollection,
 } from '@/lib/mongodb';
 
@@ -33,18 +33,18 @@ export const getUserByUserId = async (userId: string): Promise<UserProps | null>
 
 export const getManageItemsByUserId = async (userId: string): Promise<UserManageProps> => {
   // Initialize collections
-  const playerManageCollection: Collection<ManageDBProps> = await getPlayerManagesCollection();
-  const playersCollection: Collection<PlayerDBProps> = await getPlayersCollection();
+  const gamerManageCollection: Collection<ManageDBProps> = await getGamerManagesCollection();
+  const gamersCollection: Collection<GamerDBProps> = await getGamersCollection();
   const courtManageCollection: Collection<ManageDBProps> = await getCourtManagesCollection();
   const courtsCollection: Collection<CourtDBProps> = await getCourtsCollection();
 
-  // Fetch manage records for players
-  const playerManageRecords = await playerManageCollection.find({ userId }).toArray();
-  const playerIds: ObjectId[] = playerManageRecords.map((record) => new ObjectId(record.itemId));
+  // Fetch manage records for gamers
+  const gamerManageRecords = await gamerManageCollection.find({ userId }).toArray();
+  const gamerIds: ObjectId[] = gamerManageRecords.map((record) => new ObjectId(record.itemId));
 
-  const managedPlayers: WithId<PlayerDBProps>[] = await playersCollection
+  const managedGamers: WithId<GamerDBProps>[] = await gamersCollection
     .find({
-      _id: { $in: playerIds },
+      _id: { $in: gamerIds },
     })
     .toArray();
 
@@ -60,9 +60,9 @@ export const getManageItemsByUserId = async (userId: string): Promise<UserManage
 
   // Map records to IDs
   const manage: UserManageProps = {
-    players: managedPlayers.map((player) => ({
-      ...player,
-      _id: player._id.toString(),
+    gamers: managedGamers.map((gamer) => ({
+      ...gamer,
+      _id: gamer._id.toString(),
     })),
     courts: managedCourts.map((court) => ({
       ...court,
@@ -86,11 +86,11 @@ export const getManageCourtRecordsByCategoryId = async ({ id }: GetManageRecords
   return hasManager;
 };
 
-export const getManagePlayerRecordsByCategoryId = async ({ id }: GetManageRecordsByCategoryIdProps): Promise<boolean> => {
+export const getManageGamerRecordsByCategoryId = async ({ id }: GetManageRecordsByCategoryIdProps): Promise<boolean> => {
   const getCollectionAndQuery = async () => {
     return {
-      collection: await getPlayerManagesCollection(),
-      query: { player_id: id.toString() },
+      collection: await getGamerManagesCollection(),
+      query: { gamer_id: id.toString() },
     };
   };
 

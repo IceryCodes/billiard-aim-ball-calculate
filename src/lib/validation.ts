@@ -14,6 +14,7 @@ import {
   StringSchema,
 } from 'yup';
 
+import { GameTypesType } from '@/domains/gamer';
 import {
   CountyType,
   districtOptions,
@@ -22,7 +23,6 @@ import {
   GenderType,
   UserRoleType,
 } from '@/domains/interface';
-import { GameTypesType } from '@/domains/player';
 
 interface RulesProps {
   //user

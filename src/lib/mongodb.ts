@@ -1,9 +1,9 @@
 import { Collection, MongoClient } from 'mongodb';
 
 import { CourtDBProps } from '@/domains/court';
+import { GamerDBProps } from '@/domains/gamer';
 import { ManageDBProps } from '@/domains/manage';
 import { PaymentProps } from '@/domains/payment';
-import { PlayerDBProps } from '@/domains/player';
 import { TournamentDBProps } from '@/domains/tournament';
 import { UserWithPasswordProps } from '@/domains/user';
 
@@ -27,18 +27,18 @@ export const getUsersCollection = async (): Promise<Collection<Omit<UserWithPass
   return database.collection<Omit<UserWithPasswordProps, '_id'>>('users');
 };
 
-// Function to get the players collection
-export const getPlayersCollection = async (): Promise<Collection<PlayerDBProps>> => {
+// Function to get the gamers collection
+export const getGamersCollection = async (): Promise<Collection<GamerDBProps>> => {
   const client = await connectToDatabase();
   const database = client.db('billiards');
-  return database.collection<PlayerDBProps>('players');
+  return database.collection<GamerDBProps>('gamers');
 };
 
-// Function to get the players collection with geospatial index
-export const getPlayersMapCollection = async (): Promise<Collection<PlayerDBProps>> => {
+// Function to get the gamers collection with geospatial index
+export const getGamersMapCollection = async (): Promise<Collection<GamerDBProps>> => {
   const client = await connectToDatabase();
   const database = client.db('billiards');
-  const collection = database.collection<PlayerDBProps>('players');
+  const collection = database.collection<GamerDBProps>('gamers');
 
   await collection.createIndex(
     { location: '2dsphere' },
@@ -51,11 +51,11 @@ export const getPlayersMapCollection = async (): Promise<Collection<PlayerDBProp
   return collection;
 };
 
-// Function to get the player manages collection
-export const getPlayerManagesCollection = async (): Promise<Collection<ManageDBProps>> => {
+// Function to get the gamer manages collection
+export const getGamerManagesCollection = async (): Promise<Collection<ManageDBProps>> => {
   const client = await connectToDatabase();
   const database = client.db('billiards');
-  return database.collection<ManageDBProps>('player_manages');
+  return database.collection<ManageDBProps>('gamer_manages');
 };
 
 // Function to get the courts collection

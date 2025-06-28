@@ -46,7 +46,7 @@ export const generateToken = async ({ user, manage, isRegister = false }: Genera
     throw new AuthError('無效的使用者資料', 'INVALID_USER_DATA');
   }
 
-  if (!manage || !Array.isArray(manage.players)) {
+  if (!manage || !Array.isArray(manage.gamers)) {
     throw new AuthError('無效的管理資料', 'INVALID_MANAGE_DATA');
   }
 
@@ -58,9 +58,9 @@ export const generateToken = async ({ user, manage, isRegister = false }: Genera
 
   const manageForToken = {
     ...manage,
-    players: manage.players.map((player) => ({
-      ...player,
-      _id: player._id.toString(), // 確保 player._id 也是字串格式
+    gamers: manage.gamers.map((gamer) => ({
+      ...gamer,
+      _id: gamer._id.toString(), // 確保 gamer._id 也是字串格式
     })),
   };
 
@@ -122,8 +122,8 @@ export const verifyToken = async ({ token, isRegister }: VerifyTokenProps): Prom
     }
 
     // 確保 manage 物件有所有必要的欄位
-    if (!Array.isArray(decodedPayload.manage.players)) {
-      throw new AuthError('Token 中的選手資料無效', 'INVALID_PLAYERS_DATA_IN_TOKEN');
+    if (!Array.isArray(decodedPayload.manage.gamers)) {
+      throw new AuthError('Token 中的選手資料無效', 'INVALID_GAMERS_DATA_IN_TOKEN');
     }
 
     // 確保解碼後的資料中 _id 都是字串格式
@@ -134,9 +134,9 @@ export const verifyToken = async ({ token, isRegister }: VerifyTokenProps): Prom
 
     const manageWithStringIds = {
       ...decodedPayload.manage,
-      players: decodedPayload.manage.players.map((player) => ({
-        ...player,
-        _id: player._id.toString(),
+      gamers: decodedPayload.manage.gamers.map((gamer) => ({
+        ...gamer,
+        _id: gamer._id.toString(),
       })),
     };
 
@@ -179,13 +179,13 @@ export const isManagerToken = async ({ authHeader, pageId }: IsManagerTokenProps
     const token = authHeader.split(' ')[1];
     const {
       user,
-      manage: { players },
+      manage: { gamers },
     } = await verifyToken({ token });
 
     if (user.role === UserRoleType.Admin) return true;
 
-    // 確保 pageId 和 player._id 的比較都是字串格式
-    return players.some((player) => player._id.toString() === pageId.toString());
+    // 確保 pageId 和 gamer._id 的比較都是字串格式
+    return gamers.some((gamer) => gamer._id.toString() === pageId.toString());
   } catch (error) {
     console.error('Manager token verification failed:', error);
     return false;

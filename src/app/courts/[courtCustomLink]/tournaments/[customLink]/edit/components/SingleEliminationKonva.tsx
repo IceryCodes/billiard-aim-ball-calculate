@@ -6,7 +6,7 @@ import { FiberProvider } from 'its-fine';
 import Konva from 'konva';
 import { Group, Layer, Line, Rect, Stage, Text } from 'react-konva';
 
-import { Match, Player } from '@/domains/tournament';
+import { Gamer, Match } from '@/domains/tournament';
 
 import { QRCodeCanvas } from '../../components/shared/TournamentShared';
 
@@ -47,6 +47,7 @@ import {
   fullscreenPositionX,
   fullscreenPositionY,
   fullscreenScale,
+  gamerSpacing,
   headerHeight,
   highlightColor,
   mainLayerName,
@@ -55,7 +56,6 @@ import {
   optimalPositionX,
   optimalPositionY,
   optimalScale,
-  playerSpacing,
   qrCodeOffsetX,
   qrCodeOffsetY,
   qrCodeSize,
@@ -71,7 +71,7 @@ import {
   zoomStep,
 } from './constants';
 import EditableKonvaMatch from './EditableKonvaMatch';
-import { DrawingData, DrawingLine, PlayerEditState, SingleEliminationKonvaProps } from './interfaces';
+import { DrawingData, DrawingLine, GamerEditState, SingleEliminationKonvaProps } from './interfaces';
 
 interface StageConfig {
   width: number;
@@ -106,19 +106,19 @@ export interface SingleEliminationKonvaRef {
 const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleEliminationKonvaProps>(
   (
     {
-      players,
+      gamers,
       matches,
       isEditMode,
       onMatchUpdate,
       drawingData,
       onDrawingUpdate,
       editMode = EditMode.NORMAL,
-      onPlayerNameEdit,
-      onPlayerGamesEdit,
+      onGamerNameEdit,
+      onGamerGamesEdit,
     },
     ref
   ) => {
-    const rounds = Math.floor(Math.log2(players.length));
+    const rounds = Math.floor(Math.log2(gamers.length));
     const stageRef = useRef<Konva.Stage>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const drawingLayerRef = useRef<Konva.Layer>(null);
@@ -130,14 +130,14 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       drawingData || { lines: [], lastUpdated: Date.now() }
     );
     const [currentEditMode, setCurrentEditMode] = useState<EditMode>(editMode);
-    const [playerEditState, setPlayerEditState] = useState<PlayerEditState>({
-      playerId: null,
+    const [gamerEditState, setGamerEditState] = useState<GamerEditState>({
+      gamerId: null,
       tempName: '',
       isEditing: false,
     });
 
-    const firstRoundMatches = players.length / 2;
-    const matchesAreaWidth = firstRoundMatches * playerSpacing;
+    const firstRoundMatches = gamers.length / 2;
+    const matchesAreaWidth = firstRoundMatches * gamerSpacing;
     const sceneWidth = titleWidth + canvasLeftPadding + matchesAreaWidth + canvasRightPadding;
     const sceneHeight = rounds * roundHeight + headerHeight + boxHeight + canvasBottomPadding + sceneHeightExtra;
 
@@ -147,49 +147,49 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       scale: 1,
     });
 
-    const handlePlayerGamesEdit = useCallback(
-      (playerId: number, newGames: number) => {
-        if (!onPlayerNameEdit) return; // 可以重用同一個回調或創建新的
+    const handleGamerGamesEdit = useCallback(
+      (gamerId: number, newGames: number) => {
+        if (!onGamerNameEdit) return; // 可以重用同一個回調或創建新的
 
-        // 這裡需要更新 players 數組中對應 player 的 games 值
+        // 這裡需要更新 gamers 數組中對應 gamer 的 games 值
         // 實際實現會依賴於父組件如何處理這個更新
-        if (onPlayerGamesEdit) {
-          onPlayerGamesEdit(playerId, newGames);
+        if (onGamerGamesEdit) {
+          onGamerGamesEdit(gamerId, newGames);
         }
       },
-      [onPlayerGamesEdit, onPlayerNameEdit]
+      [onGamerGamesEdit, onGamerNameEdit]
     );
 
-    const handlePlayerDoubleClick = useCallback(
-      (player: Player) => {
-        if (currentEditMode !== EditMode.PLAYER_EDIT || !isEditMode) return;
+    const handleGamerDoubleClick = useCallback(
+      (gamer: Gamer) => {
+        if (currentEditMode !== EditMode.GAMER_EDIT || !isEditMode) return;
 
-        setPlayerEditState({
-          playerId: player.id,
-          tempName: player.name,
+        setGamerEditState({
+          gamerId: gamer.id,
+          tempName: gamer.name,
           isEditing: true,
         });
       },
       [currentEditMode, isEditMode]
     );
 
-    const confirmPlayerEdit = useCallback(
+    const confirmGamerEdit = useCallback(
       (newName: string) => {
-        if (!playerEditState.isEditing || !playerEditState.playerId || !onPlayerNameEdit) return;
+        if (!gamerEditState.isEditing || !gamerEditState.gamerId || !onGamerNameEdit) return;
 
-        onPlayerNameEdit(playerEditState.playerId, newName);
-        setPlayerEditState({
-          playerId: null,
+        onGamerNameEdit(gamerEditState.gamerId, newName);
+        setGamerEditState({
+          gamerId: null,
           tempName: '',
           isEditing: false,
         });
       },
-      [onPlayerNameEdit, playerEditState]
+      [onGamerNameEdit, gamerEditState]
     );
 
-    const cancelPlayerEdit = useCallback(() => {
-      setPlayerEditState({
-        playerId: null,
+    const cancelGamerEdit = useCallback(() => {
+      setGamerEditState({
+        gamerId: null,
         tempName: '',
         isEditing: false,
       });
@@ -197,25 +197,25 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
     const handleKeyDown = useCallback(
       (e: KeyboardEvent) => {
-        if (!playerEditState.isEditing) return;
+        if (!gamerEditState.isEditing) return;
 
         if (e.key === 'Enter') {
-          confirmPlayerEdit(playerEditState.tempName);
+          confirmGamerEdit(gamerEditState.tempName);
         } else if (e.key === 'Escape') {
-          cancelPlayerEdit();
+          cancelGamerEdit();
         }
       },
-      [playerEditState.isEditing, playerEditState.tempName, confirmPlayerEdit, cancelPlayerEdit]
+      [gamerEditState.isEditing, gamerEditState.tempName, confirmGamerEdit, cancelGamerEdit]
     );
 
     const handleSetEditMode = useCallback(
       (mode: EditMode) => {
         setCurrentEditMode(mode);
-        if (mode !== EditMode.PLAYER_EDIT) {
-          cancelPlayerEdit();
+        if (mode !== EditMode.GAMER_EDIT) {
+          cancelGamerEdit();
         }
       },
-      [cancelPlayerEdit]
+      [cancelGamerEdit]
     );
 
     useEffect(() => {
@@ -404,15 +404,15 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       [drawingMode]
     );
 
-    const generateSingleEliminationMatches = useCallback((playerList: Player[]): Match[] => {
+    const generateSingleEliminationMatches = useCallback((gamerList: Gamer[]): Match[] => {
       const matchList: Match[] = [];
-      const totalRounds: number = Math.floor(Math.log2(playerList.length));
+      const totalRounds: number = Math.floor(Math.log2(gamerList.length));
 
-      for (let i = 0; i < playerList.length; i += 2) {
+      for (let i = 0; i < gamerList.length; i += 2) {
         matchList.push({
           id: `round1-match${i / 2}`,
-          player1: playerList[i],
-          player2: playerList[i + 1] || null,
+          gamer1: gamerList[i],
+          gamer2: gamerList[i + 1] || null,
           winner: null,
           round: 1,
           matchIndex: i / 2,
@@ -426,8 +426,8 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         for (let i = 0; i < currentRoundMatches; i++) {
           matchList.push({
             id: `round${round}-match${i}`,
-            player1: null,
-            player2: null,
+            gamer1: null,
+            gamer2: null,
             winner: null,
             round,
             matchIndex: i,
@@ -439,23 +439,23 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     }, []);
 
     const canMatchProceed = useCallback((match: Match): boolean => {
-      return match.player1 !== null && match.player2 !== null;
+      return match.gamer1 !== null && match.gamer2 !== null;
     }, []);
 
-    const clearPlayerFromFutureMatches = useCallback(
-      (playerToClear: Player, fromRound: number, prevMatches: Match[]): Match[] => {
+    const clearGamerFromFutureMatches = useCallback(
+      (gamerToClear: Gamer, fromRound: number, prevMatches: Match[]): Match[] => {
         return prevMatches.map((match: Match): Match => {
           if (match.round > fromRound) {
             const updatedMatch: Match = { ...match };
 
-            if (updatedMatch.player1?.id === playerToClear.id) {
-              updatedMatch.player1 = null;
+            if (updatedMatch.gamer1?.id === gamerToClear.id) {
+              updatedMatch.gamer1 = null;
             }
-            if (updatedMatch.player2?.id === playerToClear.id) {
-              updatedMatch.player2 = null;
+            if (updatedMatch.gamer2?.id === gamerToClear.id) {
+              updatedMatch.gamer2 = null;
             }
 
-            if (updatedMatch.winner?.id === playerToClear.id) {
+            if (updatedMatch.winner?.id === gamerToClear.id) {
               updatedMatch.winner = null;
             }
 
@@ -468,8 +468,8 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     );
 
     const advanceWinner = useCallback(
-      (matchId: string, selectedPlayer: Player): void => {
-        if (currentEditMode === EditMode.PLAYER_EDIT) return;
+      (matchId: string, selectedGamer: Gamer): void => {
+        if (currentEditMode === EditMode.GAMER_EDIT) return;
         if (drawingMode === DrawingMode.DRAWING) return;
         if (!onMatchUpdate) return;
 
@@ -480,25 +480,25 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
           return;
         }
 
-        if (currentMatch.winner?.id === selectedPlayer.id) {
+        if (currentMatch.winner?.id === selectedGamer.id) {
           const updatedMatches: Match[] = matches.map(
             (match: Match): Match => (match.id === matchId ? { ...match, winner: null } : match)
           );
-          const finalMatches: Match[] = clearPlayerFromFutureMatches(selectedPlayer, currentMatch.round, updatedMatches);
+          const finalMatches: Match[] = clearGamerFromFutureMatches(selectedGamer, currentMatch.round, updatedMatches);
           onMatchUpdate(finalMatches);
           return;
         }
 
         let updatedMatches: Match[] = matches;
         if (currentMatch.winner) {
-          updatedMatches = clearPlayerFromFutureMatches(currentMatch.winner, currentMatch.round, matches);
+          updatedMatches = clearGamerFromFutureMatches(currentMatch.winner, currentMatch.round, matches);
         }
 
         updatedMatches = updatedMatches.map(
-          (match: Match): Match => (match.id === matchId ? { ...match, winner: selectedPlayer } : match)
+          (match: Match): Match => (match.id === matchId ? { ...match, winner: selectedGamer } : match)
         );
 
-        if (currentMatch.round < Math.floor(Math.log2(players.length))) {
+        if (currentMatch.round < Math.floor(Math.log2(gamers.length))) {
           const nextRound: number = currentMatch.round + 1;
           const nextMatchIndex: number = Math.floor(currentMatch.matchIndex / 2);
           const nextMatchId = `round${nextRound}-match${nextMatchIndex}`;
@@ -508,7 +508,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
             if (match.id === nextMatchId) {
               return {
                 ...match,
-                [isFirstSlot ? 'player1' : 'player2']: selectedPlayer,
+                [isFirstSlot ? 'gamer1' : 'gamer2']: selectedGamer,
               };
             }
             return match;
@@ -516,7 +516,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         }
         onMatchUpdate(updatedMatches);
       },
-      [currentEditMode, drawingMode, onMatchUpdate, matches, canMatchProceed, players.length, clearPlayerFromFutureMatches]
+      [currentEditMode, drawingMode, onMatchUpdate, matches, canMatchProceed, gamers.length, clearGamerFromFutureMatches]
     );
 
     const getRoundName = useCallback((roundNumber: number, totalRounds: number): string => {
@@ -537,7 +537,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         }
 
         if (round === 1) {
-          const x: number = titleWidth + canvasLeftPadding + matchIndex * playerSpacing + boxHeight;
+          const x: number = titleWidth + canvasLeftPadding + matchIndex * gamerSpacing + boxHeight;
           const y: number = headerHeight + (rounds - 1) * roundHeight + canvasBottomPadding - boxHeight + boxHeight / 2;
           positions[key] = { x, y };
         } else {
@@ -573,7 +573,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       [matchPositions]
     );
 
-    const champion = useMemo((): Player | null => {
+    const champion = useMemo((): Gamer | null => {
       const finalMatch: Match | undefined = matches.find((match: Match) => match.round === rounds);
       return finalMatch?.winner || null;
     }, [matches, rounds]);
@@ -595,11 +595,11 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
     const handleStageClick = useCallback(
       (e: Konva.KonvaEventObject<MouseEvent>) => {
-        if (playerEditState.isEditing && e.target.getClassName() !== 'Html') {
-          cancelPlayerEdit();
+        if (gamerEditState.isEditing && e.target.getClassName() !== 'Html') {
+          cancelGamerEdit();
         }
       },
-      [playerEditState.isEditing, cancelPlayerEdit]
+      [gamerEditState.isEditing, cancelGamerEdit]
     );
 
     useImperativeHandle(ref, () => ({
@@ -638,12 +638,12 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
 
     useEffect((): void => {
       if (matches.length === 0) {
-        const initialMatches: Match[] = generateSingleEliminationMatches(players);
+        const initialMatches: Match[] = generateSingleEliminationMatches(gamers);
         if (onMatchUpdate) {
           onMatchUpdate(initialMatches);
         }
       }
-    }, [generateSingleEliminationMatches, players, matches.length, onMatchUpdate]);
+    }, [generateSingleEliminationMatches, gamers, matches.length, onMatchUpdate]);
 
     return (
       <FiberProvider>
@@ -736,14 +736,14 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                     match={match}
                     x={pos.x}
                     y={pos.y + championToFinalGap}
-                    onPlayerClick={advanceWinner}
-                    onPlayerDoubleClick={handlePlayerDoubleClick}
+                    onGamerClick={advanceWinner}
+                    onGamerDoubleClick={handleGamerDoubleClick}
                     isEditMode={isEditMode && drawingMode === DrawingMode.NORMAL}
                     editMode={currentEditMode}
-                    playerEditState={playerEditState}
-                    onConfirmEdit={confirmPlayerEdit}
-                    onCancelEdit={cancelPlayerEdit}
-                    onGamesEdit={handlePlayerGamesEdit}
+                    gamerEditState={gamerEditState}
+                    onConfirmEdit={confirmGamerEdit}
+                    onCancelEdit={cancelGamerEdit}
+                    onGamesEdit={handleGamerGamesEdit}
                   />
                 );
               })}

@@ -3,11 +3,11 @@ import React, { ChangeEvent, useState } from 'react';
 import Image from 'next/image';
 import { Control, Controller } from 'react-hook-form';
 
-import { UpdatePlayerProps } from '@/domains/player';
+import { UpdateGamerProps } from '@/domains/gamer';
 import { useImageUploadMutation } from '@/features/useImageUploadMutation';
 
 interface ImageUploadProps {
-  control: Control<UpdatePlayerProps>;
+  control: Control<UpdateGamerProps>;
   defaultImage?: string;
 }
 

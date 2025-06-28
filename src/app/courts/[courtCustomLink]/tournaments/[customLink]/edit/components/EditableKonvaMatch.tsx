@@ -5,7 +5,7 @@ import { Stage as KonvaStage } from 'konva/lib/Stage';
 import { Group, Line, Rect, Text } from 'react-konva';
 import { Html } from 'react-konva-utils';
 
-import { Match, Player } from '@/domains/tournament';
+import { Gamer, Match } from '@/domains/tournament';
 
 import {
   boxHeight,
@@ -13,28 +13,28 @@ import {
   defaultStrokeWidth,
   disabledColor,
   disabledTextColor,
-  editableEmptyPlayerBoxBackgroundColor,
+  editableEmptyGamerBoxBackgroundColor,
   editingIndicatorBackgroundColor,
   editingIndicatorBorderColor,
   editingTextColor,
   EditMode,
-  emptyPlayerBoxBackgroundColor,
-  emptyPlayerBoxStrokeColor,
+  emptyGamerBoxBackgroundColor,
+  emptyGamerBoxStrokeColor,
   emptySlotColor,
+  gamerBoxBackgroundColor,
+  gamerNameFontSize,
   halfBoxWidth,
   highlightColor,
   lockIconFontSize,
   lockIconOffsetX,
   lockIconOffsetY,
   outerStrokeWidth,
-  playerBoxBackgroundColor,
-  playerNameFontSize,
   strokeColor,
   textColor,
   winnerHighlightColor,
   winnerStrokeWidth,
 } from './constants';
-import { PlayerEditState } from './interfaces';
+import { GamerEditState } from './interfaces';
 
 // 添加遊戲局數相關的常數
 const gamesBoxWidth = 50;
@@ -54,15 +54,15 @@ interface EditableKonvaMatchProps {
   y: number;
   isEditMode: boolean;
   editMode: EditMode;
-  playerEditState: PlayerEditState;
-  onPlayerClick: (matchId: string, player: Player) => void;
-  onPlayerDoubleClick: (player: Player) => void;
+  gamerEditState: GamerEditState;
+  onGamerClick: (matchId: string, gamer: Gamer) => void;
+  onGamerDoubleClick: (gamer: Gamer) => void;
   onConfirmEdit: (newValue: string) => void;
   onCancelEdit: () => void;
-  onGamesEdit?: (playerId: number, newGames: number) => void;
+  onGamesEdit?: (gamerId: number, newGames: number) => void;
 }
 
-interface PlayerTextEditorProps {
+interface GamerTextEditorProps {
   initialValue: string;
   x: number;
   y: number;
@@ -82,7 +82,7 @@ interface GamesEditorProps {
   onCancel: () => void;
 }
 
-const PlayerTextEditor: React.FC<PlayerTextEditorProps> = ({ initialValue, x, y, width, height, onConfirm, onCancel }) => {
+const GamerTextEditor: React.FC<GamerTextEditorProps> = ({ initialValue, x, y, width, height, onConfirm, onCancel }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(initialValue);
   const [hasFocused, setHasFocused] = useState(false);
@@ -161,7 +161,7 @@ const PlayerTextEditor: React.FC<PlayerTextEditorProps> = ({ initialValue, x, y,
           style={{
             width: '100%',
             height: '100%',
-            fontSize: `${Math.min(playerNameFontSize + 2, 20)}px`,
+            fontSize: `${Math.min(gamerNameFontSize + 2, 20)}px`,
             border: `2px solid ${editingIndicatorBorderColor}`,
             borderRadius: '4px',
             padding: '6px 8px',
@@ -211,7 +211,7 @@ const GamesEditor: React.FC<GamesEditorProps> = ({ initialValue, x, y, width, he
       }
     };
 
-    // 添加 onBlur 事件處理，與 PlayerTextEditor 保持一致
+    // 添加 onBlur 事件處理，與 GamerTextEditor 保持一致
     const handleBlur = () => {
       setTimeout(() => {
         const numValue = parseInt(value) || 7;
@@ -283,73 +283,73 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
   y,
   isEditMode,
   editMode,
-  playerEditState,
-  onPlayerClick,
-  onPlayerDoubleClick,
+  gamerEditState,
+  onGamerClick,
+  onGamerDoubleClick,
   onConfirmEdit,
   onCancelEdit,
   onGamesEdit,
 }) => {
-  const [editingGames, setEditingGames] = useState<{ playerId: number; side: 'left' | 'right' } | null>(null);
+  const [editingGames, setEditingGames] = useState<{ gamerId: number; side: 'left' | 'right' } | null>(null);
 
-  const canMatchProceed = match.round === 1 || (match.player1 !== null && match.player2 !== null);
-  const isPlayer1Empty = !match.player1 || !match.player1.name || match.player1.name.trim() === '';
-  const isPlayer2Empty = !match.player2 || !match.player2.name || match.player2.name.trim() === '';
-  const canClickPlayer1 = !isPlayer1Empty && canMatchProceed && editMode !== EditMode.PLAYER_EDIT;
-  const canClickPlayer2 = !isPlayer2Empty && canMatchProceed && editMode !== EditMode.PLAYER_EDIT;
+  const canMatchProceed = match.round === 1 || (match.gamer1 !== null && match.gamer2 !== null);
+  const isGamer1Empty = !match.gamer1 || !match.gamer1.name || match.gamer1.name.trim() === '';
+  const isGamer2Empty = !match.gamer2 || !match.gamer2.name || match.gamer2.name.trim() === '';
+  const canClickGamer1 = !isGamer1Empty && canMatchProceed && editMode !== EditMode.GAMER_EDIT;
+  const canClickGamer2 = !isGamer2Empty && canMatchProceed && editMode !== EditMode.GAMER_EDIT;
 
-  const handlePlayer1Click = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT) return;
-    if (!isPlayer1Empty && canClickPlayer1 && match.player1) {
-      onPlayerClick(match.id, match.player1);
+  const handleGamer1Click = useCallback(() => {
+    if (editMode === EditMode.GAMER_EDIT) return;
+    if (!isGamer1Empty && canClickGamer1 && match.gamer1) {
+      onGamerClick(match.id, match.gamer1);
     }
-  }, [match.id, match.player1, onPlayerClick, canClickPlayer1, editMode, isPlayer1Empty]);
+  }, [match.id, match.gamer1, onGamerClick, canClickGamer1, editMode, isGamer1Empty]);
 
-  const handlePlayer2Click = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT) return;
-    if (!isPlayer2Empty && canClickPlayer2 && match.player2) {
-      onPlayerClick(match.id, match.player2);
+  const handleGamer2Click = useCallback(() => {
+    if (editMode === EditMode.GAMER_EDIT) return;
+    if (!isGamer2Empty && canClickGamer2 && match.gamer2) {
+      onGamerClick(match.id, match.gamer2);
     }
-  }, [match.id, match.player2, onPlayerClick, canClickPlayer2, editMode, isPlayer2Empty]);
+  }, [match.id, match.gamer2, onGamerClick, canClickGamer2, editMode, isGamer2Empty]);
 
-  const handlePlayer1DoubleClick = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT) {
-      const playerToEdit = match.player1 || {
+  const handleGamer1DoubleClick = useCallback(() => {
+    if (editMode === EditMode.GAMER_EDIT) {
+      const gamerToEdit = match.gamer1 || {
         id: -Math.abs(parseInt(match.id) * 10 + 1),
         name: '',
         games: 7,
       };
-      onPlayerDoubleClick(playerToEdit);
+      onGamerDoubleClick(gamerToEdit);
     }
-  }, [match.player1, match.id, onPlayerDoubleClick, editMode]);
+  }, [match.gamer1, match.id, onGamerDoubleClick, editMode]);
 
-  const handlePlayer2DoubleClick = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT) {
-      const playerToEdit = match.player2 || {
+  const handleGamer2DoubleClick = useCallback(() => {
+    if (editMode === EditMode.GAMER_EDIT) {
+      const gamerToEdit = match.gamer2 || {
         id: -Math.abs(parseInt(match.id) * 10 + 2),
         name: '',
         games: 7,
       };
-      onPlayerDoubleClick(playerToEdit);
+      onGamerDoubleClick(gamerToEdit);
     }
-  }, [match.player2, match.id, onPlayerDoubleClick, editMode]);
+  }, [match.gamer2, match.id, onGamerDoubleClick, editMode]);
 
   const handleGames1DoubleClick = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT && match.player1 && onGamesEdit) {
-      setEditingGames({ playerId: match.player1.id, side: 'left' });
+    if (editMode === EditMode.GAMER_EDIT && match.gamer1 && onGamesEdit) {
+      setEditingGames({ gamerId: match.gamer1.id, side: 'left' });
     }
-  }, [editMode, match.player1, onGamesEdit]);
+  }, [editMode, match.gamer1, onGamesEdit]);
 
   const handleGames2DoubleClick = useCallback(() => {
-    if (editMode === EditMode.PLAYER_EDIT && match.player2 && onGamesEdit) {
-      setEditingGames({ playerId: match.player2.id, side: 'right' });
+    if (editMode === EditMode.GAMER_EDIT && match.gamer2 && onGamesEdit) {
+      setEditingGames({ gamerId: match.gamer2.id, side: 'right' });
     }
-  }, [editMode, match.player2, onGamesEdit]);
+  }, [editMode, match.gamer2, onGamesEdit]);
 
   const handleGamesConfirm = useCallback(
     (newGames: number) => {
       if (editingGames && onGamesEdit) {
-        onGamesEdit(editingGames.playerId, newGames);
+        onGamesEdit(editingGames.gamerId, newGames);
       }
       setEditingGames(null);
     },
@@ -360,29 +360,29 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     setEditingGames(null);
   }, []);
 
-  const isEditingPlayer1 =
-    playerEditState.isEditing &&
-    ((match.player1 !== null && playerEditState.playerId === match.player1.id) ||
-      playerEditState.playerId === -Math.abs(parseInt(match.id) * 10 + 1));
-  const isEditingPlayer2 =
-    playerEditState.isEditing &&
-    ((match.player2 !== null && playerEditState.playerId === match.player2.id) ||
-      playerEditState.playerId === -Math.abs(parseInt(match.id) * 10 + 2));
+  const isEditingGamer1 =
+    gamerEditState.isEditing &&
+    ((match.gamer1 !== null && gamerEditState.gamerId === match.gamer1.id) ||
+      gamerEditState.gamerId === -Math.abs(parseInt(match.id) * 10 + 1));
+  const isEditingGamer2 =
+    gamerEditState.isEditing &&
+    ((match.gamer2 !== null && gamerEditState.gamerId === match.gamer2.id) ||
+      gamerEditState.gamerId === -Math.abs(parseInt(match.id) * 10 + 2));
 
   const isEditingGames1 = editingGames?.side === 'left';
   const isEditingGames2 = editingGames?.side === 'right';
 
-  const getPlayerBoxStyle = (player: Player | null, isWinner: boolean, canClick: boolean, isEmpty: boolean) => {
-    if (isEmpty && editMode !== EditMode.PLAYER_EDIT) {
+  const getGamerBoxStyle = (gamer: Gamer | null, isWinner: boolean, canClick: boolean, isEmpty: boolean) => {
+    if (isEmpty && editMode !== EditMode.GAMER_EDIT) {
       return {
-        fill: emptyPlayerBoxBackgroundColor,
-        stroke: emptyPlayerBoxStrokeColor,
+        fill: emptyGamerBoxBackgroundColor,
+        stroke: emptyGamerBoxStrokeColor,
         strokeWidth: defaultStrokeWidth,
         cursor: 'default',
       };
     }
 
-    if (!player) {
+    if (!gamer) {
       return {
         fill: emptySlotColor,
         stroke: strokeColor,
@@ -391,10 +391,10 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       };
     }
 
-    if (editMode === EditMode.PLAYER_EDIT) {
+    if (editMode === EditMode.GAMER_EDIT) {
       if (isEmpty) {
         return {
-          fill: editableEmptyPlayerBoxBackgroundColor,
+          fill: editableEmptyGamerBoxBackgroundColor,
           stroke: strokeColor,
           strokeWidth: defaultStrokeWidth,
           cursor: 'text',
@@ -409,7 +409,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         };
       }
       return {
-        fill: playerBoxBackgroundColor,
+        fill: gamerBoxBackgroundColor,
         stroke: strokeColor,
         strokeWidth: defaultStrokeWidth,
         cursor: 'text',
@@ -435,19 +435,19 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
     }
 
     return {
-      fill: playerBoxBackgroundColor,
+      fill: gamerBoxBackgroundColor,
       stroke: strokeColor,
       strokeWidth: defaultStrokeWidth,
       cursor: 'pointer',
     };
   };
 
-  const getTextStyle = (player: Player | null, canClick: boolean, isEmpty: boolean) => {
+  const getTextStyle = (gamer: Gamer | null, canClick: boolean, isEmpty: boolean) => {
     if (isEmpty) {
-      if (editMode === EditMode.PLAYER_EDIT) {
+      if (editMode === EditMode.GAMER_EDIT) {
         return {
           fill: disabledTextColor,
-          text: player?.name || '空籤',
+          text: gamer?.name || '空籤',
         };
       }
       return {
@@ -456,47 +456,47 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
       };
     }
 
-    if (!player) {
+    if (!gamer) {
       return {
         fill: disabledTextColor,
         text: '待定',
       };
     }
 
-    if (editMode === EditMode.PLAYER_EDIT) {
+    if (editMode === EditMode.GAMER_EDIT) {
       return {
         fill: textColor,
-        text: player.name,
+        text: gamer.name,
       };
     }
 
     if (!canClick) {
       return {
         fill: disabledTextColor,
-        text: player.name,
+        text: gamer.name,
       };
     }
 
     return {
       fill: textColor,
-      text: player.name,
+      text: gamer.name,
     };
   };
 
-  const player1Style = getPlayerBoxStyle(
-    match.player1,
-    !!(match.winner && match.player1 && match.winner.id === match.player1.id),
-    canClickPlayer1,
-    isPlayer1Empty
+  const gamer1Style = getGamerBoxStyle(
+    match.gamer1,
+    !!(match.winner && match.gamer1 && match.winner.id === match.gamer1.id),
+    canClickGamer1,
+    isGamer1Empty
   );
-  const player2Style = getPlayerBoxStyle(
-    match.player2,
-    !!(match.winner && match.player2 && match.winner.id === match.player2.id),
-    canClickPlayer2,
-    isPlayer2Empty
+  const gamer2Style = getGamerBoxStyle(
+    match.gamer2,
+    !!(match.winner && match.gamer2 && match.winner.id === match.gamer2.id),
+    canClickGamer2,
+    isGamer2Empty
   );
-  const player1TextStyle = getTextStyle(match.player1, canClickPlayer1, isPlayer1Empty);
-  const player2TextStyle = getTextStyle(match.player2, canClickPlayer2, isPlayer2Empty);
+  const gamer1TextStyle = getTextStyle(match.gamer1, canClickGamer1, isGamer1Empty);
+  const gamer2TextStyle = getTextStyle(match.gamer2, canClickGamer2, isGamer2Empty);
 
   const handleMouseEnter = useCallback(
     (e: KonvaEventObject<MouseEvent>, cursor: string) => {
@@ -536,34 +536,34 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         y={y}
         width={halfBoxWidth}
         height={boxHeight}
-        fill={player1Style.fill}
+        fill={gamer1Style.fill}
         stroke="transparent"
         strokeWidth={0}
         onClick={(e: KonvaEventObject<MouseEvent>) => {
-          if (playerEditState.isEditing) {
+          if (gamerEditState.isEditing) {
             e.evt.stopPropagation();
             return;
           }
-          if (editMode !== EditMode.PLAYER_EDIT && isPlayer1Empty) {
+          if (editMode !== EditMode.GAMER_EDIT && isGamer1Empty) {
             return;
           }
-          handlePlayer1Click();
+          handleGamer1Click();
         }}
         onDblClick={(e: KonvaEventObject<MouseEvent>) => {
-          if (editMode === EditMode.PLAYER_EDIT) {
+          if (editMode === EditMode.GAMER_EDIT) {
             e.evt.preventDefault();
             e.evt.stopPropagation();
-            handlePlayer1DoubleClick();
+            handleGamer1DoubleClick();
           }
         }}
-        onTap={handlePlayer1Click}
-        onMouseEnter={(e: KonvaEventObject<MouseEvent>) => handleMouseEnter(e, player1Style.cursor)}
+        onTap={handleGamer1Click}
+        onMouseEnter={(e: KonvaEventObject<MouseEvent>) => handleMouseEnter(e, gamer1Style.cursor)}
         onMouseLeave={handleMouseLeave}
       />
 
-      {isEditingPlayer1 && (
-        <PlayerTextEditor
-          initialValue={playerEditState.tempName}
+      {isEditingGamer1 && (
+        <GamerTextEditor
+          initialValue={gamerEditState.tempName}
           x={x}
           y={y}
           width={halfBoxWidth}
@@ -573,45 +573,45 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         />
       )}
 
-      {!isEditingPlayer1 &&
-        Array.from(player1TextStyle.text).map((text: string, index: number) => (
+      {!isEditingGamer1 &&
+        Array.from(gamer1TextStyle.text).map((text: string, index: number) => (
           <Text
-            key={`player1-${index}`}
+            key={`gamer1-${index}`}
             x={x}
-            y={y + boxHeight / 4 + index * (playerNameFontSize + 2)}
+            y={y + boxHeight / 4 + index * (gamerNameFontSize + 2)}
             text={text}
-            fontSize={playerNameFontSize}
-            fill={player1TextStyle.fill}
+            fontSize={gamerNameFontSize}
+            fill={gamer1TextStyle.fill}
             width={halfBoxWidth}
             onClick={(e: KonvaEventObject<MouseEvent>) => {
-              if (editMode === EditMode.PLAYER_EDIT) {
+              if (editMode === EditMode.GAMER_EDIT) {
                 e.evt.stopPropagation();
                 return;
               }
-              if (!isPlayer1Empty) {
-                handlePlayer1Click();
+              if (!isGamer1Empty) {
+                handleGamer1Click();
               }
             }}
             onDblClick={(e: KonvaEventObject<MouseEvent>) => {
-              if (editMode === EditMode.PLAYER_EDIT) {
+              if (editMode === EditMode.GAMER_EDIT) {
                 e.evt.preventDefault();
                 e.evt.stopPropagation();
-                handlePlayer1DoubleClick();
+                handleGamer1DoubleClick();
               }
             }}
             onTap={() => {
-              if (editMode === EditMode.PLAYER_EDIT) {
+              if (editMode === EditMode.GAMER_EDIT) {
                 return;
               }
-              if (!isPlayer1Empty) {
-                handlePlayer1Click();
+              if (!isGamer1Empty) {
+                handleGamer1Click();
               }
             }}
             ellipsis
             wrap="none"
             align="center"
             verticalAlign="middle"
-            listening={editMode === EditMode.PLAYER_EDIT}
+            listening={editMode === EditMode.GAMER_EDIT}
           />
         ))}
 
@@ -626,34 +626,34 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         y={y}
         width={halfBoxWidth}
         height={boxHeight}
-        fill={player2Style.fill}
+        fill={gamer2Style.fill}
         stroke="transparent"
         strokeWidth={0}
         onClick={(e: KonvaEventObject<MouseEvent>) => {
-          if (playerEditState.isEditing) {
+          if (gamerEditState.isEditing) {
             e.evt.stopPropagation();
             return;
           }
-          if (editMode !== EditMode.PLAYER_EDIT && isPlayer2Empty) {
+          if (editMode !== EditMode.GAMER_EDIT && isGamer2Empty) {
             return;
           }
-          handlePlayer2Click();
+          handleGamer2Click();
         }}
         onDblClick={(e: KonvaEventObject<MouseEvent>) => {
-          if (editMode === EditMode.PLAYER_EDIT) {
+          if (editMode === EditMode.GAMER_EDIT) {
             e.evt.preventDefault();
             e.evt.stopPropagation();
-            handlePlayer2DoubleClick();
+            handleGamer2DoubleClick();
           }
         }}
-        onTap={handlePlayer2Click}
-        onMouseEnter={(e: KonvaEventObject<MouseEvent>) => handleMouseEnter(e, player2Style.cursor)}
+        onTap={handleGamer2Click}
+        onMouseEnter={(e: KonvaEventObject<MouseEvent>) => handleMouseEnter(e, gamer2Style.cursor)}
         onMouseLeave={handleMouseLeave}
       />
 
-      {isEditingPlayer2 && (
-        <PlayerTextEditor
-          initialValue={playerEditState.tempName}
+      {isEditingGamer2 && (
+        <GamerTextEditor
+          initialValue={gamerEditState.tempName}
           x={x + halfBoxWidth}
           y={y}
           width={halfBoxWidth}
@@ -663,45 +663,45 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         />
       )}
 
-      {!isEditingPlayer2 &&
-        Array.from(player2TextStyle.text).map((text: string, index: number) => (
+      {!isEditingGamer2 &&
+        Array.from(gamer2TextStyle.text).map((text: string, index: number) => (
           <Text
-            key={`player2-${index}`}
+            key={`gamer2-${index}`}
             x={x + halfBoxWidth}
-            y={y + boxHeight / 4 + index * (playerNameFontSize + 2)}
+            y={y + boxHeight / 4 + index * (gamerNameFontSize + 2)}
             text={text}
-            fontSize={playerNameFontSize}
-            fill={player2TextStyle.fill}
+            fontSize={gamerNameFontSize}
+            fill={gamer2TextStyle.fill}
             width={halfBoxWidth}
             onClick={(e: KonvaEventObject<MouseEvent>) => {
-              if (editMode === EditMode.PLAYER_EDIT) {
+              if (editMode === EditMode.GAMER_EDIT) {
                 e.evt.stopPropagation();
                 return;
               }
-              if (!isPlayer2Empty) {
-                handlePlayer2Click();
+              if (!isGamer2Empty) {
+                handleGamer2Click();
               }
             }}
             onDblClick={(e: KonvaEventObject<MouseEvent>) => {
-              if (editMode === EditMode.PLAYER_EDIT) {
+              if (editMode === EditMode.GAMER_EDIT) {
                 e.evt.preventDefault();
                 e.evt.stopPropagation();
-                handlePlayer2DoubleClick();
+                handleGamer2DoubleClick();
               }
             }}
             onTap={() => {
-              if (editMode === EditMode.PLAYER_EDIT) {
+              if (editMode === EditMode.GAMER_EDIT) {
                 return;
               }
-              if (!isPlayer2Empty) {
-                handlePlayer2Click();
+              if (!isGamer2Empty) {
+                handleGamer2Click();
               }
             }}
             ellipsis
             wrap="none"
             align="center"
             verticalAlign="middle"
-            listening={editMode === EditMode.PLAYER_EDIT}
+            listening={editMode === EditMode.GAMER_EDIT}
           />
         ))}
 
@@ -714,20 +714,20 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
             y={y + boxHeight + gamesBoxMarginTop}
             width={gamesBoxWidth}
             height={gamesBoxHeight}
-            fill={editMode === EditMode.PLAYER_EDIT ? editableGamesBoxBackgroundColor : gamesBoxBackgroundColor}
+            fill={editMode === EditMode.GAMER_EDIT ? editableGamesBoxBackgroundColor : gamesBoxBackgroundColor}
             stroke={gamesBoxBorderColor}
             strokeWidth={1}
             cornerRadius={4}
             onDblClick={handleGames1DoubleClick}
             onMouseEnter={(e: KonvaEventObject<MouseEvent>) =>
-              handleMouseEnter(e, editMode === EditMode.PLAYER_EDIT ? 'text' : 'default')
+              handleMouseEnter(e, editMode === EditMode.GAMER_EDIT ? 'text' : 'default')
             }
             onMouseLeave={handleMouseLeave}
           />
 
-          {isEditingGames1 && match.player1 ? (
+          {isEditingGames1 && match.gamer1 ? (
             <GamesEditor
-              initialValue={match.player1.games || 7}
+              initialValue={match.gamer1.games || 7}
               x={x + (halfBoxWidth - gamesBoxWidth) / 2}
               y={y + boxHeight + gamesBoxMarginTop}
               width={gamesBoxWidth}
@@ -741,7 +741,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
               y={y + boxHeight + gamesBoxMarginTop}
               width={gamesBoxWidth}
               height={gamesBoxHeight}
-              text={(match.player1?.games || 7).toString()}
+              text={(match.gamer1?.games || 7).toString()}
               fontSize={gamesFontSize}
               fill={gamesBoxTextColor}
               align="center"
@@ -756,20 +756,20 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
             y={y + boxHeight + gamesBoxMarginTop}
             width={gamesBoxWidth}
             height={gamesBoxHeight}
-            fill={editMode === EditMode.PLAYER_EDIT ? editableGamesBoxBackgroundColor : gamesBoxBackgroundColor}
+            fill={editMode === EditMode.GAMER_EDIT ? editableGamesBoxBackgroundColor : gamesBoxBackgroundColor}
             stroke={gamesBoxBorderColor}
             strokeWidth={1}
             cornerRadius={4}
             onDblClick={handleGames2DoubleClick}
             onMouseEnter={(e: KonvaEventObject<MouseEvent>) =>
-              handleMouseEnter(e, editMode === EditMode.PLAYER_EDIT ? 'text' : 'default')
+              handleMouseEnter(e, editMode === EditMode.GAMER_EDIT ? 'text' : 'default')
             }
             onMouseLeave={handleMouseLeave}
           />
 
-          {isEditingGames2 && match.player2 ? (
+          {isEditingGames2 && match.gamer2 ? (
             <GamesEditor
-              initialValue={match.player2.games || 7}
+              initialValue={match.gamer2.games || 7}
               x={x + halfBoxWidth + (halfBoxWidth - gamesBoxWidth) / 2}
               y={y + boxHeight + gamesBoxMarginTop}
               width={gamesBoxWidth}
@@ -783,7 +783,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
               y={y + boxHeight + gamesBoxMarginTop}
               width={gamesBoxWidth}
               height={gamesBoxHeight}
-              text={(match.player2?.games || 7).toString()}
+              text={(match.gamer2?.games || 7).toString()}
               fontSize={gamesFontSize}
               fill={gamesBoxTextColor}
               align="center"
@@ -794,7 +794,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         </Group>
       )}
 
-      {match.winner && match.player1 && match.winner.id === match.player1.id && (
+      {match.winner && match.gamer1 && match.winner.id === match.gamer1.id && (
         <Rect
           x={x + defaultStrokeWidth}
           y={y + defaultStrokeWidth}
@@ -807,7 +807,7 @@ const EditableKonvaMatch: React.FC<EditableKonvaMatchProps> = ({
         />
       )}
 
-      {match.winner && match.player2 && match.winner.id === match.player2.id && (
+      {match.winner && match.gamer2 && match.winner.id === match.gamer2.id && (
         <Rect
           x={x + halfBoxWidth + defaultStrokeWidth}
           y={y + defaultStrokeWidth}

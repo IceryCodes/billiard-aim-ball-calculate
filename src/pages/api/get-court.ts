@@ -5,7 +5,7 @@ import { CourtDBProps, CourtProps } from '@/domains/court';
 import { getCourtsCollection } from '@/lib/mongodb';
 import { GetCourtReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
-import { getManagePlayerRecordsByCategoryId } from '@/utils/apiFunctions';
+import { getManageGamerRecordsByCategoryId } from '@/utils/apiFunctions';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtReturnType>) => {
   const { customLink } = req.query;
@@ -24,7 +24,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtReturnT
 
     const manage = !!(
       court &&
-      (await getManagePlayerRecordsByCategoryId({
+      (await getManageGamerRecordsByCategoryId({
         id: court._id,
       }))
     );

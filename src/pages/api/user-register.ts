@@ -53,7 +53,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UserLoginReturn
       user: { _id: userId.toString(), ...newUser },
       manage: {
         courts: [],
-        players: [],
+        gamers: [],
       },
       isRegister: true,
     });

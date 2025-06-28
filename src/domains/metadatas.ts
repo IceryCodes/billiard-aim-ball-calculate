@@ -1,11 +1,11 @@
 import { CourtProps } from './court';
+import { GamerProps } from './gamer';
 import { getPageUrlByType, PageType } from './interface';
-import { PlayerProps } from './player';
 import { TournamentProps } from './tournament';
 
 interface GetDescriptionProps {
   currentPath: string;
-  data?: CourtProps | PlayerProps | TournamentProps;
+  data?: CourtProps | GamerProps | TournamentProps;
 }
 
 interface MetadataInfoProps {
@@ -15,7 +15,7 @@ interface MetadataInfoProps {
   keywords?: string[];
   email?: string;
   featuredImage?: string;
-  data?: CourtProps | PlayerProps | TournamentProps;
+  data?: CourtProps | GamerProps | TournamentProps;
 }
 
 interface MetadataInfoTournamentProps {
@@ -29,7 +29,7 @@ interface MetadataInfoTournamentProps {
 
 export const defaultCourtExcerpt = ({ title }: CourtProps): string => `${title}`;
 
-export const defaultPlayerExcerpt = ({ title }: PlayerProps): string => `${title}`;
+export const defaultGamerExcerpt = ({ title }: GamerProps): string => `${title}`;
 
 export const getDescription = ({ currentPath }: GetDescriptionProps): string => {
   switch (true) {

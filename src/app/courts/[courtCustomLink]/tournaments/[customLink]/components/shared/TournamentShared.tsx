@@ -206,8 +206,8 @@ export const TournamentDisplay = ({
   isEditMode = false,
   drawingData,
   onDrawingUpdate,
-  onPlayerNameEdit,
-  onPlayerGamesEdit,
+  onGamerNameEdit,
+  onGamerGamesEdit,
 }: TournamentDisplayProps): ReactElement => {
   const router = useRouter();
 
@@ -218,12 +218,12 @@ export const TournamentDisplay = ({
   const [editMode, setEditMode] = useState<EditMode>(EditMode.NORMAL);
   const konvaRef = useRef<SingleEliminationKonvaRef>(null);
 
-  const validPlayersCount = useMemo(() => {
-    return tournament.players.filter((player) => !!player.name).length;
-  }, [tournament.players]);
+  const validGamersCount = useMemo(() => {
+    return tournament.gamers.filter((gamer) => !!gamer.name).length;
+  }, [tournament.gamers]);
 
   const toggleEditMode = useCallback(() => {
-    const newMode = editMode === EditMode.NORMAL ? EditMode.PLAYER_EDIT : EditMode.NORMAL;
+    const newMode = editMode === EditMode.NORMAL ? EditMode.GAMER_EDIT : EditMode.NORMAL;
     setEditMode(newMode);
     konvaRef.current?.setEditMode(newMode);
   }, [editMode]);
@@ -294,7 +294,7 @@ export const TournamentDisplay = ({
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-3 sm:px-6 pt-3 sm:pt-4 pb-2 gap-2 sm:gap-0">
             <div className="flex gap-x-2 items-center">
               <h3 className="text-base sm:text-lg font-semibold text-background">
-                {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
+                {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validGamersCount}/${tournament.gamerCount}人)`}
               </h3>
               {!isEditMode && (
                 <ManagerCourtProtected pageId={tournamentData.courtCustomLink}>
@@ -352,14 +352,14 @@ export const TournamentDisplay = ({
                       <button
                         onClick={toggleEditMode}
                         className={`px-2 py-1 rounded text-xs font-medium ${
-                          editMode === EditMode.PLAYER_EDIT
+                          editMode === EditMode.GAMER_EDIT
                             ? 'bg-blue-100 hover:bg-blue-200 text-blue-600'
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                         }`}
-                        title={editMode === EditMode.PLAYER_EDIT ? '完成編輯' : '編輯選手'}
+                        title={editMode === EditMode.GAMER_EDIT ? '完成編輯' : '編輯選手'}
                         disabled={drawingMode === DrawingMode.DRAWING}
                       >
-                        {editMode === EditMode.PLAYER_EDIT ? '✅ 完成' : '✏️ 編輯選手'}
+                        {editMode === EditMode.GAMER_EDIT ? '✅ 完成' : '✏️ 編輯選手'}
                       </button>
 
                       <button
@@ -402,15 +402,15 @@ export const TournamentDisplay = ({
             {tournament.tournamentType === TournamentType.SINGLE && (
               <SingleEliminationKonva
                 ref={konvaRef}
-                players={tournament.players}
+                gamers={tournament.gamers}
                 matches={tournament.matches}
                 onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
                 isEditMode={isEditMode}
                 drawingData={drawingData}
                 onDrawingUpdate={onDrawingUpdate}
                 editMode={editMode}
-                onPlayerNameEdit={onPlayerNameEdit}
-                onPlayerGamesEdit={onPlayerGamesEdit}
+                onGamerNameEdit={onGamerNameEdit}
+                onGamerGamesEdit={onGamerGamesEdit}
               />
             )}
 
@@ -436,7 +436,7 @@ export const TournamentDisplay = ({
               <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
                 {isMobile
                   ? `${title}`
-                  : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validPlayersCount}/${tournament.playerCount}人)`}
+                  : `${courtTitle} ${title} ${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validGamersCount}/${tournament.gamerCount}人)`}
               </h3>
               .........
               {!isEditMode && (
@@ -522,7 +522,7 @@ export const TournamentDisplay = ({
             {tournament.tournamentType === TournamentType.SINGLE && (
               <SingleEliminationKonva
                 ref={konvaRef}
-                players={tournament.players}
+                gamers={tournament.gamers}
                 matches={tournament.matches}
                 onMatchUpdate={isEditMode ? onMatchUpdate : undefined}
                 isEditMode={isEditMode}

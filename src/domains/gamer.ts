@@ -17,7 +17,7 @@ interface LicenseProps {
   date: Date;
 }
 
-export interface PlayerProps {
+export interface GamerProps {
   _id: string;
   partner: boolean;
   orgCode: string;
@@ -41,11 +41,11 @@ export interface PlayerProps {
   updatedAt: Date;
 }
 
-export interface GetPlayerDto {
+export interface GetGamerDto {
   customLink: string;
 }
 
-export interface GetPlayersDto {
+export interface GetGamersDto {
   query: string;
   county: string;
   gameTypes: GameTypesType;
@@ -56,15 +56,15 @@ export interface GetPlayersDto {
   limit?: number;
 }
 
-export type UpdatePlayerProps = Omit<
-  PlayerProps,
+export type UpdateGamerProps = Omit<
+  GamerProps,
   '_id' | 'createdAt' | 'updatedAt' | 'fullDay' | 'surgery' | 'location' | 'licenseDate' | 'licenseType'
 >;
-export interface UpdatePlayerDto extends UpdatePlayerProps, Pick<PlayerProps, '_id'> {}
-export type CreatePlayerDto = UpdatePlayerProps;
-export type DeletePlayerDto = Pick<PlayerProps, '_id'>;
-export type UpdatePlayerViewDto = Pick<PlayerProps, '_id'>;
+export interface UpdateGamerDto extends UpdateGamerProps, Pick<GamerProps, '_id'> {}
+export type CreateGamerDto = UpdateGamerProps;
+export type DeleteGamerDto = Pick<GamerProps, '_id'>;
+export type UpdateGamerViewDto = Pick<GamerProps, '_id'>;
 
-export interface PlayerDBProps extends Omit<PlayerProps, '_id'> {
+export interface GamerDBProps extends Omit<GamerProps, '_id'> {
   _id: ObjectId;
 }
