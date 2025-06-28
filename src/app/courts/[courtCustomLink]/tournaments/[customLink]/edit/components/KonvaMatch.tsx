@@ -4,7 +4,7 @@ import React, { useCallback } from 'react';
 
 import { Group, Line, Rect, Text } from 'react-konva';
 
-import { Player } from '@/domains/tournament';
+import { Gamer } from '@/domains/tournament';
 
 import {
   boxHeight,
@@ -13,13 +13,13 @@ import {
   disabledColor,
   disabledTextColor,
   emptySlotColor,
+  gamerNameFontSize,
   halfBoxWidth,
   highlightColor,
   lockIconFontSize,
   lockIconOffsetX,
   lockIconOffsetY,
   outerStrokeWidth,
-  playerNameFontSize,
   strokeColor,
   textColor,
   winnerHighlightColor,
@@ -27,26 +27,26 @@ import {
 } from './constants';
 import { KonvaMatchProps } from './interfaces';
 
-const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlayerClick }) => {
-  const canMatchProceed = match.round === 1 || (match.player1 !== null && match.player2 !== null);
+const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onGamerClick }) => {
+  const canMatchProceed = match.round === 1 || (match.gamer1 !== null && match.gamer2 !== null);
 
-  const canClickPlayer1 = match.player1 !== null && canMatchProceed;
-  const canClickPlayer2 = match.player2 !== null && canMatchProceed;
+  const canClickGamer1 = match.gamer1 !== null && canMatchProceed;
+  const canClickGamer2 = match.gamer2 !== null && canMatchProceed;
 
-  const handlePlayer1Click = useCallback(() => {
-    if (canClickPlayer1 && match.player1) {
-      onPlayerClick(match.id, match.player1);
+  const handleGamer1Click = useCallback(() => {
+    if (canClickGamer1 && match.gamer1) {
+      onGamerClick(match.id, match.gamer1);
     }
-  }, [match.id, match.player1, onPlayerClick, canClickPlayer1]);
+  }, [match.id, match.gamer1, onGamerClick, canClickGamer1]);
 
-  const handlePlayer2Click = useCallback(() => {
-    if (canClickPlayer2 && match.player2) {
-      onPlayerClick(match.id, match.player2);
+  const handleGamer2Click = useCallback(() => {
+    if (canClickGamer2 && match.gamer2) {
+      onGamerClick(match.id, match.gamer2);
     }
-  }, [match.id, match.player2, onPlayerClick, canClickPlayer2]);
+  }, [match.id, match.gamer2, onGamerClick, canClickGamer2]);
 
-  const getPlayerBoxStyle = (player: Player | null, isWinner: boolean, canClick: boolean) => {
-    if (!player) {
+  const getGamerBoxStyle = (gamer: Gamer | null, isWinner: boolean, canClick: boolean) => {
+    if (!gamer) {
       return {
         fill: emptySlotColor,
         stroke: strokeColor,
@@ -81,8 +81,8 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
     };
   };
 
-  const getTextStyle = (player: Player | null, canClick: boolean) => {
-    if (!player) {
+  const getTextStyle = (gamer: Gamer | null, canClick: boolean) => {
+    if (!gamer) {
       return {
         fill: disabledTextColor,
         text: '待定',
@@ -92,21 +92,21 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
     if (!canClick) {
       return {
         fill: disabledTextColor,
-        text: player.name,
+        text: gamer.name,
       };
     }
 
     return {
       fill: textColor,
-      text: player.name,
+      text: gamer.name,
     };
   };
 
-  const player1Style = getPlayerBoxStyle(match.player1, match.winner?.id === match.player1?.id, canClickPlayer1);
-  const player2Style = getPlayerBoxStyle(match.player2, match.winner?.id === match.player2?.id, canClickPlayer2);
+  const gamer1Style = getGamerBoxStyle(match.gamer1, match.winner?.id === match.gamer1?.id, canClickGamer1);
+  const gamer2Style = getGamerBoxStyle(match.gamer2, match.winner?.id === match.gamer2?.id, canClickGamer2);
 
-  const player1TextStyle = getTextStyle(match.player1, canClickPlayer1);
-  const player2TextStyle = getTextStyle(match.player2, canClickPlayer2);
+  const gamer1TextStyle = getTextStyle(match.gamer1, canClickGamer1);
+  const gamer2TextStyle = getTextStyle(match.gamer2, canClickGamer2);
 
   return (
     <Group>
@@ -128,15 +128,15 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
         y={y}
         width={halfBoxWidth}
         height={boxHeight}
-        fill={player1Style.fill}
+        fill={gamer1Style.fill}
         stroke="transparent"
         strokeWidth={0}
-        onClick={handlePlayer1Click}
-        onTap={handlePlayer1Click}
+        onClick={handleGamer1Click}
+        onTap={handleGamer1Click}
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
           if (stage && isEditMode) {
-            if (canClickPlayer1) {
+            if (canClickGamer1) {
               stage.container().style.cursor = 'pointer';
             } else {
               stage.container().style.cursor = 'not-allowed';
@@ -152,7 +152,7 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
       />
 
       {/* 選手1獲勝時的內框高亮 */}
-      {match.winner?.id === match.player1?.id && (
+      {match.winner?.id === match.gamer1?.id && (
         <Rect
           x={x + defaultStrokeWidth}
           y={y + defaultStrokeWidth}
@@ -164,17 +164,17 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
         />
       )}
 
-      {Array.from(player1TextStyle.text).map((text: string, index: number) => (
+      {Array.from(gamer1TextStyle.text).map((text: string, index: number) => (
         <Text
           key={text}
           x={x}
-          y={y + halfBoxWidth / 2 + index * (playerNameFontSize + 2)}
+          y={y + halfBoxWidth / 2 + index * (gamerNameFontSize + 2)}
           text={text}
-          fontSize={playerNameFontSize}
-          fill={player1TextStyle.fill}
+          fontSize={gamerNameFontSize}
+          fill={gamer1TextStyle.fill}
           width={halfBoxWidth}
-          onClick={handlePlayer1Click}
-          onTap={handlePlayer1Click}
+          onClick={handleGamer1Click}
+          onTap={handleGamer1Click}
           ellipsis
           wrap="none"
           align="center"
@@ -195,15 +195,15 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
         y={y}
         width={halfBoxWidth}
         height={boxHeight}
-        fill={player2Style.fill}
+        fill={gamer2Style.fill}
         stroke="transparent"
         strokeWidth={0}
-        onClick={handlePlayer2Click}
-        onTap={handlePlayer2Click}
+        onClick={handleGamer2Click}
+        onTap={handleGamer2Click}
         onMouseEnter={(e) => {
           const stage = e.target.getStage();
           if (stage) {
-            if (canClickPlayer2) {
+            if (canClickGamer2) {
               stage.container().style.cursor = 'pointer';
             } else {
               stage.container().style.cursor = 'not-allowed';
@@ -219,7 +219,7 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
       />
 
       {/* 選手2獲勝時的內框高亮 */}
-      {match.winner?.id === match.player2?.id && (
+      {match.winner?.id === match.gamer2?.id && (
         <Rect
           x={x + halfBoxWidth + defaultStrokeWidth}
           y={y + defaultStrokeWidth}
@@ -231,17 +231,17 @@ const KonvaMatch: React.FC<KonvaMatchProps> = ({ match, x, y, isEditMode, onPlay
         />
       )}
 
-      {Array.from(player2TextStyle.text).map((text: string, index: number) => (
+      {Array.from(gamer2TextStyle.text).map((text: string, index: number) => (
         <Text
           key={text}
           x={x + halfBoxWidth}
-          y={y + halfBoxWidth / 2 + index * (playerNameFontSize + 2)}
+          y={y + halfBoxWidth / 2 + index * (gamerNameFontSize + 2)}
           text={text}
-          fontSize={playerNameFontSize}
-          fill={player2TextStyle.fill}
+          fontSize={gamerNameFontSize}
+          fill={gamer2TextStyle.fill}
           width={halfBoxWidth}
-          onClick={handlePlayer2Click}
-          onTap={handlePlayer2Click}
+          onClick={handleGamer2Click}
+          onTap={handleGamer2Click}
           ellipsis
           wrap="none"
           align="center"

@@ -37,8 +37,8 @@ const TournamentBracket = ({
     windowWidth,
     isConnected,
     onlineCount,
-    handlePlayerNameChange,
-    handlePlayerGamesChange,
+    handleGamerNameChange,
+    handleGamerGamesChange,
     handleMatchUpdate,
     handleTestBroadcast,
     drawingData,
@@ -80,8 +80,8 @@ const TournamentBracket = ({
           isEditMode={true}
           drawingData={drawingData}
           onDrawingUpdate={handleDrawingUpdate}
-          onPlayerNameEdit={handlePlayerNameChange}
-          onPlayerGamesEdit={handlePlayerGamesChange}
+          onGamerNameEdit={handleGamerNameChange}
+          onGamerGamesEdit={handleGamerGamesChange}
           connectionQuality={connectionQuality}
         />
       </div>

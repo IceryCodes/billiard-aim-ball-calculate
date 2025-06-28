@@ -408,9 +408,9 @@ export function useTournamentRealtime({
       let message: RealtimeMessage;
 
       switch (updateData.type) {
-        case RealtimeMessageType.PLAYER_UPDATE:
+        case RealtimeMessageType.GAMER_UPDATE:
           message = {
-            type: RealtimeMessageType.PLAYER_UPDATE,
+            type: RealtimeMessageType.GAMER_UPDATE,
             data: updateData.data,
             timestamp: new Date().toISOString(),
             fromUserId: userId,

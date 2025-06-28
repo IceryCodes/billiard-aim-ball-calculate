@@ -15,9 +15,9 @@ import { useTournamentRealtime } from '@/features/tournaments/hooks/useTournamen
 import {
   isAnnouncement,
   isDrawingUpdate,
+  isGamerUpdateComplete,
+  isGamerUpdateSingle,
   isMatchUpdate,
-  isPlayerUpdateComplete,
-  isPlayerUpdateSingle,
   isTestUpdate,
   isTournamentUpdated,
 } from '../helper';
@@ -57,31 +57,31 @@ export const useViewerTournamentState = ({ tournamentData }: ViewerTournamentSta
   const handleWebSocketMessage = useCallback(
     (message: RealtimeMessage) => {
       switch (message.type) {
-        case RealtimeMessageType.PLAYER_UPDATE:
-          if (isPlayerUpdateComplete(message)) {
+        case RealtimeMessageType.GAMER_UPDATE:
+          if (isGamerUpdateComplete(message)) {
             setCurrentTournament((prev) => ({
               ...prev,
               tournament: {
                 ...prev.tournament,
-                players: message.data.players || prev.tournament.players,
+                gamers: message.data.gamers || prev.tournament.gamers,
                 matches: message.data.matches || prev.tournament.matches,
               },
             }));
-          } else if (isPlayerUpdateSingle(message)) {
-            const { playerId, playerName } = message.data;
-            if (playerId && playerName) {
+          } else if (isGamerUpdateSingle(message)) {
+            const { gamerId, gamerName } = message.data;
+            if (gamerId && gamerName) {
               setCurrentTournament((prev) => ({
                 ...prev,
                 tournament: {
                   ...prev.tournament,
-                  players: prev.tournament.players.map((player) =>
-                    player.id === playerId ? { ...player, name: playerName } : player
+                  gamers: prev.tournament.gamers.map((gamer) =>
+                    gamer.id === gamerId ? { ...gamer, name: gamerName } : gamer
                   ),
                   matches: prev.tournament.matches.map((match) => ({
                     ...match,
-                    player1: match.player1?.id === playerId ? { ...match.player1, name: playerName } : match.player1,
-                    player2: match.player2?.id === playerId ? { ...match.player2, name: playerName } : match.player2,
-                    winner: match.winner?.id === playerId ? { ...match.winner, name: playerName } : match.winner,
+                    gamer1: match.gamer1?.id === gamerId ? { ...match.gamer1, name: gamerName } : match.gamer1,
+                    gamer2: match.gamer2?.id === gamerId ? { ...match.gamer2, name: gamerName } : match.gamer2,
+                    winner: match.winner?.id === gamerId ? { ...match.winner, name: gamerName } : match.winner,
                   })),
                 },
               }));
@@ -114,15 +114,15 @@ export const useViewerTournamentState = ({ tournamentData }: ViewerTournamentSta
               tournament: {
                 ...prev.tournament,
                 ...message.data.tournament,
-                players: message.data.tournament?.players || prev.tournament.players,
+                gamers: message.data.tournament?.gamers || prev.tournament.gamers,
                 matches: message.data.tournament?.matches || prev.tournament.matches,
               },
             }));
 
             const actionMessages: Record<TournamentAction, string> = {
-              [TournamentAction.PLAYER_COUNT_CHANGED]: '參賽人數已變更',
+              [TournamentAction.GAMER_COUNT_CHANGED]: '參賽人數已變更',
               [TournamentAction.TOURNAMENT_TYPE_CHANGED]: '賽程類型已變更',
-              [TournamentAction.PLAYER_NAME_CHANGED]: '選手名稱已變更',
+              [TournamentAction.GAMER_NAME_CHANGED]: '選手名稱已變更',
               [TournamentAction.MATCH_RESULT_UPDATED]: '比賽結果已更新',
               [TournamentAction.DRAWING_UPDATED]: '繪圖已更新',
             };

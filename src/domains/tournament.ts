@@ -5,7 +5,7 @@ export enum TournamentType {
   DOUBLE = 'double',
 }
 
-export enum PlayerCount {
+export enum GamerCount {
   THIRTY_TWO = 32,
   SIXTY_FOUR = 64,
   ONE_HUNDRED_AND_TWENTY_EIGHT = 128,
@@ -25,7 +25,7 @@ export enum ToastType {
 }
 
 export enum RealtimeMessageType {
-  PLAYER_UPDATE = 'playerUpdate',
+  GAMER_UPDATE = 'gamerUpdate',
   MATCH_UPDATE = 'matchUpdate',
   TOURNAMENT_UPDATED = 'tournamentUpdated',
   ANNOUNCEMENT = 'announcement',
@@ -41,8 +41,8 @@ export enum BroadcastTestType {
 }
 
 export enum TournamentAction {
-  PLAYER_NAME_CHANGED = 'player_name_changed',
-  PLAYER_COUNT_CHANGED = 'player_count_changed',
+  GAMER_NAME_CHANGED = 'gamer_name_changed',
+  GAMER_COUNT_CHANGED = 'gamer_count_changed',
   TOURNAMENT_TYPE_CHANGED = 'tournament_type_changed',
   MATCH_RESULT_UPDATED = 'match_result_updated',
   DRAWING_UPDATED = 'drawing_updated',
@@ -63,7 +63,7 @@ export interface DrawingData {
 }
 
 // 基礎類型定義
-export interface Player {
+export interface Gamer {
   id: number;
   name: string;
   games: number;
@@ -71,18 +71,18 @@ export interface Player {
 
 export interface Match {
   id: string;
-  player1: Player | null;
-  player2: Player | null;
-  winner: Player | null;
+  gamer1: Gamer | null;
+  gamer2: Gamer | null;
+  winner: Gamer | null;
   round: number;
   matchIndex: number;
 }
 
 export interface TournamentState {
-  players: Player[];
+  gamers: Gamer[];
   matches: Match[];
   tournamentType: TournamentType;
-  playerCount: PlayerCount;
+  gamerCount: GamerCount;
 }
 
 export interface GetTournamentDto {
@@ -136,12 +136,12 @@ export interface BaseRealtimeMessage {
   timestamp?: number;
 }
 
-export interface PlayerUpdateMessage extends BaseRealtimeMessage {
-  type: RealtimeMessageType.PLAYER_UPDATE;
+export interface GamerUpdateMessage extends BaseRealtimeMessage {
+  type: RealtimeMessageType.GAMER_UPDATE;
   data: {
-    playerId?: number;
-    playerName?: string;
-    players?: Player[];
+    gamerId?: number;
+    gamerName?: string;
+    gamers?: Gamer[];
     matches?: Match[];
     action?: TournamentAction;
   };
@@ -185,7 +185,7 @@ export interface DrawingUpdateMessage extends BaseRealtimeMessage {
 }
 
 export type RealtimeMessage =
-  | PlayerUpdateMessage
+  | GamerUpdateMessage
   | MatchUpdateMessage
   | TournamentUpdatedMessage
   | AnnouncementMessage
@@ -215,8 +215,8 @@ export interface TournamentHookState {
 // Hook 操作介面
 export interface TournamentHookActions {
   reconnect: () => void;
-  handlePlayerNameChange: (id: number, name: string) => Promise<void>;
-  handlePlayerCountChange: (count: PlayerCount) => Promise<void>;
+  handleGamerNameChange: (id: number, name: string) => Promise<void>;
+  handleGamerCountChange: (count: GamerCount) => Promise<void>;
   handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;

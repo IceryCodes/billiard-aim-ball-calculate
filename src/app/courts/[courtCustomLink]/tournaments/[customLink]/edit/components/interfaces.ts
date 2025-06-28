@@ -1,8 +1,8 @@
 import {
   BroadcastTestType,
+  Gamer,
+  GamerCount,
   Match,
-  Player,
-  PlayerCount,
   ToastNotification,
   TournamentProps,
   TournamentType,
@@ -25,10 +25,10 @@ export interface DrawingData {
 }
 
 // 組件 Props 介面
-export interface EditablePlayerProps {
-  player: Player;
+export interface EditableGamerProps {
+  gamer: Gamer;
   onNameChange: (id: number, name: string) => void;
-  onDragStart: (player: Player) => void;
+  onDragStart: (gamer: Gamer) => void;
   className?: string;
 }
 
@@ -37,7 +37,7 @@ export interface KonvaMatchProps {
   x: number;
   y: number;
   isEditMode: boolean;
-  onPlayerClick: (matchId: string, player: Player) => void;
+  onGamerClick: (matchId: string, gamer: Gamer) => void;
 }
 
 export interface KonvaConnectorProps {
@@ -48,19 +48,19 @@ export interface KonvaConnectorProps {
 }
 
 export interface SingleEliminationKonvaProps {
-  players: Player[];
+  gamers: Gamer[];
   matches: Match[];
   isEditMode: boolean;
   onMatchUpdate?: (matches: Match[]) => void;
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
   editMode?: EditMode;
-  onPlayerNameEdit?: (playerId: number, newName: string) => void;
-  onPlayerGamesEdit?: (playerId: number, newGames: number) => void;
+  onGamerNameEdit?: (gamerId: number, newName: string) => void;
+  onGamerGamesEdit?: (gamerId: number, newGames: number) => void;
 }
 
-export interface PlayerEditState {
-  playerId: number | null;
+export interface GamerEditState {
+  gamerId: number | null;
   tempName: string;
   isEditing: boolean;
 }
@@ -95,8 +95,8 @@ export interface TournamentDisplayProps {
   isEditMode?: boolean;
   drawingData?: DrawingData;
   onDrawingUpdate?: (drawingData: DrawingData) => void;
-  onPlayerNameEdit?: (playerId: number, newName: string) => void;
-  onPlayerGamesEdit?: (playerId: number, newGames: number) => void;
+  onGamerNameEdit?: (gamerId: number, newName: string) => void;
+  onGamerGamesEdit?: (gamerId: number, newGames: number) => void;
   connectionQuality: ConnectionQualityType;
 }
 
@@ -130,9 +130,9 @@ export interface UseTournamentStateReturn {
   isConnected: boolean;
   onlineCount: number;
   reconnect: () => void;
-  handlePlayerNameChange: (id: number, name: string) => Promise<void>;
-  handlePlayerCountChange: (count: PlayerCount) => Promise<void>;
-  handlePlayerGamesChange: (playerId: number, newGames: number) => Promise<void>;
+  handleGamerNameChange: (id: number, name: string) => Promise<void>;
+  handleGamerCountChange: (count: GamerCount) => Promise<void>;
+  handleGamerGamesChange: (gamerId: number, newGames: number) => Promise<void>;
   handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;

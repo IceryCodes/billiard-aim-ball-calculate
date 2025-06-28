@@ -9,7 +9,7 @@ export const championBoxHeight = 50;
 
 // ====== 間距與佈局常數 ======
 // 選手間距
-export const playerSpacing = 110;
+export const gamerSpacing = 110;
 
 // 輪次間距
 export const roundHeight = 130;
@@ -44,7 +44,7 @@ export const qrCodeOffsetY = 0;
 // 文字相關
 export const roundTitleFontSize = 30;
 export const championTitleFontSize = 30;
-export const playerNameFontSize = 18;
+export const gamerNameFontSize = 18;
 export const championNameFontSize = 20;
 export const lockIconFontSize = 16;
 export const crownIconFontSize = 16;
@@ -90,10 +90,10 @@ export const roundTitleTextColor = '#374151';
 export const championTitleBackgroundColor = '#FFD700';
 
 // 選手框顏色
-export const playerBoxBackgroundColor = 'white';
-export const emptyPlayerBoxBackgroundColor = '#f5f5f5';
-export const emptyPlayerBoxStrokeColor = '#d0d0d0';
-export const editableEmptyPlayerBoxBackgroundColor = '#f8f8f8';
+export const gamerBoxBackgroundColor = 'white';
+export const emptyGamerBoxBackgroundColor = '#f5f5f5';
+export const emptyGamerBoxStrokeColor = '#d0d0d0';
+export const editableEmptyGamerBoxBackgroundColor = '#f8f8f8';
 
 // 繪圖相關顏色
 export const drawingStrokeColor = '#ef4444';
@@ -150,7 +150,7 @@ export enum DrawingMode {
 
 export enum EditMode {
   NORMAL = 'normal',
-  PLAYER_EDIT = 'player_edit',
+  GAMER_EDIT = 'gamer_edit',
 }
 
 // 繪圖層級

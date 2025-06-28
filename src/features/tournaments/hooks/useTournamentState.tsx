@@ -8,8 +8,8 @@ import { BroadcastUpdateData, RealtimeMessage } from '@/domains/realtime';
 import {
   BroadcastTestType,
   DrawingData,
+  GamerCount,
   Match,
-  PlayerCount,
   RealtimeMessageType,
   ToastNotification,
   ToastType,
@@ -23,9 +23,9 @@ import { useTournamentRealtime } from '@/features/tournaments/hooks/useTournamen
 import {
   isAnnouncement,
   isDrawingUpdate,
+  isGamerUpdateComplete,
+  isGamerUpdateSingle,
   isMatchUpdate,
-  isPlayerUpdateComplete,
-  isPlayerUpdateSingle,
   isTestUpdate,
   isTournamentUpdated,
 } from '../helper';
@@ -57,31 +57,31 @@ export const useTournamentState = ({
   const handleWebSocketMessage = useCallback(
     (message: RealtimeMessage) => {
       switch (message.type) {
-        case RealtimeMessageType.PLAYER_UPDATE:
-          if (isPlayerUpdateComplete(message)) {
+        case RealtimeMessageType.GAMER_UPDATE:
+          if (isGamerUpdateComplete(message)) {
             setCurrentTournament((prev) => ({
               ...prev,
               tournament: {
                 ...prev.tournament,
-                players: message.data.players || prev.tournament.players,
+                gamers: message.data.gamers || prev.tournament.gamers,
                 matches: message.data.matches || prev.tournament.matches,
               },
             }));
-          } else if (isPlayerUpdateSingle(message)) {
-            const { playerId, playerName } = message.data;
-            if (playerId && playerName) {
+          } else if (isGamerUpdateSingle(message)) {
+            const { gamerId, gamerName } = message.data;
+            if (gamerId && gamerName) {
               setCurrentTournament((prev) => ({
                 ...prev,
                 tournament: {
                   ...prev.tournament,
-                  players: prev.tournament.players.map((player) =>
-                    player.id === playerId ? { ...player, name: playerName } : player
+                  gamers: prev.tournament.gamers.map((gamer) =>
+                    gamer.id === gamerId ? { ...gamer, name: gamerName } : gamer
                   ),
                   matches: prev.tournament.matches.map((match) => ({
                     ...match,
-                    player1: match.player1?.id === playerId ? { ...match.player1, name: playerName } : match.player1,
-                    player2: match.player2?.id === playerId ? { ...match.player2, name: playerName } : match.player2,
-                    winner: match.winner?.id === playerId ? { ...match.winner, name: playerName } : match.winner,
+                    gamer1: match.gamer1?.id === gamerId ? { ...match.gamer1, name: gamerName } : match.gamer1,
+                    gamer2: match.gamer2?.id === gamerId ? { ...match.gamer2, name: gamerName } : match.gamer2,
+                    winner: match.winner?.id === gamerId ? { ...match.winner, name: gamerName } : match.winner,
                   })),
                 },
               }));
@@ -118,16 +118,16 @@ export const useTournamentState = ({
               tournament: {
                 ...prev.tournament,
                 ...message.data.tournament,
-                players: message.data.tournament?.players || prev.tournament.players,
+                gamers: message.data.tournament?.gamers || prev.tournament.gamers,
                 matches: message.data.tournament?.matches || prev.tournament.matches,
               },
             }));
 
             if (!isEditMode) {
               const actionMessages: Record<TournamentAction, string> = {
-                [TournamentAction.PLAYER_COUNT_CHANGED]: '參賽人數已變更',
+                [TournamentAction.GAMER_COUNT_CHANGED]: '參賽人數已變更',
                 [TournamentAction.TOURNAMENT_TYPE_CHANGED]: '賽程類型已變更',
-                [TournamentAction.PLAYER_NAME_CHANGED]: '選手名稱已變更',
+                [TournamentAction.GAMER_NAME_CHANGED]: '選手名稱已變更',
                 [TournamentAction.MATCH_RESULT_UPDATED]: '比賽結果已更新',
                 [TournamentAction.DRAWING_UPDATED]: '繪圖已更新',
               };
@@ -250,18 +250,18 @@ export const useTournamentState = ({
   );
 
   // 編輯相關的操作方法
-  const handlePlayerNameChange = useCallback(
+  const handleGamerNameChange = useCallback(
     async (id: number, name: string): Promise<void> => {
       if (!updateTournament || !refetchTournament) return;
 
-      const updatedPlayers = currentTournament.tournament.players.map((player) =>
-        player.id === id ? { ...player, name } : player
+      const updatedGamers = currentTournament.tournament.gamers.map((gamer) =>
+        gamer.id === id ? { ...gamer, name } : gamer
       );
 
       const updatedMatches = currentTournament.tournament.matches.map((match) => ({
         ...match,
-        player1: match.player1?.id === id ? { ...match.player1, name } : match.player1,
-        player2: match.player2?.id === id ? { ...match.player2, name } : match.player2,
+        gamer1: match.gamer1?.id === id ? { ...match.gamer1, name } : match.gamer1,
+        gamer2: match.gamer2?.id === id ? { ...match.gamer2, name } : match.gamer2,
         winner: match.winner?.id === id ? { ...match.winner, name } : match.winner,
       }));
 
@@ -270,7 +270,7 @@ export const useTournamentState = ({
         ...prev,
         tournament: {
           ...prev.tournament,
-          players: updatedPlayers,
+          gamers: updatedGamers,
           matches: updatedMatches,
         },
       }));
@@ -279,7 +279,7 @@ export const useTournamentState = ({
         ...currentTournament,
         tournament: {
           ...currentTournament.tournament,
-          players: updatedPlayers,
+          gamers: updatedGamers,
           matches: updatedMatches,
         },
         updatedAt: new Date(),
@@ -289,15 +289,15 @@ export const useTournamentState = ({
         await updateTournament(updatedTournamentData);
 
         const broadcastData: BroadcastUpdateData = {
-          type: RealtimeMessageType.PLAYER_UPDATE,
+          type: RealtimeMessageType.GAMER_UPDATE,
           data: {
-            playerId: id,
-            playerName: name,
-            players: updatedPlayers,
+            gamerId: id,
+            gamerName: name,
+            gamers: updatedGamers,
             matches: updatedMatches,
-            action: TournamentAction.PLAYER_NAME_CHANGED,
+            action: TournamentAction.GAMER_NAME_CHANGED,
           },
-          action: TournamentAction.PLAYER_NAME_CHANGED,
+          action: TournamentAction.GAMER_NAME_CHANGED,
         };
 
         const success = await broadcastUpdate(broadcastData);
@@ -323,19 +323,19 @@ export const useTournamentState = ({
     [currentTournament, updateTournament, broadcastUpdate, refetchTournament, showToast]
   );
 
-  const handlePlayerGamesChange = useCallback(
+  const handleGamerGamesChange = useCallback(
     async (id: number, games: number): Promise<void> => {
       if (!updateTournament || !refetchTournament) return;
 
-      // 完全複製 handlePlayerNameChange 的邏輯，只是改成更新 games 欄位
-      const updatedPlayers = currentTournament.tournament.players.map((player) =>
-        player.id === id ? { ...player, games } : player
+      // 完全複製 handleGamerNameChange 的邏輯，只是改成更新 games 欄位
+      const updatedGamers = currentTournament.tournament.gamers.map((gamer) =>
+        gamer.id === id ? { ...gamer, games } : gamer
       );
 
       const updatedMatches = currentTournament.tournament.matches.map((match) => ({
         ...match,
-        player1: match.player1?.id === id ? { ...match.player1, games } : match.player1,
-        player2: match.player2?.id === id ? { ...match.player2, games } : match.player2,
+        gamer1: match.gamer1?.id === id ? { ...match.gamer1, games } : match.gamer1,
+        gamer2: match.gamer2?.id === id ? { ...match.gamer2, games } : match.gamer2,
         winner: match.winner?.id === id ? { ...match.winner, games } : match.winner,
       }));
 
@@ -344,7 +344,7 @@ export const useTournamentState = ({
         ...prev,
         tournament: {
           ...prev.tournament,
-          players: updatedPlayers,
+          gamers: updatedGamers,
           matches: updatedMatches,
         },
       }));
@@ -353,7 +353,7 @@ export const useTournamentState = ({
         ...currentTournament,
         tournament: {
           ...currentTournament.tournament,
-          players: updatedPlayers,
+          gamers: updatedGamers,
           matches: updatedMatches,
         },
         updatedAt: new Date(),
@@ -363,14 +363,14 @@ export const useTournamentState = ({
         await updateTournament(updatedTournamentData);
 
         const broadcastData: BroadcastUpdateData = {
-          type: RealtimeMessageType.PLAYER_UPDATE,
+          type: RealtimeMessageType.GAMER_UPDATE,
           data: {
-            playerId: id,
-            players: updatedPlayers,
+            gamerId: id,
+            gamers: updatedGamers,
             matches: updatedMatches,
-            action: TournamentAction.PLAYER_NAME_CHANGED, // 重用相同的 action
+            action: TournamentAction.GAMER_NAME_CHANGED, // 重用相同的 action
           },
-          action: TournamentAction.PLAYER_NAME_CHANGED,
+          action: TournamentAction.GAMER_NAME_CHANGED,
         };
 
         const success = await broadcastUpdate(broadcastData);
@@ -396,15 +396,15 @@ export const useTournamentState = ({
     [currentTournament, updateTournament, broadcastUpdate, refetchTournament, showToast]
   );
 
-  const handlePlayerCountChange = useCallback(
-    async (count: PlayerCount): Promise<void> => {
+  const handleGamerCountChange = useCallback(
+    async (count: GamerCount): Promise<void> => {
       if (!updateTournament || !refetchTournament) return;
 
       const updatedTournamentData = {
         ...currentTournament,
         tournament: {
           ...currentTournament.tournament,
-          playerCount: count,
+          gamerCount: count,
         },
         updatedAt: new Date(),
       };
@@ -417,10 +417,10 @@ export const useTournamentState = ({
           data: {
             tournament: {
               ...currentTournament.tournament,
-              playerCount: count,
+              gamerCount: count,
             },
           },
-          action: TournamentAction.PLAYER_COUNT_CHANGED,
+          action: TournamentAction.GAMER_COUNT_CHANGED,
         };
 
         const success = await broadcastUpdate(broadcastData);
@@ -611,9 +611,9 @@ export const useTournamentState = ({
     onlineCount,
     connectionQuality,
     reconnect,
-    handlePlayerNameChange,
-    handlePlayerGamesChange,
-    handlePlayerCountChange,
+    handleGamerNameChange,
+    handleGamerGamesChange,
+    handleGamerCountChange,
     handleTournamentTypeChange,
     handleMatchUpdate,
     handleTestBroadcast,
