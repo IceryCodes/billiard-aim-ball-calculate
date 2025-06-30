@@ -2,25 +2,27 @@ import { useMemo } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 
-import { GetUserDto } from '@/domains/user';
+import { GetPlayersDto } from '@/domains/player';
 import { useQueryCallback } from '@/hooks/utils/useQueryCallback';
-import { GetUserReturnType } from '@/services/interfaces';
-import { getUser, userQueryKeys } from '@/services/user';
+import { GetPlayersReturnType } from '@/services/interfaces';
+import { getPlayers, playerQueryKeys } from '@/services/player';
 import { QueryBaseProps, QueryBaseReturnType } from '@/utils/reactQuery';
 
-interface UseUserQueryProps extends QueryBaseProps<GetUserReturnType>, GetUserDto {}
+interface UsePlayersQueryProps extends QueryBaseProps<GetPlayersReturnType>, GetPlayersDto {}
 
-export const useUserQuery = ({
+export const usePlayersQuery = ({
   onSuccess,
   onError,
   enabled,
   queryPrefixKey = [],
-  _id,
-}: UseUserQueryProps): QueryBaseReturnType<GetUserReturnType> => {
+  query = '',
+  page = 1,
+  limit = 10,
+}: UsePlayersQueryProps): QueryBaseReturnType<GetPlayersReturnType> => {
   const queryResult = useQuery({
-    queryKey: [...queryPrefixKey, userQueryKeys.getUser, _id],
-    queryFn: () => getUser({ _id }),
-    enabled: enabled && !!_id,
+    queryKey: [...queryPrefixKey, playerQueryKeys.getPlayers, query, page, limit],
+    queryFn: () => getPlayers({ query, page, limit }),
+    enabled,
   });
 
   const {
@@ -28,10 +30,8 @@ export const useUserQuery = ({
     isError,
     error,
     data = {
-      manage: {
-        courts: [],
-        players: [],
-      },
+      players: [],
+      total: 0,
       message: '',
     },
     refetch,

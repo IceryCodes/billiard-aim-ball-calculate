@@ -32,7 +32,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetUserReturnTy
 
     const manage: UserManageProps = await getManageItemsByUserId(_id);
 
-    // Return user details with managed gamers
+    // Return user details with managed players
     res.status(HttpStatus.Ok).json({
       user: {
         _id: user._id,
@@ -46,7 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetUserReturnTy
         updatedAt: user.updatedAt,
       },
       manage: {
-        gamers: manage.gamers.map((gamer) => ({
+        players: manage.players.map((gamer) => ({
           ...gamer,
           _id: gamer._id.toString(),
         })),

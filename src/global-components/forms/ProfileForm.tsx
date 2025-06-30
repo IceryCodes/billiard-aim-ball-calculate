@@ -176,7 +176,7 @@ export const ProfileForm = ({ token, user }: ProfileFormProps) => {
       >
         <path d="M3 17.25V21h3.75l11.39-11.39-3.75-3.75L3 17.25zM16 3l5 5-2 2-5-5 2-2z" />
       </svg>
-      {form}
+      {display && form}
     </>
   );
 };

@@ -1,7 +1,7 @@
 import { ObjectId, WithId } from 'mongodb';
 
 import { CourtProps } from './court';
-import { GamerProps } from './gamer';
+import { PlayerProps } from './player';
 
 export interface ManageProps {
   _id: string;
@@ -12,7 +12,7 @@ export interface ManageProps {
 }
 
 export interface UserManageProps {
-  gamers: WithId<GamerProps>[];
+  players: WithId<PlayerProps>[];
   courts: WithId<CourtProps>[];
 }
 

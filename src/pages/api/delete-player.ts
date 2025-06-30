@@ -1,9 +1,9 @@
 import { Collection, ObjectId } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { CourtDBProps } from '@/domains/court';
 import { ManageDBProps } from '@/domains/manage';
-import { getCourtManagesCollection, getCourtsCollection } from '@/lib/mongodb';
+import { PlayerDBProps } from '@/domains/player';
+import { getPlayerManagesCollection, getPlayersCollection } from '@/lib/mongodb';
 import { HttpStatus } from '@/utils/api';
 import { isAdminToken, verifyToken } from '@/utils/token';
 
@@ -30,53 +30,53 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   if (typeof req.body._id !== 'string' || !ObjectId.isValid(req.body._id))
-    return res.status(HttpStatus.BadRequest).json({ message: '刪除撞球場地失敗!' });
+    return res.status(HttpStatus.BadRequest).json({ message: '刪除撞球選手失敗!' });
 
   try {
-    const courtsCollection: Collection<CourtDBProps> = await getCourtsCollection();
-    const courtManagesCollection: Collection<ManageDBProps> = await getCourtManagesCollection();
+    const playersCollection: Collection<PlayerDBProps> = await getPlayersCollection();
+    const playerManagesCollection: Collection<ManageDBProps> = await getPlayerManagesCollection();
 
-    const court = await courtsCollection.findOne({
+    const player = await playersCollection.findOne({
       _id: new ObjectId(req.body._id as string),
       $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
     });
-    if (!court) return res.status(HttpStatus.NotFound).json({ message: '撞球場地不存在' });
+    if (!player) return res.status(HttpStatus.NotFound).json({ message: '撞球選手不存在' });
 
     // 先刪除當前用戶的 manage 記錄
-    const deleteManagesResult = await courtManagesCollection.deleteMany({
+    const deleteManagesResult = await playerManagesCollection.deleteMany({
       userId: user._id,
       itemId: req.body._id,
     });
 
-    // 檢查是否還有其他用戶在 manage 這個 court
-    const remainingManages = await courtManagesCollection.countDocuments({
+    // 檢查是否還有其他用戶在 manage 這個 player
+    const remainingManages = await playerManagesCollection.countDocuments({
       itemId: req.body._id,
     });
 
-    let courtDeleted = false;
-    let message = `已移除${court.title}的${deleteManagesResult.deletedCount}筆管理權限!`;
+    let playerDeleted = false;
+    let message = `已移除${player.title}的${deleteManagesResult.deletedCount}筆管理權限!`;
 
-    // 如果沒有其他用戶管理這個 court，則軟刪除 court
+    // 如果沒有其他用戶管理這個 player，則軟刪除 player
     if (remainingManages === 0) {
-      const result = await courtsCollection.updateOne(
+      const result = await playersCollection.updateOne(
         { _id: new ObjectId(req.body._id as string) },
         { $set: { deletedAt: new Date() } }
       );
 
       if (result.modifiedCount > 0) {
-        courtDeleted = true;
-        message = `已刪除${court.title}以及${deleteManagesResult.deletedCount}筆管理權限!`;
+        playerDeleted = true;
+        message = `已刪除${player.title}以及${deleteManagesResult.deletedCount}筆管理權限!`;
       }
     }
 
     res.status(HttpStatus.Ok).json({
       message,
-      courtDeleted,
+      playerDeleted,
       deletedManages: deleteManagesResult.deletedCount,
       remainingManages,
     });
   } catch (error) {
-    console.error('Error soft deleting court:', error);
+    console.error('Error soft deleting player:', error);
     res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
   }
 };

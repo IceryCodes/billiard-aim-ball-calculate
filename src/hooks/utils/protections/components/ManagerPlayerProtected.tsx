@@ -1,21 +1,21 @@
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { GamerProps } from '@/domains/gamer';
 import { UserRoleType } from '@/domains/interface';
+import { PlayerProps } from '@/domains/player';
 import { TokenProps, verifyToken } from '@/utils/token';
 
-interface ManagerGamerProtectedProps {
+interface ManagerPlayerProtectedProps {
   children: ReactNode;
   pageId: string;
 }
 
-const ManagerGamerProtected = ({ children, pageId }: ManagerGamerProtectedProps): ReactNode => {
+const ManagerPlayerProtected = ({ children, pageId }: ManagerPlayerProtectedProps): ReactNode => {
   const { isAuthenticated, token } = useAuth();
   const [hasAccess, setHasAccess] = useState(false);
 
   const isMatch = useCallback(
-    (items: GamerProps[]): boolean => items.some((obj) => obj._id.toString() === pageId),
+    (items: PlayerProps[]): boolean => items.some((obj) => obj._id.toString() === pageId),
     [pageId]
   );
 
@@ -26,7 +26,7 @@ const ManagerGamerProtected = ({ children, pageId }: ManagerGamerProtectedProps)
           try {
             const {
               user,
-              manage: { gamers },
+              manage: { players },
             }: TokenProps = await verifyToken({ token });
 
             if (isAuthenticated && typeof user._id === 'string' && user.role === UserRoleType.Admin) {
@@ -34,7 +34,7 @@ const ManagerGamerProtected = ({ children, pageId }: ManagerGamerProtectedProps)
               return;
             }
 
-            const usedItems: GamerProps[] = gamers;
+            const usedItems: PlayerProps[] = players;
             setHasAccess(isMatch(usedItems));
           } catch (error) {
             console.error('Token verification failed:', error);
@@ -50,4 +50,4 @@ const ManagerGamerProtected = ({ children, pageId }: ManagerGamerProtectedProps)
   return <>{children}</>;
 };
 
-export default ManagerGamerProtected;
+export default ManagerPlayerProtected;

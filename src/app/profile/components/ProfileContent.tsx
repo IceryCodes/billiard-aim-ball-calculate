@@ -12,7 +12,9 @@ import { useUserQuery } from '@/features/user/hooks/useUserQuery';
 import { ToastStyleType } from '@/global-components/Toast';
 
 import { AccountDetail } from './AccountDetail';
+import { CourtDetail } from './CourtDetail';
 import { PaymentDetail } from './PaymentDetail';
+import { PlayerDetail } from './PlayerDetail';
 
 const ProfileContent = (): ReactNode => {
   const router = useRouter();
@@ -21,9 +23,10 @@ const ProfileContent = (): ReactNode => {
   const [isClient, setIsClient] = useState<boolean>(false);
 
   const {
-    data: { user } = {},
+    data: { user, manage } = {},
     isLoading: userLoading,
     isError,
+    refetch,
   } = useUserQuery({
     _id: userStorage?._id,
     enabled: !!userStorage?._id,
@@ -61,6 +64,8 @@ const ProfileContent = (): ReactNode => {
     <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {!userLoading && user && token && <AccountDetail user={user} token={token} />}
+        {!userLoading && !!manage && <PlayerDetail players={manage.players} refetch={refetch} />}
+        {!userLoading && !!manage && <CourtDetail courts={manage.courts} />}
         {!paymentsLoading && <PaymentDetail payments={payments} />}
       </div>
     </div>

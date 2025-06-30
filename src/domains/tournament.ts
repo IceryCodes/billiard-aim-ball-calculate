@@ -48,6 +48,16 @@ export enum TournamentAction {
   DRAWING_UPDATED = 'drawing_updated',
 }
 
+export enum GameTypesType {
+  EightBall = '八號球',
+  NineBall = '九號球',
+  TenBall = '十號球',
+  FourteenOne = '14-1',
+  ThreeCushion = '三顆星',
+  Snooker = '斯諾克',
+  TwoThreeFive = '二三五',
+}
+
 // 繪圖相關介面
 export interface DrawingLine {
   id: string;
