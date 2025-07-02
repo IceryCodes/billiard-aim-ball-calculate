@@ -8,7 +8,7 @@ import { Controller, useForm } from 'react-hook-form';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { CreateTournamentProps, TournamentProps } from '@/domains/tournament';
+import { CreateTournamentProps, GamerCountType, TournamentProps } from '@/domains/tournament';
 import { useCourtQuery } from '@/features/courts/hooks/useCourtQuery';
 import { useCreateTournamentMutation } from '@/features/tournaments/hooks/useCreateTournamentMutation';
 import { useUpdateTournamentMutation } from '@/features/tournaments/hooks/useUpdateTournamentMutation';
@@ -18,6 +18,7 @@ import { tournamentValidationSchema } from '@/lib/validation';
 import FieldErrorlabel from '../FieldErrorlabel';
 import { FormField } from '../formFields/FormFields';
 import Popup from '../Popup';
+import { Select } from '../selects/Select';
 import { TextArea } from '../textareas/TextArea';
 
 export enum TournamentFormMode {
@@ -40,6 +41,7 @@ const defaultTournament: CreateTournamentProps = {
   court: '',
   courtTitle: '',
   courtCustomLink: '',
+  gamerCount: GamerCountType.THIRTY_TWO,
 };
 
 export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: TournamentFormProps) => {
@@ -138,12 +140,30 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
 
           <FormField control={control} titleText="球場賽程" fieldName="title" placeholder="球場賽程名稱" col={6} />
 
+          <div className="flex flex-col col-span-3">
+            <label>參賽人數</label>
+            <Controller
+              name="gamerCount"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <Select
+                    {...field}
+                    defaultValue="選擇參賽人數"
+                    options={Object.values(GamerCountType).filter((item) => typeof item === 'number')}
+                  />
+                  <FieldErrorlabel error={error} />
+                </>
+              )}
+            />
+          </div>
+
           <FormField
             control={control}
             titleText="自訂網址名稱"
             fieldName="customLink"
             placeholder={tournament?.customLink || '付費功能😜'}
-            col={6}
+            col={3}
             disabled
           />
 

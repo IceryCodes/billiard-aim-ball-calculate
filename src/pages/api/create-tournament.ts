@@ -40,7 +40,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TournamentUpdat
       customLink: req.body.customLink || uniqueCustomLink,
       featuredImg: req.body.featuredImg || '',
       tags: req.body.tags || [],
-      tournament: req.body.tournament || generateTournament({ gamerCount: 32, tournamentType: TournamentType.SINGLE }),
+      tournament:
+        req.body.tournament ||
+        generateTournament({ gamerCount: req.body.gamerCount, tournamentType: TournamentType.SINGLE }),
       drawingData: req.body.drawingData || {
         lines: [],
         lastUpdated: Date.now(),

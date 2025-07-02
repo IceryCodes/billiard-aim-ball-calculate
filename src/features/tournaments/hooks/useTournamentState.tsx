@@ -1,33 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-  UseTournamentStateProps,
-  UseTournamentStateReturn,
+    UseTournamentStateProps,
+    UseTournamentStateReturn,
 } from '@/app/courts/[courtCustomLink]/tournaments/[customLink]/edit/components/interfaces';
 import { BroadcastUpdateData, RealtimeMessage } from '@/domains/realtime';
 import {
-  BroadcastTestType,
-  DrawingData,
-  GamerCount,
-  Match,
-  RealtimeMessageType,
-  ToastNotification,
-  ToastType,
-  TournamentAction,
-  TournamentProps,
-  TournamentType,
-  UserType,
+    BroadcastTestType,
+    DrawingData,
+    GamerCountType,
+    Match,
+    RealtimeMessageType,
+    ToastNotification,
+    ToastType,
+    TournamentAction,
+    TournamentProps,
+    TournamentType,
+    UserType,
 } from '@/domains/tournament';
 import { useTournamentRealtime } from '@/features/tournaments/hooks/useTournamentRealtime';
 
 import {
-  isAnnouncement,
-  isDrawingUpdate,
-  isGamerUpdateComplete,
-  isGamerUpdateSingle,
-  isMatchUpdate,
-  isTestUpdate,
-  isTournamentUpdated,
+    isAnnouncement,
+    isDrawingUpdate,
+    isGamerUpdateComplete,
+    isGamerUpdateSingle,
+    isMatchUpdate,
+    isTestUpdate,
+    isTournamentUpdated,
 } from '../helper';
 
 export const useTournamentState = ({
@@ -397,7 +397,7 @@ export const useTournamentState = ({
   );
 
   const handleGamerCountChange = useCallback(
-    async (count: GamerCount): Promise<void> => {
+    async (count: GamerCountType): Promise<void> => {
       if (!updateTournament || !refetchTournament) return;
 
       const updatedTournamentData = {

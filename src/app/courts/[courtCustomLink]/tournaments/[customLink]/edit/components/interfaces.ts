@@ -1,7 +1,7 @@
 import {
   BroadcastTestType,
   Gamer,
-  GamerCount,
+  GamerCountType,
   Match,
   ToastNotification,
   TournamentProps,
@@ -131,7 +131,7 @@ export interface UseTournamentStateReturn {
   onlineCount: number;
   reconnect: () => void;
   handleGamerNameChange: (id: number, name: string) => Promise<void>;
-  handleGamerCountChange: (count: GamerCount) => Promise<void>;
+  handleGamerCountChange: (count: GamerCountType) => Promise<void>;
   handleGamerGamesChange: (gamerId: number, newGames: number) => Promise<void>;
   handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
   handleMatchUpdate: (matches: Match[]) => Promise<void>;

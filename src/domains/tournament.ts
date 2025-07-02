@@ -5,10 +5,9 @@ export enum TournamentType {
   DOUBLE = 'double',
 }
 
-export enum GamerCount {
+export enum GamerCountType {
   THIRTY_TWO = 32,
   SIXTY_FOUR = 64,
-  ONE_HUNDRED_AND_TWENTY_EIGHT = 128,
 }
 
 export enum UserType {
@@ -92,7 +91,7 @@ export interface TournamentState {
   gamers: Gamer[];
   matches: Match[];
   tournamentType: TournamentType;
-  gamerCount: GamerCount;
+  gamerCount: GamerCountType;
 }
 
 export interface GetTournamentDto {
@@ -131,7 +130,7 @@ export type UpdateTournamentDto = TournamentProps;
 export type CreateTournamentProps = Omit<
   TournamentProps,
   '_id' | 'createdAt' | 'updatedAt' | 'featuredImg' | 'tags' | 'tournament' | 'drawingData'
->;
+> & { gamerCount: number };
 
 // Toast 相關類型
 export interface ToastNotification {
@@ -226,7 +225,7 @@ export interface TournamentHookState {
 export interface TournamentHookActions {
   reconnect: () => void;
   handleGamerNameChange: (id: number, name: string) => Promise<void>;
-  handleGamerCountChange: (count: GamerCount) => Promise<void>;
+  handleGamerCountChange: (count: GamerCountType) => Promise<void>;
   handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
