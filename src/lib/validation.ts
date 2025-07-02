@@ -5,6 +5,7 @@ import {
   ArraySchema,
   boolean,
   BooleanSchema,
+  date,
   mixed,
   MixedSchema,
   number,
@@ -14,7 +15,6 @@ import {
   StringSchema,
 } from 'yup';
 
-import { GameTypesType } from '@/domains/gamer';
 import {
   CountyType,
   districtOptions,
@@ -23,6 +23,7 @@ import {
   GenderType,
   UserRoleType,
 } from '@/domains/interface';
+import { GameTypesType } from '@/domains/tournament';
 
 interface RulesProps {
   //user
@@ -37,11 +38,12 @@ interface RulesProps {
   // court
   partner: BooleanSchema<boolean, AnyObject>;
   orgCode: StringSchema<string, AnyObject>;
-  owner: StringSchema<string, AnyObject>;
+  owner: StringSchema<string | undefined, AnyObject>;
   genderOptional: MixedSchema<GenderType | undefined, AnyObject, undefined, ''>;
   gameTypes: ArraySchema<GameTypesType[], AnyObject, '', ''>;
   websiteUrl: StringSchema<string | undefined, AnyObject, undefined, ''>;
   phone: StringSchema<string | undefined, AnyObject>;
+  phoneOptional: StringSchema<string | undefined, AnyObject>;
   emailOptional: StringSchema<string | undefined, AnyObject>;
   county: StringSchema<CountyType, AnyObject>;
   district: MixedSchema<DistrictType, AnyObject>;
@@ -60,10 +62,16 @@ interface RulesProps {
   coachs: ArraySchema<string[] | undefined, AnyObject, '', ''>;
   companyName: StringSchema<string, AnyObject>;
 
+  // tournament
   tournamentTitle: StringSchema<string, AnyObject>;
   court: StringSchema<string | undefined, AnyObject>;
   courtTitle: StringSchema<string | undefined, AnyObject>;
   courtCustomLink: StringSchema<string | undefined, AnyObject>;
+
+  // player
+  professional: BooleanSchema<boolean, AnyObject>;
+  // 修正這裡：licenses 應該是包含 { type: string, date: Date } 物件的陣列
+  licenses: ArraySchema<Array<{ type: string; date: Date }> | undefined, AnyObject, '', ''>;
 
   // feedback
   message: StringSchema<string, AnyObject>;
@@ -118,26 +126,49 @@ const rules: RulesProps = {
   orgCode: string()
     .required('機構代碼是必填項目')
     .matches(/^[^\s#!@*()\\"';/%^=_$`,.?:+]+$/, '機構代碼不能包含空格或特殊字符'),
-  owner: string().required('負責人是必填項目'),
+  owner: string().test('is-owner-or-empty', '負責人名稱不能包含特殊字符', (value) => {
+    // 如果是空字串或未定義，就通過驗證
+    if (!value || value === '') return true;
+    // 如果有值，就進行驗證
+    return value.length >= 1;
+  }),
   genderOptional: mixed<GenderType>().oneOf([GenderType.None, GenderType.Male, GenderType.Female], '性別必須為有效選項'),
   gameTypes: array().of(mixed<GameTypesType>().required()).required('種類是必填項目'),
   websiteUrl: string().test('is-valid-url', '無效的網址格式', (value) => {
-    if (!value) return true;
+    if (!value) return true; // 空字串通過驗證
+    
     try {
-      new URL(value);
+      const url = new URL(value);
+      
       // 檢查是否以 https:// 開頭
-      if (!value.startsWith('https://')) {
+      if (!url.protocol.startsWith('https:')) {
         return false;
       }
-      // 檢查是否至少有兩個點
-      const dotCount = (value.match(/\./g) || []).length;
-      if (dotCount < 2) return false;
-
-      return (
-        /^https:\/\/([\da-z.-]+)\.([a-z.]{2,})(\/[/\w .-:]*)*\/?$/.test(value) &&
-        !/[<>()[\]\\,;\s@"]/.test(value) &&
-        (value.match(/:/g) || []).length <= 1
-      );
+      
+      // 檢查主機名稱格式（支援大小寫字母、數字、連字符和點）
+      const hostnameRegex = /^[a-zA-Z0-9.-]+$/;
+      if (!hostnameRegex.test(url.hostname)) {
+        return false;
+      }
+      
+      // 檢查是否至少有一個點（確保有頂級域名）
+      if (!url.hostname.includes('.')) {
+        return false;
+      }
+      
+      // 檢查頂級域名至少2個字元
+      const parts = url.hostname.split('.');
+      const tld = parts[parts.length - 1];
+      if (tld.length < 2) {
+        return false;
+      }
+      
+      // 檢查是否包含不允許的特殊字符
+      if (/[<>()[\]\\,;\s@"]/.test(value)) {
+        return false;
+      }
+      
+      return true;
     } catch {
       return false;
     }
@@ -146,12 +177,23 @@ const rules: RulesProps = {
     .matches(/^(0[2-9]|0[2-9]-|\+886[2-9]-)?\d{6,8}$/, '請輸入有效的台灣電話號碼格式，例如: 023456789 或 0912345678')
     .min(8, '電話號碼過短')
     .max(12, '電話號碼過長'),
-  emailOptional: string()
-    .email('無效的信箱格式')
-    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, '請輸入有效的信箱格式')
-    .max(254, '信箱長度不可超過254個字元')
-    .matches(/^[^<>()[\]\\,;:\s@"]+@/, '信箱開頭不可包含特殊字元')
-    .matches(/@[^<>()[\]\\,;:\s@"]+$/, '網域名稱不可包含特殊字元'),
+  phoneOptional: string().test('is-phone-or-empty', '請輸入有效的台灣電話號碼格式', (value) => {
+    // 如果是空字串或未定義，就通過驗證
+    if (!value || value === '') return true;
+    // 如果有值，就進行完整的電話號碼格式驗證
+    return /^(0[2-9]|0[2-9]-|\+886[2-9]-)?\d{6,8}$/.test(value) && value.length >= 8 && value.length <= 12;
+  }),
+  emailOptional: string().test('is-email-or-empty', '無效的信箱格式', (value) => {
+    // 如果是空字串或未定義，就通過驗證
+    if (!value || value === '') return true;
+    // 如果有值，就進行完整的 email 格式驗證
+    return (
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value) &&
+      value.length <= 254 &&
+      /^[^<>()[\]\\,;:\s@"]+@/.test(value) &&
+      /@[^<>()[\]\\,;:\s@"]+$/.test(value)
+    );
+  }),
   county: string().oneOf(Object.values(CountyType), '縣市必須是有效的選項').required('縣市是必填項目'),
   district: mixed<DistrictType>()
     .test('is-valid-district', '請選擇有效的地區', function (value) {
@@ -205,6 +247,18 @@ const rules: RulesProps = {
   court: string(),
   courtTitle: string(),
   courtCustomLink: string(),
+
+  // player
+  professional: boolean().required('職業選手是必填項目'),
+  // 修正這裡：使用正確的驗證規則和錯誤訊息
+  licenses: array()
+    .of(
+      object({
+        type: string().required('證照名稱是必填項目'),
+        date: date().required('證照日期是必填項目'),
+      })
+    )
+    .required('證照是必填項目'), // 修正錯誤訊息：從「照片」改為「證照」
 
   // feedback
   message: string().required('回饋是必填項目'),
@@ -272,6 +326,26 @@ export const tournamentValidationSchema = object({
   court: rules.court.default(''),
   courtTitle: rules.courtTitle.default(''),
   courtCustomLink: rules.courtCustomLink.default(''),
+}).required();
+
+export const playerValidationSchema = object({
+  partner: rules.partner.default(false),
+  owner: rules.owner.default(''),
+  gender: rules.genderOptional.default(GenderType.None),
+  websiteUrl: rules.websiteUrl.default(''),
+  email: rules.emailOptional.default(''),
+  phone: rules.phoneOptional.default(''),
+  county: rules.county,
+  district: rules.district,
+  title: rules.title.default(''),
+  excerpt: rules.excerpt.default(''),
+  content: rules.content.default(''),
+  keywords: rules.keywords.default([]),
+  featuredImg: rules.featuredImg.default(''),
+  customLink: rules.customLink.default(''),
+  gameTypes: rules.gameTypes.default([]),
+  professional: rules.professional.default(false),
+  licenses: rules.licenses.default([]),
 }).required();
 
 export const adminValidationSchema = object({

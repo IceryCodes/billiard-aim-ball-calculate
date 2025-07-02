@@ -60,7 +60,7 @@ const SidebarLayout = ({ pageId, county, children }: SidebarLayoutProps) => {
       <div className="w-1/3 flex-col hidden md:flex">
         <Card>
           <>
-            <label className="text-xl font-bold">附近其他撞球場地</label>
+            <label className="text-xl font-bold">附近其他{PageType.COURTS}</label>
             {/* search form */}
             <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 mb-4">
               <div className="flex gap-x-2">
@@ -99,7 +99,7 @@ const SidebarLayout = ({ pageId, county, children }: SidebarLayoutProps) => {
               <Controller
                 name="query"
                 control={control}
-                render={({ field }) => <Input placeholder="撞球場地名稱" {...field} />}
+                render={({ field }) => <Input placeholder={`${PageType.COURTS}名稱`} {...field} />}
               />
 
               <Controller
@@ -117,16 +117,16 @@ const SidebarLayout = ({ pageId, county, children }: SidebarLayoutProps) => {
               <span className="text-gray-500 text-lg">搜尋中...</span>
             </div>
           )}
-          {isError && <span>搜尋附近撞球場地出現錯誤</span>}
+          {isError && <span>搜尋附近{PageType.COURTS}出現錯誤</span>}
 
           {/* Court list */}
           <div className="grid grid-cols-1 gap-4 p-4">
-            {!courts.length && <label>附近沒有符合撞球場地</label>}
+            {!courts.length && <label>附近沒有符合{PageType.COURTS}</label>}
             {courts
-              .filter(({ _id }: CourtProps) => _id.toString() !== pageId)
+              .filter(({ _id }: CourtProps) => _id !== pageId)
               .map(({ _id, title, partner, county, district, address, featuredImg, customLink, coachs }: CourtProps) => (
                 <CourtListItemCard
-                  key={_id.toString()}
+                  key={_id}
                   image={
                     featuredImg
                       ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`

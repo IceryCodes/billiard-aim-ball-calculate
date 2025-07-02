@@ -1,6 +1,7 @@
 import { Collection } from 'mongodb';
 
 import { ConnectionQualityType } from '@/app/courts/[courtCustomLink]/tournaments/[customLink]/edit/components/interfaces';
+import { PlayerDBProps } from '@/domains/player';
 import {
   AnnouncementMessage,
   DrawingUpdateMessage,
@@ -91,7 +92,7 @@ export const generateRandomCode = (length = 4): string => {
 };
 
 export const generateUniqueCustomLink = async (
-  tournamentsCollection: Collection<TournamentDBProps>,
+  collection: Collection<TournamentDBProps> | Collection<PlayerDBProps>,
   providedCustomLink?: string,
   maxAttempts = 10
 ): Promise<string> => {
@@ -100,7 +101,7 @@ export const generateUniqueCustomLink = async (
 
   // 如果使用者有提供 customLink，先檢查是否已存在
   if (customLink) {
-    const existingTournament = await tournamentsCollection.findOne({ customLink });
+    const existingTournament = await collection.findOne({ customLink });
     if (!existingTournament) {
       return customLink; // 使用者提供的 customLink 是唯一的，直接使用
     }
@@ -112,7 +113,7 @@ export const generateUniqueCustomLink = async (
   while (attempts < maxAttempts) {
     customLink = generateRandomCode();
 
-    const existingTournament = await tournamentsCollection.findOne({ customLink });
+    const existingTournament = await collection.findOne({ customLink });
 
     if (!existingTournament) {
       return customLink; // 找到唯一的 customLink

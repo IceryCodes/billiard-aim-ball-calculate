@@ -58,8 +58,6 @@ const GoogleInfos = ({
           />
         )}
 
-        <H3Li label="開業狀態" value={<span className="font-medium">{status ? '開業' : '歇業'}</span>} />
-
         {/* Address */}
         {!!formatted_address && (
           <H3Li label="撞球場地地址" value={ConvertLink({ text: formatted_address, type: LinkType.Address })} />

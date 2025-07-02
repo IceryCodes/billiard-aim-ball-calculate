@@ -1,5 +1,4 @@
 import { CourtProps } from '@/domains/court';
-import { GamerProps } from '@/domains/gamer';
 import {
   GoogleAddressComponent,
   GoogleBusinessStatus,
@@ -11,6 +10,7 @@ import {
 } from '@/domains/google';
 import { UserManageProps } from '@/domains/manage';
 import { PaymentBaseProps, PaymentStatusType } from '@/domains/payment';
+import { PlayerProps } from '@/domains/player';
 import { TournamentProps } from '@/domains/tournament';
 import { UserProps } from '@/domains/user';
 
@@ -34,19 +34,19 @@ export interface TournamentUpdateReturnType {
   message: string;
 }
 
-export interface GetGamerReturnType {
-  gamer?: GamerProps | null;
+export interface GetPlayerReturnType {
+  player?: PlayerProps | null;
   manage?: boolean;
   message: string;
 }
 
-export interface GetGamersReturnType {
-  gamers?: GamerProps[];
+export interface GetPlayersReturnType {
+  players?: PlayerProps[];
   total?: number;
   message: string;
 }
 
-export interface GamerUpdateReturnType {
+export interface PlayerUpdateReturnType {
   message: string;
 }
 

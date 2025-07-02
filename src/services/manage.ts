@@ -5,7 +5,7 @@ import { ManageUpdateReturnType } from './interfaces';
 
 export const updateManages = async (manages: CreateManageDto): Promise<ManageUpdateReturnType> => {
   try {
-    const { data } = await apiOrigin.post(`/update-manages`, manages);
+    const { data } = await apiOrigin.post(`/update-manage-courts`, manages);
 
     return {
       message: data.message,

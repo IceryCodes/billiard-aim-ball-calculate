@@ -4,6 +4,7 @@ export enum PageType {
   CUSHION = '顆星公式',
   COURTS = '撞球場地',
   TOURNAMENTS = '賽程列表',
+  PLAYERS = '撞球選手',
   REGISTER = '註冊',
   LOGIN = '登入',
   VERIFY = '帳號驗證',

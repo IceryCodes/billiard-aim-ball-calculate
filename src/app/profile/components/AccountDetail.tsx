@@ -10,10 +10,10 @@ interface AccountDetailProps {
 }
 
 export const AccountDetail = ({ user, token }: AccountDetailProps) => (
-  <div className="bg-backgroundLight rounded-lg shadow-md p-6">
+  <div className="bg-backgroundLight rounded-lg shadow-md p-6 h-fit">
     <div className="flex justify-between items-center mb-8">
       <h2 className="text-2xl font-semibold">帳號資訊</h2>
-      <div className="relative">{user && <ProfileForm token={token} user={user} />}</div>
+      {user && <ProfileForm token={token} user={user} />}
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

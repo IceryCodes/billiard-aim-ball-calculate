@@ -1,12 +1,12 @@
 import { Collection, WithId } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { CourtDBProps } from '@/domains/court';
-import { getCourtsCollection } from '@/lib/mongodb';
-import { GetCourtsReturnType } from '@/services/interfaces';
+import { PlayerDBProps } from '@/domains/player';
+import { getPlayersCollection } from '@/lib/mongodb';
+import { GetPlayersReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtsReturnType>) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse<GetPlayersReturnType>) => {
   const { query, county, keywords, fullDay, partner, page = '1', limit = '10' } = req.query;
 
   // Parse page and limit as integers
@@ -19,7 +19,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtsReturn
   }
 
   try {
-    const courtsCollection: Collection<CourtDBProps> = await getCourtsCollection();
+    const playersCollection: Collection<PlayerDBProps> = await getPlayersCollection();
 
     const mongoQuery: Record<string, unknown> = {}; // Type-safe object
     mongoQuery.$or = [{ deletedAt: null }, { deletedAt: { $exists: false } }];
@@ -52,9 +52,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtsReturn
       mongoQuery.keywords = { $in: keywordsArray.map((kw) => new RegExp(kw, 'i')) };
     }
 
-    const total: number = await courtsCollection.countDocuments(mongoQuery);
+    const total: number = await playersCollection.countDocuments(mongoQuery);
 
-    const courts: WithId<CourtDBProps>[] = await courtsCollection
+    const players: WithId<PlayerDBProps>[] = await playersCollection
       .find(mongoQuery)
       .sort({ partner: -1, viewed: -1, title: 1, _id: 1 })
       .skip(pageSize ? (currentPage - 1) * pageSize : 0)
@@ -62,12 +62,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtsReturn
       .toArray();
 
     res.status(HttpStatus.Ok).json({
-      courts: courts.map((court) => ({ ...court, _id: court._id.toString() })),
+      players: players.map((player) => ({ ...player, _id: player._id.toString() })),
       total,
       message: 'Success',
     });
   } catch (error) {
-    console.error('Error fetching courts:', error);
+    console.error('Error fetching players:', error);
     res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
   }
 };
