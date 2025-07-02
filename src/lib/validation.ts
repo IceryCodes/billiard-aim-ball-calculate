@@ -135,22 +135,40 @@ const rules: RulesProps = {
   genderOptional: mixed<GenderType>().oneOf([GenderType.None, GenderType.Male, GenderType.Female], '性別必須為有效選項'),
   gameTypes: array().of(mixed<GameTypesType>().required()).required('種類是必填項目'),
   websiteUrl: string().test('is-valid-url', '無效的網址格式', (value) => {
-    if (!value) return true;
+    if (!value) return true; // 空字串通過驗證
+    
     try {
-      new URL(value);
+      const url = new URL(value);
+      
       // 檢查是否以 https:// 開頭
-      if (!value.startsWith('https://')) {
+      if (!url.protocol.startsWith('https:')) {
         return false;
       }
-      // 檢查是否至少有兩個點
-      const dotCount = (value.match(/\./g) || []).length;
-      if (dotCount < 2) return false;
-
-      return (
-        /^https:\/\/([\da-z.-]+)\.([a-z.]{2,})(\/[/\w .-:]*)*\/?$/.test(value) &&
-        !/[<>()[\]\\,;\s@"]/.test(value) &&
-        (value.match(/:/g) || []).length <= 1
-      );
+      
+      // 檢查主機名稱格式（支援大小寫字母、數字、連字符和點）
+      const hostnameRegex = /^[a-zA-Z0-9.-]+$/;
+      if (!hostnameRegex.test(url.hostname)) {
+        return false;
+      }
+      
+      // 檢查是否至少有一個點（確保有頂級域名）
+      if (!url.hostname.includes('.')) {
+        return false;
+      }
+      
+      // 檢查頂級域名至少2個字元
+      const parts = url.hostname.split('.');
+      const tld = parts[parts.length - 1];
+      if (tld.length < 2) {
+        return false;
+      }
+      
+      // 檢查是否包含不允許的特殊字符
+      if (/[<>()[\]\\,;\s@"]/.test(value)) {
+        return false;
+      }
+      
+      return true;
     } catch {
       return false;
     }

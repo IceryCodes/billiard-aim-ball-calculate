@@ -29,7 +29,7 @@ interface MetadataInfoTournamentProps {
 
 export const defaultCourtExcerpt = ({ title }: CourtProps): string => `${title}`;
 
-export const defaultGamerExcerpt = ({ title }: PlayerProps): string => `${title}`;
+export const defaultPlayerExcerpt = ({ title }: PlayerProps): string => `${title}`;
 
 export const getDescription = ({ currentPath }: GetDescriptionProps): string => {
   switch (true) {

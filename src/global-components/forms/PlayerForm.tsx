@@ -19,7 +19,7 @@ import { verifyToken } from '@/utils/token';
 import { Button, defaultButtonStyle } from '../buttons/Button';
 import FieldErrorlabel from '../FieldErrorlabel';
 import { FormField } from '../formFields/FormFields';
-import { Input, InputStyleType } from '../inputs/Input';
+import { AutoCompleteType, Input, InputStyleType } from '../inputs/Input';
 import Popup from '../Popup';
 import { Select } from '../selects/Select';
 import { TextArea } from '../textareas/TextArea';
@@ -288,6 +288,24 @@ export const PlayerForm = ({ mode, player, onSuccess }: PlayerFormProps) => {
 
           <FormField
             control={control}
+            type={InputStyleType.Tel}
+            titleText="電話"
+            fieldName="phone"
+            placeholder="聯絡電話"
+            col={3}
+          />
+          <FormField
+            control={control}
+            type={InputStyleType.Email}
+            titleText="信箱"
+            fieldName="email"
+            placeholder="聯絡信箱"
+            col={3}
+            autoComplete={AutoCompleteType.Email}
+          />
+
+          <FormField
+            control={control}
             titleText="簡述"
             fieldName="excerpt"
             placeholder={`${PageType.PLAYERS}的簡述`}
@@ -334,12 +352,12 @@ export const PlayerForm = ({ mode, player, onSuccess }: PlayerFormProps) => {
       manage: { players },
     } = await verifyToken({ token });
 
-    if (players.length > 0) {
+    if (players.length > 0 && mode === PlayerFormMode.Create) {
       return showToast({ message: `您目前只能管理一名${PageType.PLAYERS}`, toastStyle: ToastStyleType.Normal });
     }
 
     setDisplay(true);
-  }, [logout, showToast, token]);
+  }, [logout, mode, showToast, token]);
 
   return (
     <>
