@@ -23,7 +23,6 @@ export const generateMetadata = async (props: { params: Params }): Promise<Metad
   if (player) {
     pageName = player.title;
   } else {
-    console.log('Player not found', player);
     notFound();
   }
 
