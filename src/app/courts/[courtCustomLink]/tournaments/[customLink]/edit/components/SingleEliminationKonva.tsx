@@ -126,9 +126,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
     const [drawingMode, setDrawingMode] = useState<DrawingMode>(DrawingMode.NORMAL);
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentLine, setCurrentLine] = useState<DrawingLine | null>(null);
-    const [localDrawingData, setLocalDrawingData] = useState<DrawingData>(
-      drawingData || { lines: [], lastUpdated: Date.now() }
-    );
+
     const [currentEditMode, setCurrentEditMode] = useState<EditMode>(editMode);
     const [gamerEditState, setGamerEditState] = useState<GamerEditState>({
       gamerId: null,
@@ -146,6 +144,8 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       height: sceneHeight,
       scale: 1,
     });
+
+    const effectiveDrawingData = drawingData || { lines: [], lastUpdated: Date.now() };
 
     const handleGamerGamesEdit = useCallback(
       (gamerId: number, newGames: number) => {
@@ -227,19 +227,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       setCurrentEditMode(editMode);
     }, [editMode]);
 
-    useEffect(() => {
-      if (drawingData) {
-        if (
-          drawingData.lastUpdated !== localDrawingData.lastUpdated ||
-          drawingData.lines.length !== localDrawingData.lines.length
-        ) {
-          setLocalDrawingData(drawingData);
-        }
-      } else {
-        setLocalDrawingData({ lines: [], lastUpdated: Date.now() });
-      }
-    }, [drawingData, localDrawingData.lastUpdated, localDrawingData.lines.length]);
-
     const updateStageSize = useCallback((): void => {
       if (!containerRef.current) return;
 
@@ -299,8 +286,6 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
         lastUpdated: Date.now(),
       };
 
-      setLocalDrawingData(newDrawingData);
-
       if (onDrawingUpdate) {
         onDrawingUpdate(newDrawingData);
       }
@@ -358,17 +343,16 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
       setIsDrawing(false);
 
       const newDrawingData: DrawingData = {
-        lines: [...localDrawingData.lines, currentLine],
+        lines: [...(drawingData?.lines || []), currentLine],
         lastUpdated: Date.now(),
       };
 
-      setLocalDrawingData(newDrawingData);
       setCurrentLine(null);
 
       if (onDrawingUpdate) {
         onDrawingUpdate(newDrawingData);
       }
-    }, [drawingMode, isDrawing, currentLine, localDrawingData, onDrawingUpdate]);
+    }, [drawingMode, isDrawing, currentLine, drawingData, onDrawingUpdate]);
 
     const handleWheel = useCallback(
       (e: Konva.KonvaEventObject<WheelEvent>): void => {
@@ -857,7 +841,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
             </Layer>
 
             <Layer ref={drawingLayerRef} listening={false}>
-              {localDrawingData.lines.map((line: DrawingLine) => {
+              {effectiveDrawingData.lines.map((line: DrawingLine) => {
                 if (!line.points || line.points.length < 4) {
                   return null;
                 }
@@ -920,7 +904,7 @@ const SingleEliminationKonva = forwardRef<SingleEliminationKonvaRef, SingleElimi
                 color: debugInfoTextColor,
               }}
             >
-              <div>本地線條: {localDrawingData.lines.length}</div>
+              <div>本地線條: {effectiveDrawingData.lines.length}</div>
               <div>外部線條: {drawingData?.lines?.length || 0}</div>
             </div>
           )}

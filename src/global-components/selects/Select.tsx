@@ -2,7 +2,7 @@ import { InputHTMLAttributes, forwardRef } from 'react';
 
 interface SelectProps extends InputHTMLAttributes<HTMLSelectElement> {
   defaultValue: string;
-  options: string[];
+  options: (string | number)[];
   className?: string;
 }
 
@@ -13,7 +13,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <select {...restProps} ref={ref} className={`${selectClassName} ${className}`}>
         <option value="">{defaultValue}</option>
-        {options.map((item: string) => (
+        {options.map((item: string | number) => (
           <option key={item} value={item}>
             {item}
           </option>

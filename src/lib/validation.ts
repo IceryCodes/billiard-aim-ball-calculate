@@ -67,6 +67,7 @@ interface RulesProps {
   court: StringSchema<string | undefined, AnyObject>;
   courtTitle: StringSchema<string | undefined, AnyObject>;
   courtCustomLink: StringSchema<string | undefined, AnyObject>;
+  gamerCount: NumberSchema<number, AnyObject>;
 
   // player
   professional: BooleanSchema<boolean, AnyObject>;
@@ -247,6 +248,7 @@ const rules: RulesProps = {
   court: string(),
   courtTitle: string(),
   courtCustomLink: string(),
+  gamerCount: number().required('參賽人數是必填項目'),
 
   // player
   professional: boolean().required('職業選手是必填項目'),
@@ -326,6 +328,7 @@ export const tournamentValidationSchema = object({
   court: rules.court.default(''),
   courtTitle: rules.courtTitle.default(''),
   courtCustomLink: rules.courtCustomLink.default(''),
+  gamerCount: rules.gamerCount.default(32),
 }).required();
 
 export const playerValidationSchema = object({
