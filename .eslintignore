@@ -1,1 +1,10 @@
 src/global-components/effects/
+src/global-components/effects/**
+/src/global-components/effects/
+**/src/global-components/effects/**
+
+# Node modules
+node_modules/
+.next/
+out/
+build/

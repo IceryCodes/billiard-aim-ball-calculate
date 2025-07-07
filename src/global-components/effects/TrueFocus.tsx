@@ -55,7 +55,7 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
     if (!wordRefs.current[currentIndex] || !containerRef.current) return;
 
     const parentRect = containerRef.current.getBoundingClientRect();
-    const activeRect = wordRefs.current[currentIndex]!.getBoundingClientRect();
+    const activeRect = wordRefs.current[currentIndex]?.getBoundingClientRect();
 
     setFocusRect({
       x: activeRect.left - parentRect.left,
@@ -67,14 +67,14 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
 
   const handleMouseEnter = (index: number) => {
     if (manualMode) {
-      setLastActiveIndex(index);
+      setLastActiveIndex(currentIndex);
       setCurrentIndex(index);
     }
   };
 
   const handleMouseLeave = () => {
-    if (manualMode) {
-      setCurrentIndex(lastActiveIndex!);
+    if (manualMode && lastActiveIndex !== null) {
+      setCurrentIndex(lastActiveIndex);
     }
   };
 
@@ -85,20 +85,20 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
         return (
           <span
             key={index}
-            ref={(el) => (wordRefs.current[index] = el)}
+            ref={(el: HTMLSpanElement | null) => {
+              wordRefs.current[index] = el;
+            }}
             className="relative text-[3rem] font-black cursor-pointer"
-            style={
-              {
-                filter: manualMode
-                  ? isActive
-                    ? `blur(0px)`
-                    : `blur(${blurAmount}px)`
-                  : isActive
-                    ? `blur(0px)`
-                    : `blur(${blurAmount}px)`,
-                transition: `filter ${animationDuration}s ease`,
-              } as React.CSSProperties
-            }
+            style={{
+              filter: manualMode
+                ? isActive
+                  ? 'blur(0px)'
+                  : `blur(${blurAmount}px)`
+                : isActive
+                  ? 'blur(0px)'
+                  : `blur(${blurAmount}px)`,
+              transition: `filter ${animationDuration}s ease`,
+            }}
             onMouseEnter={() => handleMouseEnter(index)}
             onMouseLeave={handleMouseLeave}
           >
@@ -132,28 +132,28 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
             borderColor: 'var(--border-color)',
             filter: 'drop-shadow(0 0 4px var(--border-color))',
           }}
-        ></span>
+        />
         <span
           className="absolute w-4 h-4 border-[3px] rounded-[3px] top-[-10px] right-[-10px] border-l-0 border-b-0"
           style={{
             borderColor: 'var(--border-color)',
             filter: 'drop-shadow(0 0 4px var(--border-color))',
           }}
-        ></span>
+        />
         <span
           className="absolute w-4 h-4 border-[3px] rounded-[3px] bottom-[-10px] left-[-10px] border-r-0 border-t-0"
           style={{
             borderColor: 'var(--border-color)',
             filter: 'drop-shadow(0 0 4px var(--border-color))',
           }}
-        ></span>
+        />
         <span
           className="absolute w-4 h-4 border-[3px] rounded-[3px] bottom-[-10px] right-[-10px] border-l-0 border-t-0"
           style={{
             borderColor: 'var(--border-color)',
             filter: 'drop-shadow(0 0 4px var(--border-color))',
           }}
-        ></span>
+        />
       </motion.div>
     </div>
   );

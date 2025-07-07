@@ -425,7 +425,6 @@ class W {
 }
 
 class Y extends MeshPhysicalMaterial {
-  [x: string]: { USE_UV: string };
   uniforms: { [key: string]: { value: any } } = {
     thicknessDistortion: { value: 0.1 },
     thicknessAmbient: { value: 0 },
@@ -436,7 +435,7 @@ class Y extends MeshPhysicalMaterial {
 
   constructor(params: any) {
     super(params);
-    this.defines = { USE_UV: '' };
+    (this as any).defines = { USE_UV: '' };
     this.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, this.uniforms);
       shader.fragmentShader =
@@ -787,7 +786,6 @@ const Ballpit: React.FC<BallpitProps> = ({ className = '', followCursor = true, 
         spheresInstanceRef.current.dispose();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <canvas className={`${className} w-full h-full`} ref={canvasRef} />;
