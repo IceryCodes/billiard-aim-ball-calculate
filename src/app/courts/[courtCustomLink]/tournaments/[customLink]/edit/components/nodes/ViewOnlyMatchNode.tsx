@@ -4,6 +4,7 @@ import { Handle, Position } from '@xyflow/react';
 
 import { Gamer } from '@/domains/tournament';
 
+import { DOT_STYLE } from '../darkModeConstants';
 import { LAYOUT, STYLES } from '../reactFlowConstants';
 import { MatchNodeData } from '../reactFlowTypes';
 import { canMatchProceed, isGamerEmpty } from '../reactFlowUtils';
@@ -53,34 +54,10 @@ const ViewOnlyMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
         height: LAYOUT.boxHeight + (match.round === 1 ? 35 : 0),
       }}
     >
-      {/* 修正：第一輪不需要 target handle，其他輪次的 target 在底部 */}
-      {match.round > 1 && (
-        <Handle
-          type="target"
-          position={Position.Bottom}
-          id={`${id}-target`}
-          style={{
-            bottom: match.round === 1 ? '30px' : '0px',
-            background: '#f97316',
-            border: 'none',
-            width: '8px',
-            height: '8px',
-          }}
-        />
-      )}
+      {/* 極小的連接點 */}
+      {match.round > 1 && <Handle type="target" position={Position.Bottom} id={`${id}-target`} style={DOT_STYLE} />}
 
-      {/* 修正：所有比賽都需要 source handle，包括決賽（連接到冠軍） */}
-      <Handle
-        type="source"
-        position={Position.Top}
-        id={`${id}-source`}
-        style={{
-          background: '#f97316',
-          border: 'none',
-          width: '8px',
-          height: '8px',
-        }}
-      />
+      <Handle type="source" position={Position.Top} id={`${id}-source`} style={DOT_STYLE} />
 
       <div className={`${STYLES.matchNode} w-full flex relative`} style={{ height: LAYOUT.boxHeight }}>
         <div className={`${gamer1Classes} w-1/2`}>

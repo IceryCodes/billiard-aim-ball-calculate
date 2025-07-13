@@ -4,7 +4,7 @@ import { Handle, NodeToolbar, Position } from '@xyflow/react';
 
 import { Gamer } from '@/domains/tournament';
 
-import { getThemedStyles } from '../darkModeConstants';
+import { DOT_STYLE, getThemedStyles } from '../darkModeConstants';
 import { LAYOUT } from '../reactFlowConstants';
 import { MatchNodeData } from '../reactFlowTypes';
 import { canMatchProceed, getCursorClass, isGamerEmpty } from '../reactFlowUtils';
@@ -145,34 +145,10 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
           </NodeToolbar>
         )}
 
-        {/* React Flow 連接點 - 修正：第一輪不需要 target handle */}
-        {match.round > 1 && (
-          <Handle
-            type="target"
-            position={Position.Bottom}
-            id={`${id}-target`}
-            style={{
-              bottom: match.round === 1 ? '30px' : '0px',
-              background: '#f97316',
-              border: 'none',
-              width: '8px',
-              height: '8px',
-            }}
-          />
-        )}
+        {/* React Flow 連接點 - 極小的圈圈 */}
+        {match.round > 1 && <Handle type="target" position={Position.Bottom} id={`${id}-target`} style={DOT_STYLE} />}
 
-        {/* 修正：所有比賽都需要 source handle，包括決賽（連接到冠軍） */}
-        <Handle
-          type="source"
-          position={Position.Top}
-          id={`${id}-source`}
-          style={{
-            background: '#f97316',
-            border: 'none',
-            width: '8px',
-            height: '8px',
-          }}
-        />
+        <Handle type="source" position={Position.Top} id={`${id}-source`} style={DOT_STYLE} />
 
         {/* 其餘組件內容保持不變... */}
         <div

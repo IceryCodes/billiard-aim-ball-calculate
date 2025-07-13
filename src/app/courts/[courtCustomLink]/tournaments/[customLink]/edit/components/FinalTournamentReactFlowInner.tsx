@@ -20,12 +20,12 @@ import {
 import { validateEdges } from './reactFlowUtils';
 
 // 簡化的配置（移除繪圖相關）
-const createFlowConfig = (isEditMode: boolean) => ({
+const createFlowConfig = (isEditMode: boolean, editMode: string) => ({
   nodesDraggable: false,
   nodesConnectable: false,
   elementsSelectable: isEditMode,
-  panOnDrag: true, // 恢復正常拖拽
-  zoomOnScroll: true, // 恢復正常縮放
+  panOnDrag: true,
+  zoomOnScroll: editMode !== 'GAMER_EDIT', // 只在非編輯選手模式下允許滾輪縮放
   zoomOnDoubleClick: !isEditMode,
   panOnScroll: false,
   preventScrolling: false,
@@ -36,7 +36,7 @@ const createFlowConfig = (isEditMode: boolean) => ({
     animated: false,
     style: {
       stroke: '#f97316',
-      strokeWidth: 2,
+      strokeWidth: 3,
     },
   },
 });
@@ -249,7 +249,7 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
     }, [setOptimalView, isInitialized]);
 
     // 流程配置（移除繪圖相關）
-    const flowConfig = useMemo(() => createFlowConfig(isEditMode), [isEditMode]);
+    const flowConfig = useMemo(() => createFlowConfig(isEditMode, currentEditMode), [isEditMode, currentEditMode]);
 
     if (hasRenderError) {
       return (

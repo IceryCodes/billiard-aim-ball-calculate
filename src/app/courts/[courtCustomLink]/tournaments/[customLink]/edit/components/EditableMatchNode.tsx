@@ -4,6 +4,7 @@ import { Handle, Position } from '@xyflow/react';
 
 import { Gamer } from '@/domains/tournament';
 
+import { DOT_STYLE } from './darkModeConstants';
 import { MatchNodeData } from './reactFlowTypes';
 
 interface EditState {
@@ -23,11 +24,7 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const match = data.match;
-  const onGamerClick = data.onGamerClick;
-  const editMode = data.editMode;
-  const onGamerNameEdit = data.onGamerNameEdit;
-  const onGamerGamesEdit = data.onGamerGamesEdit;
+  const { match, onGamerClick, editMode, onGamerNameEdit, onGamerGamesEdit } = data;
 
   const getCursorClass = useCallback(
     (gamer: Gamer | null, isEmpty: boolean) => {
@@ -152,37 +149,10 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
 
   return (
     <div className="w-24 h-20 relative">
-      {/* 修正：第一輪不需要 target handle */}
-      {match.round > 1 && (
-        <Handle
-          type="target"
-          position={Position.Bottom}
-          id={`${id}-target`}
-          style={{
-            opacity: 0,
-            width: 8,
-            height: 8,
-            border: 'none',
-            background: 'transparent',
-            bottom: -4,
-          }}
-        />
-      )}
+      {/* 極小的連接點 */}
+      {match.round > 1 && <Handle type="target" position={Position.Bottom} id={`${id}-target`} style={DOT_STYLE} />}
 
-      {/* 修正：所有比賽都需要 source handle，包括決賽（連接到冠軍） */}
-      <Handle
-        type="source"
-        position={Position.Top}
-        id={`${id}-source`}
-        style={{
-          opacity: 0,
-          width: 8,
-          height: 8,
-          border: 'none',
-          background: 'transparent',
-          top: -4,
-        }}
-      />
+      <Handle type="source" position={Position.Top} id={`${id}-source`} style={DOT_STYLE} />
 
       <div className="flex h-20 w-24 border border-gray-300 dark:border-gray-600 rounded shadow-sm overflow-hidden bg-white dark:bg-gray-800">
         <div
@@ -212,7 +182,9 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
               autoFocus
             />
           ) : (
-            <span className="truncate text-center text-xs">{gamer1Name || (isGamer1Empty ? '空籤' : '待定')}</span>
+            <span className="truncate text-center text-xs" style={{ writingMode: 'vertical-rl' }}>
+              {gamer1Name || (isGamer1Empty ? '空籤' : '待定')}
+            </span>
           )}
         </div>
 
@@ -243,7 +215,9 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
               autoFocus
             />
           ) : (
-            <span className="truncate text-center text-xs">{gamer2Name || (isGamer2Empty ? '空籤' : '待定')}</span>
+            <span className="truncate text-center text-xs" style={{ writingMode: 'vertical-rl' }}>
+              {gamer2Name || (isGamer2Empty ? '空籤' : '待定')}
+            </span>
           )}
         </div>
       </div>

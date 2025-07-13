@@ -156,36 +156,15 @@ export const getCursorClass = (canClick: boolean, isEmpty: boolean, editMode: st
   return canClick ? 'cursor-pointer' : 'cursor-not-allowed';
 };
 
-// 修正：改善邊線驗證函數
+// 修正：簡化邊線驗證函數
 export const validateEdges = (edges: TournamentEdge[], nodes: TournamentNode[]): TournamentEdge[] => {
   const nodeIds = new Set(nodes.map((node) => node.id));
-  const validEdges: TournamentEdge[] = [];
 
-  edges.forEach((edge) => {
+  return edges.filter((edge) => {
     const hasValidSource = nodeIds.has(edge.source);
     const hasValidTarget = nodeIds.has(edge.target);
-
-    if (!hasValidSource) {
-      console.warn(`邊線 ${edge.id} 的來源節點不存在: ${edge.source}`);
-    }
-
-    if (!hasValidTarget) {
-      console.warn(`邊線 ${edge.id} 的目標節點不存在: ${edge.target}`);
-    }
-
-    if (hasValidSource && hasValidTarget) {
-      validEdges.push(edge);
-    } else {
-      console.warn(`邊線驗證失敗: ${edge.id}`, {
-        source: edge.source,
-        target: edge.target,
-        hasValidSource,
-        hasValidTarget,
-      });
-    }
+    return hasValidSource && hasValidTarget;
   });
-
-  return validEdges;
 };
 
 // 安全的節點 ID 生成器
@@ -193,7 +172,6 @@ export const safeGenerateNodeId = (type: string, round?: number, matchIndex?: nu
   try {
     return generateNodeId(type, round, matchIndex);
   } catch (error) {
-    console.error('生成節點ID時發生錯誤:', error);
     return `fallback-${type}-${Date.now()}-${Math.random()}`;
   }
 };
@@ -206,14 +184,4 @@ export const isValidEdge = (edge: TournamentEdge, nodeIds: Set<string>): boolean
 // 生成安全的 Handle ID
 export const generateHandleId = (nodeId: string, type: 'source' | 'target'): string => {
   return `${nodeId}-${type}`;
-};
-
-// 新增：邊線調試函數
-export const debugEdgeCreation = (edges: TournamentEdge[], nodes: TournamentNode[]): void => {
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  const invalidEdges = edges.filter((edge) => !isValidEdge(edge, nodeIds));
-
-  if (invalidEdges.length > 0) {
-    console.warn('發現無效邊線:', invalidEdges);
-  }
 };

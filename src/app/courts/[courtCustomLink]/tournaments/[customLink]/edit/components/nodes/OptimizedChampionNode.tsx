@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 
 import { Handle, Position } from '@xyflow/react';
 
-import { getThemedStyles } from '../darkModeConstants';
+import { DOT_STYLE, getThemedStyles } from '../darkModeConstants';
 import { LAYOUT } from '../reactFlowConstants';
 import { ChampionNodeData } from '../reactFlowTypes';
 
@@ -23,18 +23,7 @@ const OptimizedChampionNode: React.FC<{ data: ChampionNodeData; id: string }> = 
         height: LAYOUT.championBoxHeight,
       }}
     >
-      {/* 修正：冠軍節點的 target 在底部，接收決賽的連接 */}
-      <Handle
-        type="target"
-        position={Position.Bottom}
-        id={`${id}-target`}
-        style={{
-          background: '#f97316',
-          border: 'none',
-          width: '8px',
-          height: '8px',
-        }}
-      />
+      <Handle type="target" position={Position.Bottom} id={`${id}-target`} style={DOT_STYLE} />
 
       <div
         className={`${themedStyles.championNode} w-full h-full flex items-center justify-center relative px-2 transition-colors duration-200`}

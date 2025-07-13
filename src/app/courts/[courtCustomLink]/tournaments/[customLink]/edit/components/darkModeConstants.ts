@@ -43,6 +43,15 @@ export const DARK_MODE_COLORS = {
   connectionLine: '#f97316',
 };
 
+export const DOT_STYLE = {
+  left: '50%',
+  background: '#f97316',
+  border: 'none',
+  width: '2px',
+  height: '2px',
+  borderRadius: '50%',
+};
+
 // 檢測 Dark Mode 的工具函數
 export const isDarkMode = (): boolean => {
   if (typeof window === 'undefined') return false;
