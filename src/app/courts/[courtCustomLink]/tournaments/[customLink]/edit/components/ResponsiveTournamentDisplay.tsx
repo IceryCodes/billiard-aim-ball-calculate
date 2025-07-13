@@ -61,15 +61,6 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
     }, 100);
   }, []);
 
-  // 縮放功能
-  const handleZoomIn = useCallback(() => {
-    reactFlowRef.current?.zoomIn();
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    reactFlowRef.current?.zoomOut();
-  }, []);
-
   // 移動端最佳化顯示
   const handleMobileOptimize = useCallback(() => {
     if (isMobile) {
@@ -104,21 +95,6 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                 </button>
               ) : (
                 <>
-                  <button
-                    onClick={handleZoomOut}
-                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600 font-bold"
-                    title="縮小"
-                  >
-                    −
-                  </button>
-                  <button
-                    onClick={handleZoomIn}
-                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-600 font-bold"
-                    title="放大"
-                  >
-                    +
-                  </button>
-
                   {/* 新增：選手編輯模式按鈕 */}
                   {isEditMode && (
                     <button
@@ -208,21 +184,6 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
             <div className="flex items-center space-x-2 sm:space-x-3">
               {!isMobile && (
                 <>
-                  <button
-                    onClick={handleZoomOut}
-                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600 font-bold"
-                    title="縮小"
-                  >
-                    −
-                  </button>
-                  <button
-                    onClick={handleZoomIn}
-                    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-600 font-bold"
-                    title="放大"
-                  >
-                    +
-                  </button>
-
                   {/* 全螢幕模式下的編輯按鈕 */}
                   {isEditMode && (
                     <button

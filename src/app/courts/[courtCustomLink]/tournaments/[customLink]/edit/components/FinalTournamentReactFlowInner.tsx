@@ -1,12 +1,20 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 
-import { Background, Panel, ReactFlow, ReactFlowProvider, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
+import {
+  Background,
+  Controls,
+  Panel,
+  ReactFlow,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+} from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
 
 import { Gamer } from '@/domains/tournament';
 
-import { getThemedColors, isDarkMode } from './darkModeConstants';
 import { createTournamentEdges, matchesToNodes } from './dataTransformers';
 import { optimizedNodeTypes } from './nodes/optimizedNodeTypes';
 import { viewOnlyNodeTypes } from './nodes/viewOnlyNodeTypes';
@@ -23,12 +31,12 @@ import { validateEdges } from './reactFlowUtils';
 const createFlowConfig = (isEditMode: boolean, editMode: string) => ({
   nodesDraggable: false,
   nodesConnectable: false,
-  elementsSelectable: isEditMode,
+  elementsSelectable: true, // 改為 true 讓節點可以接收事件
   panOnDrag: true,
   zoomOnScroll: editMode !== 'GAMER_EDIT', // 只在非編輯選手模式下允許滾輪縮放
   zoomOnDoubleClick: !isEditMode,
   panOnScroll: false,
-  preventScrolling: false,
+  preventScrolling: true, // 改為 true 讓 React Flow 接管滾輪事件
   minZoom: 0.1,
   maxZoom: isEditMode ? 3 : 2,
   defaultEdgeOptions: {
@@ -38,6 +46,7 @@ const createFlowConfig = (isEditMode: boolean, editMode: string) => ({
       stroke: '#f97316',
       strokeWidth: 3,
     },
+    markerEnd: undefined, // 確保沒有箭頭
   },
 });
 
@@ -46,26 +55,8 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
   ({ gamers, matches, isEditMode = false, onMatchUpdate, editMode = 'NORMAL', onGamerNameEdit, onGamerGamesEdit }, ref) => {
     const reactFlowInstance = useReactFlow();
     const [currentEditMode, setCurrentEditMode] = useState<string>(editMode);
-    const [darkMode, setDarkMode] = useState<boolean>(false);
     const [hasRenderError, setHasRenderError] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
-
-    // 監聽 Dark Mode 變化
-    useEffect(() => {
-      const updateDarkMode = () => setDarkMode(isDarkMode());
-      updateDarkMode();
-
-      const observer = new MutationObserver(updateDarkMode);
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class'],
-      });
-
-      return () => observer.disconnect();
-    }, []);
-
-    // 獲取主題化的顏色
-    const themedColors = useMemo(() => getThemedColors(), []);
 
     // 處理選手點擊事件
     const handleGamerClick = useCallback(
@@ -274,7 +265,7 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
     return (
       <div
         className="w-full h-full relative transition-colors duration-300"
-        style={{ backgroundColor: themedColors.canvasBackground }}
+        style={{ backgroundColor: '#1f2937' }} // 直接使用深色背景
       >
         <ReactFlow
           nodes={nodes}
@@ -283,9 +274,13 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypesToUse}
           {...flowConfig}
-          fitView={false}
+          fitView={true}
+          style={{ width: '100%', height: '100%' }} // 確保完整覆蓋
         >
-          <Background color={darkMode ? '#374151' : '#555'} size={1} className="transition-colors duration-300" />
+          <Background color="#4b5563" size={1} />
+
+          {/* 觀看模式的控制面板 */}
+          <Controls showZoom={true} showFitView={true} showInteractive={false} className="text-black" />
 
           {/* 模式標識 */}
           {!isEditMode && (

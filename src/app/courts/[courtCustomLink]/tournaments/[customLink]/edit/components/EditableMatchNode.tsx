@@ -61,9 +61,7 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
 
       if (editState.field === 'name' && onGamerNameEdit) {
         const trimmedValue = value.trim();
-        if (trimmedValue.length > 0) {
-          onGamerNameEdit(editState.gamerId, trimmedValue);
-        }
+        onGamerNameEdit(editState.gamerId, trimmedValue);
       } else if (editState.field === 'games' && onGamerGamesEdit) {
         const numValue = parseInt(value) || 7;
         onGamerGamesEdit(editState.gamerId, Math.max(1, Math.min(99, numValue)));
@@ -175,7 +173,7 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
               defaultValue={editState.initialValue.toString()}
               maxLength={8}
               placeholder="輸入名稱"
-              className="w-full h-full text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none px-1"
+              className="w-20 h-full z-50 text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none px-1"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={handleKeyDown}
               onBlur={handleBlur}
@@ -208,7 +206,7 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
               defaultValue={editState.initialValue.toString()}
               maxLength={8}
               placeholder="輸入名稱"
-              className="w-full h-full text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none px-1"
+              className="w-20 h-full z-50 text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none px-1"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={handleKeyDown}
               onBlur={handleBlur}

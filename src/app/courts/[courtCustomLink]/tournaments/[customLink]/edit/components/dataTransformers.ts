@@ -66,7 +66,7 @@ export const matchesToNodes = (
         },
         data: matchNodeData,
         draggable: false,
-        selectable: false,
+        selectable: true, // 改為 true 讓節點可以接收點擊事件
       };
 
       nodes.push(matchNode);
@@ -90,7 +90,7 @@ export const matchesToNodes = (
         },
         data: roundTitleData,
         draggable: false,
-        selectable: false,
+        selectable: false, // 標題節點不需要點擊
       };
 
       nodes.push(roundTitleNode);
@@ -112,7 +112,7 @@ export const matchesToNodes = (
       },
       data: championTitleData,
       draggable: false,
-      selectable: false,
+      selectable: false, // 標題節點不需要點擊
     };
 
     nodes.push(championTitleNode);
@@ -134,7 +134,7 @@ export const matchesToNodes = (
         },
         data: championData,
         draggable: false,
-        selectable: false,
+        selectable: false, // 冠軍節點不需要點擊
       };
 
       nodes.push(championNode);
@@ -186,6 +186,7 @@ export const createTournamentEdges = (matches: Match[], gamers: Gamer[]): Tourna
             strokeWidth: 3,
           },
           animated: false,
+          markerEnd: undefined, // 確保沒有箭頭
         };
 
         edges.push(edge);
@@ -204,12 +205,13 @@ export const createTournamentEdges = (matches: Match[], gamers: Gamer[]): Tourna
         target: targetNodeId,
         sourceHandle: `${sourceNodeId}-source`,
         targetHandle: `${targetNodeId}-target`,
-        type: 'smoothstep',
+        type: 'smoothstep', // 改為 smoothstep
         style: {
           stroke: '#f97316',
           strokeWidth: 4,
         },
         animated: false,
+        markerEnd: undefined, // 確保沒有箭頭
       };
 
       edges.push(championEdge);

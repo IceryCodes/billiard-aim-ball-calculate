@@ -4,7 +4,7 @@ import { Handle, NodeToolbar, Position } from '@xyflow/react';
 
 import { Gamer } from '@/domains/tournament';
 
-import { DOT_STYLE, getThemedStyles } from '../darkModeConstants';
+import { DOT_STYLE, STYLES } from '../darkModeConstants';
 import { LAYOUT } from '../reactFlowConstants';
 import { MatchNodeData } from '../reactFlowTypes';
 import { canMatchProceed, getCursorClass, isGamerEmpty } from '../reactFlowUtils';
@@ -17,9 +17,6 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
     const [editingGames, setEditingGames] = useState<{ gamerId: number; side: 'left' | 'right' } | null>(null);
     const [gamer1Name, setGamer1Name] = useState(match.gamer1?.name || '');
     const [gamer2Name, setGamer2Name] = useState(match.gamer2?.name || '');
-
-    // 使用 useMemo 優化樣式計算
-    const themedStyles = useMemo(() => getThemedStyles(), []);
 
     const matchCanProceed = useMemo(() => canMatchProceed(match), [match]);
     const isGamer1Empty = useMemo(() => isGamerEmpty(match.gamer1), [match.gamer1]);
@@ -75,22 +72,22 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
 
     const getGamerClasses = useCallback(
       (isWinner: boolean, canClick: boolean, isEmpty: boolean, isLeft: boolean, isEditing: boolean): string => {
-        const baseClasses = [themedStyles.gamerBox];
-        if (isLeft) baseClasses.push(themedStyles.gamerBoxLeft);
+        const baseClasses = [STYLES.gamerBox];
+        if (isLeft) baseClasses.push(STYLES.gamerBoxLeft);
 
         if (isEditing) {
-          baseClasses.push(themedStyles.gamerBoxEditable);
+          baseClasses.push(STYLES.gamerBoxEditable);
         } else if (isEmpty && editMode !== 'GAMER_EDIT') {
-          baseClasses.push(themedStyles.gamerBoxEmpty);
+          baseClasses.push(STYLES.gamerBoxEmpty);
         } else if (!canClick && editMode !== 'GAMER_EDIT') {
-          baseClasses.push(themedStyles.gamerBoxDisabled);
+          baseClasses.push(STYLES.gamerBoxDisabled);
         } else if (isWinner) {
-          baseClasses.push(themedStyles.gamerBoxWinner);
+          baseClasses.push(STYLES.gamerBoxWinner);
         }
 
         return baseClasses.join(' ');
       },
-      [themedStyles, editMode]
+      [editMode]
     );
 
     const gamer1Classes = useMemo(
@@ -152,7 +149,7 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
 
         {/* 其餘組件內容保持不變... */}
         <div
-          className={`${themedStyles.matchNode} w-full flex relative transition-colors duration-200`}
+          className={`${STYLES.matchNode} w-full flex relative transition-colors duration-200`}
           style={{ height: LAYOUT.boxHeight }}
         >
           {/* 左側選手 */}
@@ -176,11 +173,11 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
                 }}
                 autoFocus
                 maxLength={8}
-                className={themedStyles.editInputFocused}
+                className={STYLES.editInputFocused}
                 placeholder="輸入名稱"
               />
             ) : (
-              <span className={themedStyles.gamerText} style={{ writingMode: 'vertical-rl' }}>
+              <span className={STYLES.gamerText} style={{ writingMode: 'vertical-rl' }}>
                 {getGamerText(match.gamer1, isGamer1Empty)}
               </span>
             )}
@@ -207,11 +204,11 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
                 }}
                 autoFocus
                 maxLength={8}
-                className={themedStyles.editInputFocused}
+                className={STYLES.editInputFocused}
                 placeholder="輸入名稱"
               />
             ) : (
-              <span className={themedStyles.gamerText} style={{ writingMode: 'vertical-rl' }}>
+              <span className={STYLES.gamerText} style={{ writingMode: 'vertical-rl' }}>
                 {getGamerText(match.gamer2, isGamer2Empty)}
               </span>
             )}
@@ -233,7 +230,7 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
           <div className="absolute top-full mt-1 w-full flex justify-between px-6">
             {/* 左側選手遊戲局數 */}
             <div
-              className={`${editingGames?.side === 'left' ? themedStyles.gamesBoxEdit : themedStyles.gamesBox} ${
+              className={`${editingGames?.side === 'left' ? STYLES.gamesBoxEdit : STYLES.gamesBox} ${
                 editMode === 'GAMER_EDIT' ? 'cursor-text' : 'cursor-default'
               } transition-colors duration-200`}
               onDoubleClick={handleGames1DoubleClick}
@@ -266,7 +263,7 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
 
             {/* 右側選手遊戲局數 */}
             <div
-              className={`${editingGames?.side === 'right' ? themedStyles.gamesBoxEdit : themedStyles.gamesBox} ${
+              className={`${editingGames?.side === 'right' ? STYLES.gamesBoxEdit : STYLES.gamesBox} ${
                 editMode === 'GAMER_EDIT' ? 'cursor-text' : 'cursor-default'
               } transition-colors duration-200`}
               onDoubleClick={handleGames2DoubleClick}

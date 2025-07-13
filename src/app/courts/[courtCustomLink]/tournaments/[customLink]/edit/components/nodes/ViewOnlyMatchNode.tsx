@@ -22,14 +22,14 @@ const ViewOnlyMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
 
   const getGamerClasses = (isWinner: boolean, isEmpty: boolean, isLeft: boolean): string => {
     const baseClasses = ['h-full', 'flex', 'items-center', 'justify-center', 'text-sm', 'font-medium', 'px-1'];
-    if (isLeft) baseClasses.push('border-r', 'border-gray-300');
+    if (isLeft) baseClasses.push('border-r', 'border-gray-600');
 
     if (isEmpty) {
-      baseClasses.push('text-gray-400', 'bg-gray-50');
+      baseClasses.push('text-gray-500', 'bg-gray-700');
     } else if (isWinner) {
-      baseClasses.push('bg-yellow-100', 'text-orange-800', 'font-bold');
+      baseClasses.push('bg-yellow-900', 'text-yellow-100', 'font-bold');
     } else {
-      baseClasses.push('bg-white');
+      baseClasses.push('bg-gray-800', 'text-gray-100');
     }
 
     return baseClasses.join(' ');
@@ -75,7 +75,7 @@ const ViewOnlyMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
         {!matchCanProceed && match.round > 1 && <div className={STYLES.lockIcon}>🔒</div>}
 
         {match.winner && (
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-orange-500">
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center border-2 border-orange-400">
             <span className="text-xs">🏆</span>
           </div>
         )}
@@ -83,11 +83,11 @@ const ViewOnlyMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
 
       {match.round === 1 && (
         <div className="absolute top-full mt-1 w-full flex justify-between px-6">
-          <div className={`${STYLES.gamesBox} cursor-default`}>
+          <div className="w-12 h-6 bg-gray-700 border border-gray-600 rounded text-xs flex items-center justify-center text-gray-200 cursor-default">
             <span>{match.gamer1?.games || 7}</span>
           </div>
 
-          <div className={`${STYLES.gamesBox} cursor-default`}>
+          <div className="w-12 h-6 bg-gray-700 border border-gray-600 rounded text-xs flex items-center justify-center text-gray-200 cursor-default">
             <span>{match.gamer2?.games || 7}</span>
           </div>
         </div>

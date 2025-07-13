@@ -1,4 +1,4 @@
-// 佈局常數 - 與原 Konva 版本保持一致
+// 佈局常數
 export const LAYOUT = {
   boxWidth: 100,
   boxHeight: 100,
@@ -16,33 +16,7 @@ export const LAYOUT = {
   sceneHeightExtra: 40,
 };
 
-// @xyflow/react 配置 - 移除無效的 props
-export const REACT_FLOW_CONFIG = {
-  // 節點設置
-  nodesDraggable: false,
-  nodesConnectable: false,
-  elementsSelectable: true,
-  // 互動設置
-  panOnDrag: true,
-  zoomOnScroll: true,
-  zoomOnDoubleClick: false,
-  panOnScroll: false,
-  preventScrolling: true,
-  // 縮放設置
-  minZoom: 0.1,
-  maxZoom: 3,
-  // 邊線設置
-  defaultEdgeOptions: {
-    type: 'smoothstep',
-    animated: false,
-    style: {
-      stroke: '#f97316',
-      strokeWidth: 2,
-    },
-  },
-};
-
-// 視口設置 - 移到單獨的常數
+// 視口設置
 export const VIEWPORT_CONFIG = {
   defaultViewport: {
     x: 28.99,
@@ -58,47 +32,47 @@ export const NODE_TYPES = {
   ROUND_TITLE: 'roundTitle',
 } as const;
 
-// 樣式常數 - 使用 Tailwind classes
+// 樣式常數
 export const STYLES = {
   // 比賽節點樣式
-  matchNode: 'bg-white border border-gray-300 rounded shadow-sm overflow-hidden',
-  matchNodeEdit: 'bg-white border-2 border-blue-400 rounded shadow-md overflow-hidden',
+  matchNode: 'bg-gray-800 border border-gray-600 rounded shadow-sm overflow-hidden',
+  matchNodeEdit: 'bg-gray-700 border-2 border-blue-400 rounded shadow-md overflow-hidden',
   // 冠軍節點樣式
-  championNode: 'bg-yellow-400 border-2 border-orange-500 rounded shadow-md overflow-hidden',
+  championNode: 'bg-yellow-600 border-2 border-orange-400 rounded shadow-md overflow-hidden',
   // 輪次標題節點樣式
-  roundTitleNode: 'bg-white bg-opacity-90 border border-gray-300 rounded shadow-sm overflow-hidden',
-  championTitleNode: 'bg-yellow-400 border-2 border-orange-500 rounded shadow-md overflow-hidden',
+  roundTitleNode: 'bg-gray-800 bg-opacity-90 border border-gray-600 rounded shadow-sm overflow-hidden',
+  championTitleNode: 'bg-yellow-600 border-2 border-orange-400 rounded shadow-md overflow-hidden',
   // 選手框樣式
-  gamerBox: 'h-full flex items-center justify-center text-sm font-medium px-1',
-  gamerBoxLeft: 'border-r border-gray-300',
+  gamerBox: 'h-full flex items-center justify-center text-sm font-medium px-1 text-gray-100',
+  gamerBoxLeft: 'border-r border-gray-600',
   gamerBoxRight: '',
-  gamerBoxWinner: 'bg-yellow-100 border-orange-400',
-  gamerBoxEmpty: 'text-gray-400 bg-gray-50',
-  gamerBoxDisabled: 'bg-gray-100 text-gray-400',
-  gamerBoxEditable: 'bg-blue-50 border-blue-200',
+  gamerBoxWinner: 'bg-yellow-900 border-orange-400 text-yellow-100',
+  gamerBoxEmpty: 'text-gray-500 bg-gray-700',
+  gamerBoxDisabled: 'bg-gray-700 text-gray-500',
+  gamerBoxEditable: 'bg-blue-900 border-blue-200 text-blue-100',
   // 文字樣式
-  championText: 'text-black font-bold text-center truncate',
-  roundTitleText: 'text-gray-700 font-medium text-center px-2',
-  championTitleText: 'text-black font-bold text-center px-2',
-  gamerText: 'truncate text-center',
+  championText: 'text-gray-900 font-bold text-center truncate',
+  roundTitleText: 'text-gray-200 font-medium text-center px-2',
+  championTitleText: 'text-gray-900 font-bold text-center px-2',
+  gamerText: 'truncate text-center text-gray-100',
   // 遊戲局數框樣式
-  gamesBox: 'w-12 h-6 bg-gray-100 border border-gray-300 rounded text-xs flex items-center justify-center',
-  gamesBoxEdit: 'w-12 h-6 bg-white border border-blue-400 rounded text-xs flex items-center justify-center',
+  gamesBox: 'w-12 h-6 bg-gray-700 border border-gray-600 rounded text-xs flex items-center justify-center text-gray-200',
+  gamesBoxEdit: 'w-12 h-6 bg-gray-600 border border-blue-400 rounded text-xs flex items-center justify-center text-gray-100',
   // 圖標樣式
   lockIcon: 'absolute top-1 right-1 text-xs opacity-60',
   crownIcon: 'text-base ml-1',
 };
 
-// 顏色常數 - 與原 Konva 版本保持一致
+// 顏色常數
 export const COLORS = {
-  stroke: '#d1d5db',
+  canvasBackground: '#1f2937', // gray-800
+  stroke: '#4b5563', // gray-600
   highlight: '#f97316',
-  text: '#000000',
-  winnerHighlight: '#fef3c7',
-  championBackground: '#ffd700',
-  emptySlot: '#f9fafb',
-  disabled: '#f3f4f6',
-  disabledText: '#9ca3af',
-  canvasBackground: '#363636',
+  text: '#f9fafb', // gray-50
+  winnerHighlight: '#451a03', // yellow-900
+  championBackground: '#d97706', // yellow-600
+  emptySlot: '#374151', // gray-700
+  disabled: '#374151', // gray-700
+  disabledText: '#6b7280', // gray-500
   connectionLine: '#f97316',
 };

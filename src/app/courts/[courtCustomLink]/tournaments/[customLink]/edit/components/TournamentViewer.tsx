@@ -13,7 +13,7 @@ import '@xyflow/react/dist/style.css';
 
 import { createTournamentEdges, matchesToNodes } from './dataTransformers';
 import { viewOnlyNodeTypes } from './nodes/viewOnlyNodeTypes';
-import { COLORS, VIEWPORT_CONFIG } from './reactFlowConstants';
+import { VIEWPORT_CONFIG } from './reactFlowConstants';
 import {
   SingleEliminationReactFlowProps,
   SingleEliminationReactFlowRef,
@@ -126,7 +126,10 @@ const TournamentViewerInner = forwardRef<
   }, [setOptimalView]);
 
   return (
-    <div className="w-full h-full relative" style={{ backgroundColor: COLORS.canvasBackground }}>
+    <div
+      className="w-full h-full relative transition-colors duration-300"
+      style={{ backgroundColor: '#1f2937' }} // 直接使用深色背景
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -134,16 +137,13 @@ const TournamentViewerInner = forwardRef<
         onEdgesChange={onEdgesChange}
         nodeTypes={viewOnlyNodeTypes}
         {...VIEWER_CONFIG}
-        fitView={false}
+        fitView={true}
       >
         <Background color="#555" size={1} />
 
         {/* 觀看模式的控制面板 */}
-        <Controls showZoom={true} showFitView={true} showInteractive={false} className="react-flow__controls-viewer" />
+        <Controls showZoom={true} showFitView={true} showInteractive={false} className="text-black" />
       </ReactFlow>
-
-      {/* 觀看模式標識 */}
-      <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">觀看模式</div>
     </div>
   );
 });
