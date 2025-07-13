@@ -10,20 +10,6 @@ import {
 
 import { EditMode } from './constants';
 
-// 繪圖相關介面
-export interface DrawingLine {
-  id: string;
-  points: number[];
-  strokeWidth: number;
-  stroke: string;
-  timestamp: number;
-}
-
-export interface DrawingData {
-  lines: DrawingLine[];
-  lastUpdated: number;
-}
-
 // 組件 Props 介面
 export interface EditableGamerProps {
   gamer: Gamer;
@@ -52,8 +38,6 @@ export interface SingleEliminationKonvaProps {
   matches: Match[];
   isEditMode: boolean;
   onMatchUpdate?: (matches: Match[]) => void;
-  drawingData?: DrawingData;
-  onDrawingUpdate?: (drawingData: DrawingData) => void;
   editMode?: EditMode;
   onGamerNameEdit?: (gamerId: number, newName: string) => void;
   onGamerGamesEdit?: (gamerId: number, newGames: number) => void;
@@ -93,8 +77,6 @@ export interface TournamentDisplayProps {
   tournamentData: TournamentProps;
   onMatchUpdate?: (matches: Match[]) => void;
   isEditMode?: boolean;
-  drawingData?: DrawingData;
-  onDrawingUpdate?: (drawingData: DrawingData) => void;
   onGamerNameEdit?: (gamerId: number, newName: string) => void;
   onGamerGamesEdit?: (gamerId: number, newGames: number) => void;
   connectionQuality: ConnectionQualityType;
@@ -136,7 +118,5 @@ export interface UseTournamentStateReturn {
   handleTournamentTypeChange: (type: TournamentType) => Promise<void>;
   handleMatchUpdate: (matches: Match[]) => Promise<void>;
   handleTestBroadcast: (testType: BroadcastTestType) => Promise<void>;
-  drawingData: DrawingData;
-  handleDrawingUpdate: (drawingData: DrawingData) => Promise<void>;
   connectionQuality: ConnectionQualityType;
 }

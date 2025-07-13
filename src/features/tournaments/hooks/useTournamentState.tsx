@@ -7,7 +7,6 @@ import {
 import { BroadcastUpdateData, RealtimeMessage } from '@/domains/realtime';
 import {
   BroadcastTestType,
-  DrawingData,
   GamerCountType,
   Match,
   RealtimeMessageType,
@@ -22,7 +21,6 @@ import { useTournamentRealtime } from '@/features/tournaments/hooks/useTournamen
 
 import {
   isAnnouncement,
-  isDrawingUpdate,
   isGamerUpdateComplete,
   isGamerUpdateSingle,
   isMatchUpdate,
@@ -40,12 +38,9 @@ export const useTournamentState = ({
   const [lastUpdateTime, setLastUpdateTime] = useState<string>(new Date().toLocaleTimeString());
   const [toast, setToast] = useState<ToastNotification | null>(null);
   const [windowWidth, setWindowWidth] = useState<number>(0);
-  const [drawingData, setDrawingData] = useState<DrawingData>(
-    tournamentData.drawingData || { lines: [], lastUpdated: Date.now() }
-  );
 
   const userId = useState(
-    () => `${isEditMode ? UserType.EDITOR : UserType.VIEWER}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    () => `${isEditMode ? UserType.EDITOR : UserType.VIEWER}_${Date.now()}_${Math.random().toString(36)}`
   )[0];
 
   const showToast = useCallback((message: string, type: ToastType, duration = 3000) => {
@@ -140,16 +135,6 @@ export const useTournamentState = ({
           }
           break;
 
-        case RealtimeMessageType.DRAWING_UPDATE:
-          if (isDrawingUpdate(message)) {
-            // console.log('📨 [DRAWING] 收到繪圖更新:', message.data.drawingData);
-            setDrawingData(message.data.drawingData);
-            if (!isEditMode) {
-              showToast('繪圖已更新', ToastType.INFO, 2000);
-            }
-          }
-          break;
-
         case RealtimeMessageType.ANNOUNCEMENT:
           if (isAnnouncement(message)) {
             showToast(message.message, ToastType.ANNOUNCEMENT, 5000);
@@ -197,57 +182,6 @@ export const useTournamentState = ({
       showToast(`連線錯誤: ${errorMessage}`, ToastType.WARNING);
     },
   });
-
-  // 繪圖更新處理
-  const handleDrawingUpdate = useCallback(
-    async (newDrawingData: DrawingData): Promise<void> => {
-      if (!updateTournament || !refetchTournament) return;
-
-      // console.log('🎨 [DRAWING] 處理繪圖更新:', newDrawingData);
-
-      // 立即更新本地狀態
-      setDrawingData(newDrawingData);
-
-      const updatedTournamentData = {
-        ...currentTournament,
-        drawingData: newDrawingData,
-        updatedAt: new Date(),
-      };
-
-      try {
-        await updateTournament(updatedTournamentData);
-
-        const broadcastData: BroadcastUpdateData = {
-          type: RealtimeMessageType.DRAWING_UPDATE,
-          data: {
-            drawingData: newDrawingData,
-            action: TournamentAction.DRAWING_UPDATED,
-          },
-          action: TournamentAction.DRAWING_UPDATED,
-        };
-
-        const success = await broadcastUpdate(broadcastData);
-
-        // 確保數據庫和本地狀態同步
-        setTimeout(() => {
-          refetchTournament();
-        }, 100);
-
-        showToast(
-          success ? '✅ 繪圖已更新並同步' : '⚠️ 繪圖已更新（同步可能延遲）',
-          success ? ToastType.SUCCESS : ToastType.WARNING
-        );
-      } catch (error) {
-        console.error('❌ 更新繪圖失敗:', error);
-        showToast('❌ 繪圖更新失敗', ToastType.ERROR);
-        // 如果更新失敗，回滾本地狀態
-        setTimeout(() => {
-          refetchTournament();
-        }, 100);
-      }
-    },
-    [currentTournament, updateTournament, broadcastUpdate, refetchTournament, showToast]
-  );
 
   // 編輯相關的操作方法
   const handleGamerNameChange = useCallback(
@@ -576,14 +510,6 @@ export const useTournamentState = ({
     [broadcastUpdate, refetchTournament, showToast]
   );
 
-  // 當外部 tournamentData 更新時，同步本地狀態
-  useEffect(() => {
-    setCurrentTournament(tournamentData);
-    if (tournamentData.drawingData) {
-      setDrawingData(tournamentData.drawingData);
-    }
-  }, [tournamentData]);
-
   // Window resize effect
   useEffect(() => {
     const handleResize = () => {
@@ -617,7 +543,5 @@ export const useTournamentState = ({
     handleTournamentTypeChange,
     handleMatchUpdate,
     handleTestBroadcast,
-    drawingData,
-    handleDrawingUpdate,
   };
 };

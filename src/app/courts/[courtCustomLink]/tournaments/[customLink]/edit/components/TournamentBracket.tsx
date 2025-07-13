@@ -11,12 +11,8 @@ import { useTournamentState } from '@/features/tournaments/hooks/useTournamentSt
 import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 
-import {
-  ResponsiveWarning,
-  TournamentControls,
-  TournamentDisplay,
-  TournamentToast,
-} from '../../components/shared/TournamentShared';
+import ResponsiveTournamentDisplay from './ResponsiveTournamentDisplay';
+import { ResponsiveWarning, TournamentControls, TournamentToast } from './TournamentShared';
 
 interface TournamentBracketProps {
   tournamentData: TournamentProps;
@@ -41,8 +37,6 @@ const TournamentBracket = ({
     handleGamerGamesChange,
     handleMatchUpdate,
     handleTestBroadcast,
-    drawingData,
-    handleDrawingUpdate,
     connectionQuality,
   } = useTournamentState({
     tournamentData,
@@ -74,12 +68,10 @@ const TournamentBracket = ({
         <ResponsiveWarning windowWidth={windowWidth} />
 
         {/* 賽程表顯示 */}
-        <TournamentDisplay
+        <ResponsiveTournamentDisplay
           tournamentData={currentTournament}
           onMatchUpdate={handleMatchUpdate}
           isEditMode={true}
-          drawingData={drawingData}
-          onDrawingUpdate={handleDrawingUpdate}
           onGamerNameEdit={handleGamerNameChange}
           onGamerGamesEdit={handleGamerGamesChange}
           connectionQuality={connectionQuality}
