@@ -315,13 +315,13 @@ export function useTournamentRealtime({
             setIsConnected(false);
             consecutiveFailuresRef.current++;
             updateConnectionQuality();
-            callbacksRef.current.onError?.(new Error('Channel error'));
+            console.error('Channel error');
             scheduleReconnectRef.current?.();
           } else if (status === 'TIMED_OUT') {
             setIsConnected(false);
             consecutiveFailuresRef.current++;
             updateConnectionQuality();
-            callbacksRef.current.onError?.(new Error('Connection timeout'));
+            console.error('Connection timeout');
             scheduleReconnectRef.current?.();
           } else if (status === 'CLOSED') {
             setIsConnected(false);
@@ -334,7 +334,7 @@ export function useTournamentRealtime({
         setIsConnected(false);
         setConnectionQuality(ConnectionQualityType.DISCONNECTED);
         const errorMessage = error instanceof Error ? error : new Error('Unknown connection error');
-        callbacksRef.current.onError?.(errorMessage);
+        console.error(errorMessage);
         scheduleReconnectRef.current?.();
       }
     };

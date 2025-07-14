@@ -113,3 +113,7 @@
   width: 235px !important;
   overflow: hidden;
 }
+
+.react-flow__attribution {
+  display: none;
+}

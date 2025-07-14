@@ -5,7 +5,8 @@ import { ReactElement } from 'react';
 import { TournamentProps } from '@/domains/tournament';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
 
-import { ResponsiveWarning, TournamentDisplay, TournamentStatusBar, TournamentToast } from './shared/TournamentShared';
+import ResponsiveTournamentDisplay from '../edit/components/ResponsiveTournamentDisplay';
+import { ResponsiveWarning, TournamentStatusBar, TournamentToast } from '../edit/components/TournamentShared';
 
 interface TournamentBoardProps {
   tournamentData: TournamentProps;
@@ -13,31 +14,20 @@ interface TournamentBoardProps {
 }
 
 const TournamentBoard = ({ tournamentData, refetch }: TournamentBoardProps): ReactElement => {
-  const {
-    currentTournament,
-    toast,
-    windowWidth,
-    lastUpdateTime,
-    isConnected,
-    onlineCount,
-    drawingData,
-    reconnect,
-    connectionQuality,
-  } = useTournamentState({
-    tournamentData,
-    isEditMode: false,
-  });
+  const { currentTournament, toast, windowWidth, lastUpdateTime, isConnected, onlineCount, reconnect, connectionQuality } =
+    useTournamentState({
+      tournamentData,
+      isEditMode: false,
+    });
 
   return (
     <section className="flex flex-col items-center gap-y-4">
       {/* Toast 通知 */}
       <TournamentToast toast={toast} />
 
-      <TournamentDisplay
+      <ResponsiveTournamentDisplay
         tournamentData={currentTournament}
         isEditMode={false}
-        drawingData={drawingData}
-        onDrawingUpdate={undefined}
         connectionQuality={connectionQuality}
       />
 

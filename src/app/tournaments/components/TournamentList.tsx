@@ -54,7 +54,11 @@ const TournamentList = ({ courtId = '', courtName = '' }: TournamentListProps): 
           {tournaments.map(({ _id, title, featuredImg, excerpt, courtCustomLink, customLink, tags }: TournamentProps) => (
             <TournamentListItemCard
               key={_id}
-              image={featuredImg ? featuredImg : process.env.NEXT_PUBLIC_FEATURED_IMAGE}
+              image={
+                featuredImg
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
+                  : process.env.NEXT_PUBLIC_FEATURED_IMAGE
+              }
               title={title}
               excerpt={excerpt}
               courtCustomLink={courtCustomLink}

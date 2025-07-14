@@ -160,6 +160,7 @@ export interface GetPaymentsReturnType {
 export interface ImageUploadReturnType {
   success: boolean;
   filename?: string;
+  imageUrl?: string;
   error?: string;
 }
 

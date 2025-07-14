@@ -129,7 +129,7 @@ export type UpdateTournamentDto = TournamentProps;
 
 export type CreateTournamentProps = Omit<
   TournamentProps,
-  '_id' | 'createdAt' | 'updatedAt' | 'featuredImg' | 'tags' | 'tournament' | 'drawingData'
+  '_id' | 'createdAt' | 'updatedAt' | 'tags' | 'tournament' | 'drawingData'
 > & { gamerCount: number };
 
 // Toast 相關類型
