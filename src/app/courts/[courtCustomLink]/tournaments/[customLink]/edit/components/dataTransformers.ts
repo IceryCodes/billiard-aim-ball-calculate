@@ -147,12 +147,12 @@ export const matchesToNodes = (
       type: 'qrCode',
       position: {
         x: 250, // 調整位置
-        y: -20,
+        y: -35,
       },
       data: {},
-      draggable: true,
+      draggable: false,
       selectable: false,
-      resizing: true,
+      resizing: false,
     };
 
     nodes.push(qrCodeNode);
