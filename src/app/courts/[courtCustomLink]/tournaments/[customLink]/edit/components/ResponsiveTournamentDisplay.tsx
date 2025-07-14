@@ -173,6 +173,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                     ref={reactFlowRef}
                     gamers={tournament.gamers}
                     matches={tournament.matches}
+                    tournamentTitle={title}
                     onMatchUpdate={onMatchUpdate}
                     isEditMode={isEditMode}
                     editMode={gamerEditMode ? 'GAMER_EDIT' : 'NORMAL'}
@@ -180,7 +181,12 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                     onGamerGamesEdit={onGamerGamesEdit}
                   />
                 ) : (
-                  <TournamentViewer ref={reactFlowRef} gamers={tournament.gamers} matches={tournament.matches} />
+                  <TournamentViewer
+                    ref={reactFlowRef}
+                    gamers={tournament.gamers}
+                    matches={tournament.matches}
+                    tournamentTitle={title}
+                  />
                 )}
               </>
             )}

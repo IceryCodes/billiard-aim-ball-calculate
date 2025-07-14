@@ -36,6 +36,7 @@
     "esbuild": "^0.25.5",
     "framer-motion": "^12.23.0",
     "gsap": "^3.13.0",
+    "html-to-image": "^1.11.13",
     "its-fine": "^2.0.0",
     "jose": "^6.0.11",
     "konva": "^9.3.20",

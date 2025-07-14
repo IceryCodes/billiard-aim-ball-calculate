@@ -48,6 +48,7 @@ export type TournamentNode = MatchNode | ChampionNode | RoundTitleNode | QRCodeN
 export interface SingleEliminationReactFlowProps {
   gamers: Gamer[];
   matches: Match[];
+  tournamentTitle?: string;
   isEditMode: boolean;
   onMatchUpdate?: (matches: Match[]) => void;
   editMode?: string;

@@ -19,6 +19,7 @@ import { createTournamentEdges, matchesToNodes } from './dataTransformers';
 import { optimizedNodeTypes } from './nodes/optimizedNodeTypes';
 import { viewOnlyNodeTypes } from './nodes/viewOnlyNodeTypes';
 import { VIEWPORT_CONFIG } from './reactFlowConstants';
+import DownloadButton from './ReactFlowDownloadButton';
 import {
   SingleEliminationReactFlowProps,
   SingleEliminationReactFlowRef,
@@ -52,7 +53,19 @@ const createFlowConfig = (isEditMode: boolean, editMode: string) => ({
 
 // 內部組件（移除繪圖功能）
 const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, SingleEliminationReactFlowProps>(
-  ({ gamers, matches, isEditMode = false, onMatchUpdate, editMode = 'NORMAL', onGamerNameEdit, onGamerGamesEdit }, ref) => {
+  (
+    {
+      gamers,
+      matches,
+      tournamentTitle = '比賽',
+      isEditMode = false,
+      onMatchUpdate,
+      editMode = 'NORMAL',
+      onGamerNameEdit,
+      onGamerGamesEdit,
+    },
+    ref
+  ) => {
     const reactFlowInstance = useReactFlow();
     const [currentEditMode, setCurrentEditMode] = useState<string>(editMode);
     const [hasRenderError, setHasRenderError] = useState(false);
@@ -309,6 +322,10 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
           style={{ width: '100%', height: '100%' }} // 確保完整覆蓋
         >
           <Background color="#4b5563" size={1} />
+          <DownloadButton
+            buttonTextElement="下載賽程表"
+            title={`${tournamentTitle}賽程表 - ${process.env.NEXT_PUBLIC_SITENAME}`}
+          />
 
           {/* 觀看模式的控制面板 */}
           <Controls showZoom={true} showFitView={true} showInteractive={false} className="text-black" />
