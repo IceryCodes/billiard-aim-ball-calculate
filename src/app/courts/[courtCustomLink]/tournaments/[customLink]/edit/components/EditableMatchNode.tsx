@@ -4,7 +4,7 @@ import { Handle, Position } from '@xyflow/react';
 
 import { Gamer } from '@/domains/tournament';
 
-import { DOT_STYLE } from './darkModeConstants';
+import { DOT_STYLE, LAYOUT, STYLES } from './darkModeConstants';
 import { MatchNodeData } from './reactFlowTypes';
 
 interface EditState {
@@ -146,13 +146,19 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
   const isGamer2Winner = !!(winnerId && gamer2Id && winnerId === gamer2Id);
 
   return (
-    <div className="w-24 h-20 relative">
+    <div
+      className="relative"
+      style={{
+        width: LAYOUT.boxWidth,
+        height: LAYOUT.boxHeight + (match.round === 1 ? 35 : 0),
+      }}
+    >
       {/* 極小的連接點 */}
       {match.round > 1 && <Handle type="target" position={Position.Bottom} id={`${id}-target`} style={DOT_STYLE} />}
 
       <Handle type="source" position={Position.Top} id={`${id}-source`} style={DOT_STYLE} />
 
-      <div className="flex h-20 w-24 border border-gray-300 dark:border-gray-600 rounded shadow-sm overflow-hidden bg-white dark:bg-gray-800">
+      <div className={`${STYLES.matchNode} w-full flex relative`} style={{ height: LAYOUT.boxHeight }}>
         <div
           className={`flex-1 h-full flex items-center justify-center text-sm font-medium px-1 border-r border-gray-300 dark:border-gray-600 ${getCursorClass(gamer1, isGamer1Empty)} ${
             isGamer1Winner
@@ -180,7 +186,7 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
               autoFocus
             />
           ) : (
-            <span className="truncate text-center text-xs" style={{ writingMode: 'vertical-rl' }}>
+            <span className={STYLES.gamerText} style={{ writingMode: 'vertical-rl' }}>
               {gamer1Name || (isGamer1Empty ? '空籤' : '待定')}
             </span>
           )}
@@ -213,7 +219,7 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
               autoFocus
             />
           ) : (
-            <span className="truncate text-center text-xs" style={{ writingMode: 'vertical-rl' }}>
+            <span className={STYLES.gamerText} style={{ writingMode: 'vertical-rl' }}>
               {gamer2Name || (isGamer2Empty ? '空籤' : '待定')}
             </span>
           )}
@@ -221,9 +227,9 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
       </div>
 
       {round === 1 && (
-        <div className="flex justify-between mt-1 px-1 space-x-1">
+        <div className={`absolute w-full flex top-[${LAYOUT.boxHeight}] mt-2`}>
           <div
-            className={`w-10 h-6 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs flex items-center justify-center ${
+            className={`w-1/2 h-6 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs flex items-center justify-center ${
               editMode === 'GAMER_EDIT' ? 'cursor-text bg-white dark:bg-gray-600 border-blue-400' : 'cursor-default'
             }`}
             onDoubleClick={(e) => handleDoubleClick(gamer1, 'games', e)}
@@ -235,19 +241,19 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
                 min="1"
                 max="99"
                 defaultValue={editState.initialValue.toString()}
-                className="w-full h-full text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none text-xs"
+                className="w-20 h-full z-50 text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none text-xs"
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={handleKeyDown}
                 onBlur={handleBlur}
                 autoFocus
               />
             ) : (
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{gamer1Games}</span>
+              <span className={STYLES.gamerText}>{gamer1Games}</span>
             )}
           </div>
 
           <div
-            className={`w-10 h-6 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs flex items-center justify-center ${
+            className={`w-1/2 h-6 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs flex items-center justify-center ${
               editMode === 'GAMER_EDIT' ? 'cursor-text bg-white dark:bg-gray-600 border-blue-400' : 'cursor-default'
             }`}
             onDoubleClick={(e) => handleDoubleClick(gamer2, 'games', e)}
@@ -259,26 +265,38 @@ const EditableMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
                 min="1"
                 max="99"
                 defaultValue={editState.initialValue.toString()}
-                className="w-full h-full text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none text-xs"
+                className="w-20 h-full z-50 text-center border-2 border-blue-500 rounded bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold outline-none text-xs"
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={handleKeyDown}
                 onBlur={handleBlur}
                 autoFocus
               />
             ) : (
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{gamer2Games}</span>
+              <span className={STYLES.gamerText}>{gamer2Games}</span>
             )}
           </div>
         </div>
       )}
 
-      {round > 1 && (!gamer1 || !gamer2) && <div className="absolute top-1 right-1 text-xs opacity-60">🔒</div>}
+      {round > 1 && (!gamer1 || !gamer2) && <div className={STYLES.lockIcon}>🔒</div>}
 
       {isGamer1Winner && (
-        <div className="absolute top-0 left-0 w-12 h-20 border-2 border-orange-500 rounded-l pointer-events-none" />
+        <div
+          className="absolute top-0 left-0 border-2 border-orange-500 rounded-l pointer-events-none"
+          style={{
+            width: LAYOUT.boxWidth / 2,
+            height: LAYOUT.boxHeight,
+          }}
+        />
       )}
       {isGamer2Winner && (
-        <div className="absolute top-0 right-0 w-12 h-20 border-2 border-orange-500 rounded-r pointer-events-none" />
+        <div
+          className="absolute top-0 right-0 border-2 border-orange-500 rounded-r pointer-events-none"
+          style={{
+            width: LAYOUT.boxWidth / 2,
+            height: LAYOUT.boxHeight,
+          }}
+        />
       )}
     </div>
   );

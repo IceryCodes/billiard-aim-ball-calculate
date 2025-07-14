@@ -38,7 +38,7 @@ const VIEWER_CONFIG = {
     animated: false,
     style: {
       stroke: '#f97316',
-      strokeWidth: 2,
+      strokeWidth: 4,
     },
   },
 };
@@ -104,26 +104,18 @@ const TournamentViewerInner = forwardRef<
     reactFlowInstance.setViewport(VIEWPORT_CONFIG.defaultViewport);
   }, [reactFlowInstance]);
 
-  const fitToScreen = useCallback(() => {
-    reactFlowInstance.fitView({ padding: 0.1 });
-  }, [reactFlowInstance]);
+  const handleReactFlowInit = useCallback(() => {
+    setOptimalView();
+  }, [setOptimalView]);
 
   // 暴露觀看模式的 ref 方法
   useImperativeHandle(ref, () => ({
     setOptimalView,
-    setFullscreenView: fitToScreen,
+    setFullscreenView: () => reactFlowInstance.fitView({ padding: 0.1, interpolate: 'smooth', duration: 1000 }),
     zoomIn: () => reactFlowInstance.zoomIn(),
     zoomOut: () => reactFlowInstance.zoomOut(),
     setEditMode: emptyHandler, // 觀看模式不支援編輯
   }));
-
-  // 初始化視角
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setOptimalView();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [setOptimalView]);
 
   return (
     <div
@@ -136,13 +128,16 @@ const TournamentViewerInner = forwardRef<
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={viewOnlyNodeTypes}
+        onInit={handleReactFlowInit}
         {...VIEWER_CONFIG}
         fitView={true}
       >
         <Background color="#555" size={1} />
 
         {/* 觀看模式的控制面板 */}
-        <Controls showZoom={true} showFitView={true} showInteractive={false} className="text-black" />
+        <div className="top-40">
+          <Controls showZoom={true} showFitView={true} showInteractive={false} className="text-black" />
+        </div>
       </ReactFlow>
     </div>
   );

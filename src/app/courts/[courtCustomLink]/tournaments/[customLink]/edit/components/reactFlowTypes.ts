@@ -36,11 +36,14 @@ export interface RoundTitleNodeData extends Record<string, unknown> {
   title: string;
 }
 
+export type QRCodeNodeData = Record<string, unknown>;
+
 export type MatchNode = Node<MatchNodeData>;
 export type ChampionNode = Node<ChampionNodeData>;
 export type RoundTitleNode = Node<RoundTitleNodeData>;
+export type QRCodeNode = Node<QRCodeNodeData>;
 
-export type TournamentNode = MatchNode | ChampionNode | RoundTitleNode;
+export type TournamentNode = MatchNode | ChampionNode | RoundTitleNode | QRCodeNode;
 
 export interface SingleEliminationReactFlowProps {
   gamers: Gamer[];

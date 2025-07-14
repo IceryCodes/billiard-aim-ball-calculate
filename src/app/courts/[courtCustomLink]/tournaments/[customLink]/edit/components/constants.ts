@@ -138,7 +138,6 @@ export const fullscreenPositionX = 33.239465842510185;
 export const fullscreenPositionY = 89.09969158521102;
 
 // 縮放控制
-export const zoomStep = 0.005;
 export const minZoom = 0.1;
 export const maxZoom = 3;
 

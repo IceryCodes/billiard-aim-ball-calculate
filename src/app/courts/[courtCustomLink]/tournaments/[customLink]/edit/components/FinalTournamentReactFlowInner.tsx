@@ -44,7 +44,7 @@ const createFlowConfig = (isEditMode: boolean, editMode: string) => ({
     animated: false,
     style: {
       stroke: '#f97316',
-      strokeWidth: 3,
+      strokeWidth: 4,
     },
     markerEnd: undefined, // 確保沒有箭頭
   },
@@ -71,17 +71,72 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
           return;
         }
 
+        const totalRounds = Math.floor(Math.log2(gamers.length));
+
         // 切換勝負狀態邏輯
         if (currentMatch.winner?.id === selectedGamer.id) {
-          const updatedMatches = matches.map((match) => (match.id === matchId ? { ...match, winner: null } : match));
+          // 取消勝者時，清除該選手在整個後續路徑的記錄
+          let updatedMatches = matches.map((match) => (match.id === matchId ? { ...match, winner: null } : match));
+
+          // 清除該選手在所有後續輪次的完整路徑
+          const clearPlayerFromSubsequentRounds = (playerToClear: Gamer, startRound: number, startMatchIndex: number) => {
+            let currentRound = startRound;
+            let currentMatchIndex = startMatchIndex;
+
+            // 追蹤該選手的整條晉級路徑
+            while (currentRound < totalRounds) {
+              const nextRound = currentRound + 1;
+              const nextMatchIndex = Math.floor(currentMatchIndex / 2);
+              const nextMatchId = `round${nextRound}-match${nextMatchIndex}`;
+
+              const nextMatch = updatedMatches.find((m) => m.id === nextMatchId);
+              if (!nextMatch) break;
+
+              let playerFoundInMatch = false;
+              const updates: {
+                gamer1?: Gamer | null;
+                gamer2?: Gamer | null;
+                winner?: Gamer | null;
+              } = {};
+
+              // 檢查並清除該選手在這場比賽中的所有記錄
+              if (nextMatch.gamer1?.id === playerToClear.id) {
+                updates.gamer1 = null;
+                playerFoundInMatch = true;
+              }
+              if (nextMatch.gamer2?.id === playerToClear.id) {
+                updates.gamer2 = null;
+                playerFoundInMatch = true;
+              }
+              if (nextMatch.winner?.id === playerToClear.id) {
+                updates.winner = null;
+                playerFoundInMatch = true;
+              }
+
+              // 如果找到該選手，清除記錄
+              if (playerFoundInMatch) {
+                updatedMatches = updatedMatches.map((m) => (m.id === nextMatchId ? { ...m, ...updates } : m));
+
+                // 繼續追蹤到下一輪
+                currentRound = nextRound;
+                currentMatchIndex = nextMatchIndex;
+              } else {
+                // 如果該選手不在這場比賽中，停止追蹤
+                break;
+              }
+            }
+          };
+
+          // 開始清除該選手的整條晉級路徑
+          clearPlayerFromSubsequentRounds(selectedGamer, currentMatch.round, currentMatch.matchIndex);
+
           onMatchUpdate(updatedMatches);
           return;
         }
 
-        // 選擇新的勝者並更新下一輪
+        // 選擇新的勝者並更新下一輪（原邏輯保持不變）
         let updatedMatches = matches.map((match) => (match.id === matchId ? { ...match, winner: selectedGamer } : match));
 
-        const totalRounds = Math.floor(Math.log2(gamers.length));
         if (currentMatch.round < totalRounds) {
           const nextRound = currentMatch.round + 1;
           const nextMatchIndex = Math.floor(currentMatch.matchIndex / 2);
@@ -127,7 +182,8 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
 
     // 修正：改善節點和邊線的創建時機
     useEffect(() => {
-      const updateNodesAndEdges = async () => {
+      const updateNodesAndEdges = () => {
+        // 移除 async
         try {
           setHasRenderError(false);
 
@@ -146,35 +202,19 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
             onGamerGamesEdit
           );
 
-          // 立即設置節點
-          setNodes(newNodes);
-
-          // 等待節點渲染完成後再創建邊線
-          await new Promise((resolve) => setTimeout(resolve, 300));
-
           // 創建邊線
           const newEdges = createTournamentEdges(matches, gamers);
 
           // 驗證邊線
           const validatedEdges = validateEdges(newEdges, newNodes);
 
-          // 如果有無效邊線，記錄詳細信息
-          if (newEdges.length !== validatedEdges.length) {
-            const invalidEdges = newEdges.filter((edge) => !validatedEdges.includes(edge));
-            console.warn('發現無效邊線:', invalidEdges);
-            console.warn(
-              '可用節點ID:',
-              newNodes.map((node) => node.id)
-            );
-          }
-
-          // 設置驗證過的邊線
+          // 同時設置節點和邊線
+          setNodes(newNodes);
           setEdges(validatedEdges);
           setIsInitialized(true);
         } catch (error) {
           console.error('更新節點和邊線時發生錯誤:', error);
           setHasRenderError(true);
-          // 設置空陣列以避免渲染錯誤
           setNodes([]);
           setEdges([]);
         }
@@ -212,9 +252,9 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
       reactFlowInstance.setViewport(VIEWPORT_CONFIG.defaultViewport);
     }, [reactFlowInstance]);
 
-    const fitToScreen = useCallback(() => {
-      reactFlowInstance.fitView({ padding: 0.1 });
-    }, [reactFlowInstance]);
+    const handleReactFlowInit = useCallback(() => {
+      setOptimalView();
+    }, [setOptimalView]);
 
     const handleSetEditMode = useCallback((mode: string) => {
       setCurrentEditMode(mode);
@@ -223,21 +263,11 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
     // 暴露 ref 方法（移除繪圖相關）
     useImperativeHandle(ref, () => ({
       setOptimalView,
-      setFullscreenView: isEditMode ? setOptimalView : fitToScreen,
+      setFullscreenView: () => reactFlowInstance.fitView({ padding: 0.1, interpolate: 'smooth', duration: 1000 }),
       zoomIn: () => reactFlowInstance.zoomIn(),
       zoomOut: () => reactFlowInstance.zoomOut(),
       setEditMode: handleSetEditMode,
     }));
-
-    // 初始化視角 - 等待數據載入完成
-    useEffect(() => {
-      if (isInitialized) {
-        const timer = setTimeout(() => {
-          setOptimalView();
-        }, 200);
-        return () => clearTimeout(timer);
-      }
-    }, [setOptimalView, isInitialized]);
 
     // 流程配置（移除繪圖相關）
     const flowConfig = useMemo(() => createFlowConfig(isEditMode, currentEditMode), [isEditMode, currentEditMode]);
@@ -273,6 +303,7 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypesToUse}
+          onInit={handleReactFlowInit}
           {...flowConfig}
           fitView={true}
           style={{ width: '100%', height: '100%' }} // 確保完整覆蓋

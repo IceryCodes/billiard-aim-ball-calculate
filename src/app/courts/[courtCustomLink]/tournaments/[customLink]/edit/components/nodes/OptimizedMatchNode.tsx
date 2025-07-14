@@ -215,7 +215,7 @@ const OptimizedMatchNode: React.FC<{ data: MatchNodeData; selected?: boolean; id
           </div>
 
           {/* 鎖定圖標 */}
-          {!matchCanProceed && match.round > 1 && <div className="absolute top-1 right-1 text-xs opacity-60">🔒</div>}
+          {!matchCanProceed && match.round > 1 && <div className={STYLES.lockIcon}>🔒</div>}
 
           {/* 勝者標記 */}
           {match.winner && (

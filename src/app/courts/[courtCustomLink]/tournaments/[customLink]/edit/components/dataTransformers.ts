@@ -142,6 +142,21 @@ export const matchesToNodes = (
       nodes.push(championNode);
     }
 
+    const qrCodeNode: TournamentNode = {
+      id: 'qr-code',
+      type: 'qrCode',
+      position: {
+        x: 250, // 調整位置
+        y: -20,
+      },
+      data: {},
+      draggable: true,
+      selectable: false,
+      resizing: true,
+    };
+
+    nodes.push(qrCodeNode);
+
     return nodes;
   } catch (error) {
     return [];
@@ -185,7 +200,7 @@ export const createTournamentEdges = (matches: Match[], gamers: Gamer[]): Tourna
           type: 'smoothstep',
           style: {
             stroke: '#f97316',
-            strokeWidth: 3,
+            strokeWidth: 4, // 統一使用較細的線條
           },
           animated: false,
           markerEnd: undefined, // 確保沒有箭頭
@@ -210,7 +225,7 @@ export const createTournamentEdges = (matches: Match[], gamers: Gamer[]): Tourna
         type: 'smoothstep',
         style: {
           stroke: '#f97316',
-          strokeWidth: 4,
+          strokeWidth: 4, // 統一使用較細的線條
         },
         animated: false,
         markerEnd: undefined, // 確保沒有箭頭

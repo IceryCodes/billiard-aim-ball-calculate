@@ -315,11 +315,11 @@ export const useTournamentState = ({
         }, 100);
 
         showToast(
-          success ? '✅ 選手遊戲局數已更新並同步' : '⚠️ 選手遊戲局數已更新（同步可能延遲）',
+          success ? '✅ 選手比賽局數已更新並同步' : '⚠️ 選手比賽局數已更新（同步可能延遲）',
           success ? ToastType.SUCCESS : ToastType.WARNING
         );
       } catch (error) {
-        console.error('❌ 更新選手遊戲局數失敗:', error);
+        console.error('❌ 更新選手比賽局數失敗:', error);
         showToast('❌ 更新失敗', ToastType.ERROR);
         // 如果更新失敗，回滾本地狀態
         setTimeout(() => {

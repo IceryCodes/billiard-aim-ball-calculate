@@ -3,7 +3,7 @@ export const LAYOUT = {
   boxWidth: 100,
   boxHeight: 100,
   gamerSpacing: 110,
-  roundHeight: 130,
+  roundHeight: 150,
   titleWidth: 180,
   headerHeight: 40,
   canvasLeftPadding: 0,
@@ -60,7 +60,7 @@ export const STYLES = {
   gamesBox: 'w-12 h-6 bg-gray-700 border border-gray-600 rounded text-xs flex items-center justify-center text-gray-200',
   gamesBoxEdit: 'w-12 h-6 bg-gray-600 border border-blue-400 rounded text-xs flex items-center justify-center text-gray-100',
   // 圖標樣式
-  lockIcon: 'absolute top-1 right-1 text-xs opacity-60',
+  lockIcon: 'absolute top-1 right-1 text-xl opacity-60',
   crownIcon: 'text-base ml-1',
 };
 

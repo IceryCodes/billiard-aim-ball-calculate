@@ -1,8 +1,8 @@
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import QRCode from 'qrcode';
-import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import useImage from 'use-image';
 
 import { getPageUrlByType, PageType } from '@/domains/interface';
@@ -55,7 +55,7 @@ const useQRCodeImage = (url: string, size = 100) => {
   return image;
 };
 
-export const QRCodeCanvas = ({ x, y, size = 80 }: { x: number; y: number; size?: number }) => {
+export const QRCodeNode: React.FC<{ id: string }> = () => {
   const [currentUrl, setCurrentUrl] = useState<string>('');
 
   useEffect(() => {
@@ -64,28 +64,14 @@ export const QRCodeCanvas = ({ x, y, size = 80 }: { x: number; y: number; size?:
     }
   }, []);
 
-  const qrImage = useQRCodeImage(currentUrl, size);
+  const qrImage = useQRCodeImage(currentUrl, 80);
 
-  if (!qrImage || !currentUrl) return <></>;
+  if (!qrImage || !currentUrl) return null;
 
   return (
-    <Group x={x - size / 2} y={y}>
-      <Rect
-        width={size + 4}
-        height={size + 4}
-        x={-2}
-        y={-2}
-        fill="white"
-        stroke="#d1d5db"
-        strokeWidth={1}
-        cornerRadius={6}
-        shadowColor="black"
-        shadowBlur={4}
-        shadowOpacity={0.1}
-        shadowOffset={{ x: 0, y: 2 }}
-      />
-      <KonvaImage image={qrImage} width={size} height={size} cornerRadius={4} />
-    </Group>
+    <div className="bg-white p-2 rounded shadow-lg border border-gray-300">
+      <Image src={qrImage.src} alt="Page QR Code" width={150} height={150} placeholder="blur" blurDataURL={qrImage.src} />
+    </div>
   );
 };
 

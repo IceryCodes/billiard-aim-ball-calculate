@@ -73,17 +73,11 @@ const ViewOnlyMatchNode: React.FC<{ data: MatchNodeData; id: string }> = ({ data
         </div>
 
         {!matchCanProceed && match.round > 1 && <div className={STYLES.lockIcon}>🔒</div>}
-
-        {match.winner && (
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center border-2 border-orange-400">
-            <span className="text-xs">🏆</span>
-          </div>
-        )}
       </div>
 
       {match.round === 1 && (
-        <div className="absolute top-full mt-1 w-full flex justify-between px-6">
-          <div className="w-12 h-6 bg-gray-700 border border-gray-600 rounded text-xs flex items-center justify-center text-gray-200 cursor-default">
+        <div className={`absolute w-full flex top-[${LAYOUT.boxHeight}] mt-2`}>
+          <div className="w-1/2 h-6 bg-gray-700 border border-gray-600 rounded text-xs flex items-center justify-center text-gray-200 cursor-default">
             <span>{match.gamer1?.games || 7}</span>
           </div>
 

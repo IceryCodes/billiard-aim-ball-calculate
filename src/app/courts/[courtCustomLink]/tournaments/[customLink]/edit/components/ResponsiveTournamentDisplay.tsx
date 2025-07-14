@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
+import { getPageUrlByType, PageType } from '@/domains/interface';
 import { TournamentType } from '@/domains/tournament';
+import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
 import FinalTournamentReactFlowInner from './FinalTournamentReactFlowInner';
 import { TournamentDisplayProps } from './interfaces';
@@ -14,6 +18,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
   onGamerNameEdit,
   onGamerGamesEdit,
 }) => {
+  const router = useRouter();
   const { tournament, title } = tournamentData;
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -35,16 +40,19 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setIsFullscreen(true);
-      setTimeout(() => {
-        reactFlowRef.current?.setFullscreenView();
-      }, 100);
+      reactFlowRef.current?.setFullscreenView();
     } else {
       setIsFullscreen(false);
-      setTimeout(() => {
-        reactFlowRef.current?.setOptimalView();
-      }, 100);
+      reactFlowRef.current?.setOptimalView();
     }
   }, [isFullscreen]);
+
+  // 編輯賽程表
+  const toggleEditTournament = useCallback(() => {
+    router.push(
+      `${getPageUrlByType(PageType.COURTS)}/${tournamentData.courtCustomLink}${getPageUrlByType(PageType.TOURNAMENTS)}/${tournamentData.customLink}/edit`
+    );
+  }, [router, tournamentData.courtCustomLink, tournamentData.customLink]);
 
   // 新增：切換選手編輯模式
   const toggleGamerEditMode = useCallback(() => {
@@ -61,9 +69,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
       e.stopPropagation();
     }
     setIsFullscreen(false);
-    setTimeout(() => {
-      reactFlowRef.current?.setOptimalView();
-    }, 100);
+    reactFlowRef.current?.setOptimalView();
   }, []);
 
   // 新增：ESC 鍵關閉全螢幕
@@ -90,9 +96,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
   const handleMobileOptimize = useCallback(() => {
     if (isMobile) {
       setIsFullscreen(true);
-      setTimeout(() => {
-        reactFlowRef.current?.setFullscreenView();
-      }, 100);
+      reactFlowRef.current?.setFullscreenView();
     }
   }, [isMobile]);
 
@@ -142,6 +146,17 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                   >
                     🔍 全螢幕
                   </button>
+                  {!isEditMode && (
+                    <ManagerCourtProtected pageId={tournamentData.customLink}>
+                      <button
+                        onClick={toggleEditTournament}
+                        className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded text-xs text-orange-600"
+                        title="編輯"
+                      >
+                        編輯賽程表
+                      </button>
+                    </ManagerCourtProtected>
+                  )}
                 </>
               )}
             </div>
