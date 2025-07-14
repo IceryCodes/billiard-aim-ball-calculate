@@ -1,9 +1,9 @@
 // 佈局常數
 export const LAYOUT = {
   boxWidth: 100,
-  boxHeight: 100,
+  boxHeight: 130,
   gamerSpacing: 110,
-  roundHeight: 150,
+  roundHeight: 180,
   titleWidth: 180,
   headerHeight: 40,
   canvasLeftPadding: 0,
