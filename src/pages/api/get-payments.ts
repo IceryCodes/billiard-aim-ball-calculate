@@ -29,7 +29,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetPaymentsRetu
         headers: {
           'Content-Type': 'application/json',
           'X-Api-Key': process.env.ICERY_API_KEY,
-          'User-Agent': 'Purrdo-Server/1.0',
           Accept: 'application/json',
           Origin: process.env.NEXT_PUBLIC_BASE_URL,
         },

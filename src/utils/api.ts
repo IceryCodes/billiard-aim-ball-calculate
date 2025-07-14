@@ -60,17 +60,6 @@ const apiOrigin = axios.create({
   },
 });
 
-const apiIcery = axios.create({
-  ...axiosBaseConfig,
-  baseURL: process.env.ICERY_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Api-Key': process.env.ICERY_API_KEY,
-    Accept: 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
-  },
-});
-
 const isBrowser = typeof window !== 'undefined';
 const enableAxiosLogs = process.env.NODE_ENV !== 'production';
 
@@ -132,56 +121,4 @@ apiOrigin.interceptors.response.use(
   }
 );
 
-apiIcery.interceptors.request.use(
-  (config: CustomAxiosRequestConfig): CustomAxiosRequestConfig => {
-    try {
-      if (!config.headers) {
-        config.headers = {} as AxiosHeaders;
-      }
-
-      const headers = config.headers as AxiosHeaders;
-
-      headers.set('Origin', process.env.NEXT_PUBLIC_BASE_URL);
-      headers.set('Referer', process.env.NEXT_PUBLIC_BASE_URL);
-
-      return config;
-    } catch (error) {
-      console.error('Request Interceptor Error:', error);
-      throw error;
-    }
-  },
-  (error: AxiosError) => {
-    if (enableAxiosLogs) {
-      console.error('Request Error:', error);
-    }
-    return Promise.reject(error);
-  }
-);
-
-apiIcery.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === HttpStatus.Forbidden && !originalRequest.hasRetried) {
-      // 標記請求已重試
-      originalRequest.hasRetried = true;
-
-      // 等待短暫時間後重試
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // 添加額外的標頭進行重試
-      originalRequest.headers = {
-        ...originalRequest.headers,
-        'Cache-Control': 'no-cache',
-        Pragma: 'no-cache',
-      };
-
-      return apiIcery(originalRequest);
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-export { apiIcery, apiOrigin };
+export { apiOrigin };

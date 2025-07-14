@@ -1,14 +1,14 @@
-import React, { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useState } from 'react';
 
 import Image from 'next/image';
-import { Control, Controller } from 'react-hook-form';
+import { Control, Controller, FieldValues, Path } from 'react-hook-form';
 
-import { UpdatePlayerProps } from '@/domains/player';
 import { useImageUploadMutation } from '@/features/useImageUploadMutation';
 
-interface ImageUploadProps {
-  control: Control<UpdatePlayerProps>;
+interface ImageUploadProps<T extends FieldValues> {
+  control: Control<T>;
   defaultImage?: string;
+  fieldName?: Path<T>;
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -22,7 +22,11 @@ interface ImageCompressionResult {
   height: number;
 }
 
-export const ImageUpload: React.FC<ImageUploadProps> = ({ control, defaultImage }) => {
+export const ImageUpload = <T extends FieldValues>({
+  control,
+  defaultImage,
+  fieldName = 'featuredImg' as Path<T>,
+}: ImageUploadProps<T>) => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [error, setError] = useState<string>('');
   const [preview, setPreview] = useState<string>(defaultImage || '');
@@ -140,7 +144,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ control, defaultImage 
       const response = await uploadImageMutation({ folder: process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER, base64Image });
 
       if (response.success && response.filename) {
-        const url = `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${response.filename}`;
+        const url = response.imageUrl ?? '';
+
         setPreview(url);
         onChange(response.filename);
       } else {
@@ -165,7 +170,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ control, defaultImage 
   return (
     <div className="space-y-4">
       <Controller
-        name="featuredImg"
+        name={fieldName}
         control={control}
         render={({ field: { onChange }, fieldState: { error: fieldError } }) => (
           <div className="space-y-4">
@@ -188,8 +193,16 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ control, defaultImage 
             )}
             {(error || fieldError) && <p className="text-red-500 text-sm">{error || fieldError?.message}</p>}
             {preview && (
-              <div className="relative w-full h-48">
-                <Image src={preview} alt="Preview" fill className="object-cover rounded-lg" />
+              <div className="relative w-full">
+                <Image
+                  src={preview}
+                  blurDataURL={preview}
+                  alt="Preview"
+                  className="object-cover rounded-lg"
+                  width={720}
+                  height={480}
+                  placeholder="blur"
+                />
               </div>
             )}
           </div>

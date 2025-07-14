@@ -17,6 +17,7 @@ import { tournamentValidationSchema } from '@/lib/validation';
 
 import FieldErrorlabel from '../FieldErrorlabel';
 import { FormField } from '../formFields/FormFields';
+import { ImageUpload } from '../images/ImageUpload';
 import Popup from '../Popup';
 import { Select } from '../selects/Select';
 import { TextArea } from '../textareas/TextArea';
@@ -35,6 +36,7 @@ interface TournamentFormProps {
 
 const defaultTournament: CreateTournamentProps = {
   title: '',
+  featuredImg: '',
   excerpt: '',
   content: '',
   customLink: '',
@@ -138,6 +140,18 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
             />
           </div>
 
+          <div className="flex flex-col col-span-6">
+            <label>預覽圖</label>
+            <ImageUpload
+              control={control}
+              defaultImage={
+                tournament?.featuredImg
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament?.featuredImg}`
+                  : process.env.NEXT_PUBLIC_FEATURED_IMAGE
+              }
+            />
+          </div>
+
           <FormField control={control} titleText="球場賽程" fieldName="title" placeholder="球場賽程名稱" col={6} />
 
           <div className="flex flex-col col-span-3">
@@ -207,6 +221,7 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
       isCreateLoading,
       isUpdateLoading,
       control,
+      tournament?.featuredImg,
       tournament?.customLink,
     ]
   );

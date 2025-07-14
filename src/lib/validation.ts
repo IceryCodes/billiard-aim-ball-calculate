@@ -322,6 +322,7 @@ export const courtValidationSchema = object({
 
 export const tournamentValidationSchema = object({
   title: rules.tournamentTitle.default(''),
+  featuredImg: rules.featuredImg.default(''),
   excerpt: rules.excerpt.default(''),
   content: rules.content.default(''),
   customLink: rules.customLink.default(''),
