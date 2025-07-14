@@ -14,12 +14,12 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { Gamer } from '@/domains/tournament';
+import { downloadImage } from '@/features/tournaments/helper';
 
 import { createTournamentEdges, matchesToNodes } from './dataTransformers';
 import { optimizedNodeTypes } from './nodes/optimizedNodeTypes';
 import { viewOnlyNodeTypes } from './nodes/viewOnlyNodeTypes';
 import { VIEWPORT_CONFIG } from './reactFlowConstants';
-import DownloadButton from './ReactFlowDownloadButton';
 import {
   SingleEliminationReactFlowProps,
   SingleEliminationReactFlowRef,
@@ -57,7 +57,7 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
     {
       gamers,
       matches,
-      tournamentTitle = '比賽',
+      tournamentTitle,
       isEditMode = false,
       onMatchUpdate,
       editMode = 'NORMAL',
@@ -280,6 +280,7 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
       zoomIn: () => reactFlowInstance.zoomIn(),
       zoomOut: () => reactFlowInstance.zoomOut(),
       setEditMode: handleSetEditMode,
+      downloadImage: () => downloadImage(reactFlowInstance, tournamentTitle),
     }));
 
     // 流程配置（移除繪圖相關）
@@ -322,10 +323,6 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
           style={{ width: '100%', height: '100%' }} // 確保完整覆蓋
         >
           <Background color="#4b5563" size={1} />
-          <DownloadButton
-            buttonTextElement="下載賽程表"
-            title={`${tournamentTitle}賽程表 - ${process.env.NEXT_PUBLIC_SITENAME}`}
-          />
 
           {/* 觀看模式的控制面板 */}
           <Controls showZoom={true} showFitView={true} showInteractive={false} className="text-black" />

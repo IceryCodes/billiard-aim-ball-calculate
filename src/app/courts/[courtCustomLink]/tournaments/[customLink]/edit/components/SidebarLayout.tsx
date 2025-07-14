@@ -56,7 +56,11 @@ const SidebarLayout = ({ pageId, children }: SidebarLayoutProps) => {
               .map(({ _id, title, excerpt, customLink, tags, featuredImg, courtCustomLink }: TournamentProps) => (
                 <TournamentListItemCard
                   key={_id}
-                  image={featuredImg ? featuredImg : process.env.NEXT_PUBLIC_FEATURED_IMAGE}
+                  image={
+                    featuredImg
+                      ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
+                      : process.env.NEXT_PUBLIC_FEATURED_IMAGE
+                  }
                   title={title}
                   excerpt={excerpt}
                   customLink={customLink}

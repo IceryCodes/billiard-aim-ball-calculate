@@ -11,10 +11,11 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+import { downloadImage } from '@/features/tournaments/helper';
+
 import { createTournamentEdges, matchesToNodes } from './dataTransformers';
 import { viewOnlyNodeTypes } from './nodes/viewOnlyNodeTypes';
 import { VIEWPORT_CONFIG } from './reactFlowConstants';
-import DownloadButton from './ReactFlowDownloadButton';
 import {
   SingleEliminationReactFlowProps,
   SingleEliminationReactFlowRef,
@@ -48,7 +49,7 @@ const VIEWER_CONFIG = {
 const TournamentViewerInner = forwardRef<
   SingleEliminationReactFlowRef,
   Pick<SingleEliminationReactFlowProps, 'gamers' | 'matches' | 'tournamentTitle'>
->(({ gamers, matches, tournamentTitle = '比賽' }, ref) => {
+>(({ gamers, matches, tournamentTitle }, ref) => {
   const reactFlowInstance = useReactFlow();
 
   // 生成節點和邊線
@@ -116,6 +117,7 @@ const TournamentViewerInner = forwardRef<
     zoomIn: () => reactFlowInstance.zoomIn(),
     zoomOut: () => reactFlowInstance.zoomOut(),
     setEditMode: emptyHandler, // 觀看模式不支援編輯
+    downloadImage: () => downloadImage(reactFlowInstance, tournamentTitle),
   }));
 
   return (
@@ -134,10 +136,6 @@ const TournamentViewerInner = forwardRef<
         fitView={true}
       >
         <Background color="#555" size={1} />
-        <DownloadButton
-          buttonTextElement="下載賽程表"
-          title={`${tournamentTitle}賽程表 - ${process.env.NEXT_PUBLIC_SITENAME}`}
-        />
 
         {/* 觀看模式的控制面板 */}
         <div className="top-40">
