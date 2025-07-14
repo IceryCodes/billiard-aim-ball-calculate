@@ -1,6 +1,6 @@
 import { Gamer, Match } from '@/domains/tournament';
 
-import { LAYOUT, NODE_TYPES } from './reactFlowConstants';
+import { NODE_TYPES } from './reactFlowConstants';
 import {
   ChampionNode,
   ChampionNodeData,
@@ -13,6 +13,7 @@ import {
 } from './reactFlowTypes';
 import {
   calculateChampionPosition,
+  calculateChampionTitlePosition,
   calculateMatchPosition,
   calculateRoundTitlePosition,
   findChampion,
@@ -40,7 +41,7 @@ export const matchesToNodes = (
   const totalRounds = Math.floor(Math.log2(gamers.length));
 
   try {
-    // 1. 創建比賽節點
+    // 1. 創建比賽節點 - 移除額外偏移
     matches.forEach((match) => {
       const position = calculateMatchPosition(match.round, match.matchIndex, totalRounds);
       const matchNodeData: MatchNodeData = {
@@ -62,17 +63,17 @@ export const matchesToNodes = (
         type: 'match',
         position: {
           x: position.x,
-          y: position.y + LAYOUT.championToFinalGap,
+          y: position.y, // 移除 championToFinalGap 偏移
         },
         data: matchNodeData,
         draggable: false,
-        selectable: true, // 改為 true 讓節點可以接收點擊事件
+        selectable: true,
       };
 
       nodes.push(matchNode);
     });
 
-    // 2. 創建輪次標題節點
+    // 2. 創建輪次標題節點 - 使用新的對齊位置
     for (let round = 1; round <= totalRounds; round++) {
       const position = calculateRoundTitlePosition(round, totalRounds);
       const roundTitleData: RoundTitleNodeData = {
@@ -86,17 +87,18 @@ export const matchesToNodes = (
         type: 'roundTitle',
         position: {
           x: position.x,
-          y: position.y + LAYOUT.championToFinalGap,
+          y: position.y, // 移除額外偏移
         },
         data: roundTitleData,
         draggable: false,
-        selectable: false, // 標題節點不需要點擊
+        selectable: false,
       };
 
       nodes.push(roundTitleNode);
     }
 
-    // 3. 創建冠軍標題節點
+    // 3. 創建冠軍標題節點 - 使用新的計算函數
+    const championTitlePosition = calculateChampionTitlePosition(totalRounds);
     const championTitleData: RoundTitleNodeData = {
       roundNumber: 0,
       totalRounds,
@@ -107,17 +109,17 @@ export const matchesToNodes = (
       id: 'champion-title',
       type: 'roundTitle',
       position: {
-        x: 0,
-        y: 0,
+        x: championTitlePosition.x,
+        y: championTitlePosition.y,
       },
       data: championTitleData,
       draggable: false,
-      selectable: false, // 標題節點不需要點擊
+      selectable: false,
     };
 
     nodes.push(championTitleNode);
 
-    // 4. 創建冠軍節點（如果有冠軍）
+    // 4. 創建冠軍節點（如果有冠軍）- 使用新的位置計算
     const champion = findChampion(matches, totalRounds);
     if (champion) {
       const position = calculateChampionPosition(totalRounds);
@@ -130,11 +132,11 @@ export const matchesToNodes = (
         type: 'champion',
         position: {
           x: position.x,
-          y: position.y,
+          y: position.y, // 使用新的統一位置計算
         },
         data: championData,
         draggable: false,
-        selectable: false, // 冠軍節點不需要點擊
+        selectable: false,
       };
 
       nodes.push(championNode);
@@ -205,7 +207,7 @@ export const createTournamentEdges = (matches: Match[], gamers: Gamer[]): Tourna
         target: targetNodeId,
         sourceHandle: `${sourceNodeId}-source`,
         targetHandle: `${targetNodeId}-target`,
-        type: 'smoothstep', // 改為 smoothstep
+        type: 'smoothstep',
         style: {
           stroke: '#f97316',
           strokeWidth: 4,

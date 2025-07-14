@@ -31,7 +31,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // 全螢幕切換
+  // 全螢幕切換 - 修復關閉功能
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       setIsFullscreen(true);
@@ -54,12 +54,37 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
     reactFlowRef.current?.setEditMode(newMode ? 'GAMER_EDIT' : 'NORMAL');
   }, [gamerEditMode]);
 
-  const closeFullscreen = useCallback(() => {
+  // 修復：強制關閉全螢幕 - 增加事件處理和錯誤處理
+  const closeFullscreen = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsFullscreen(false);
     setTimeout(() => {
       reactFlowRef.current?.setOptimalView();
     }, 100);
   }, []);
+
+  // 新增：ESC 鍵關閉全螢幕
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        closeFullscreen();
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // 防止背景滾動
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isFullscreen, closeFullscreen]);
 
   // 移動端最佳化顯示
   const handleMobileOptimize = useCallback(() => {
@@ -166,12 +191,15 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
         </div>
       </div>
 
-      {/* 全螢幕模式 */}
+      {/* 修復：全螢幕模式 - 增加 z-index 和更好的事件處理 */}
       {isFullscreen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 flex flex-col z-[9999]"
+          style={{ zIndex: 9999 }} // 確保在最上層
+        >
           {/* 全螢幕標題列 */}
           <div
-            className={`${isEditMode ? 'bg-link' : 'bg-foreground'} border-b px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center`}
+            className={`${isEditMode ? 'bg-link' : 'bg-foreground'} border-b px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center relative z-[10000]`}
           >
             <div className="flex gap-x-2 items-center">
               <h3 className="text-sm sm:text-lg font-semibold text-gray-800 truncate mr-2">
@@ -201,10 +229,13 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                 </>
               )}
 
+              {/* 修復：增強關閉按鈕 */}
               <button
                 onClick={closeFullscreen}
-                className="px-3 sm:px-4 py-1 sm:py-2 bg-red-100 hover:bg-red-200 rounded text-xs sm:text-sm text-red-600 whitespace-nowrap"
-                title="關閉全螢幕"
+                onMouseDown={(e) => e.stopPropagation()} // 防止事件被阻擋
+                className="px-3 sm:px-4 py-1 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded text-xs sm:text-sm font-medium shadow-lg transition-colors z-[10001]"
+                title="關閉全螢幕 (ESC)"
+                style={{ position: 'relative', zIndex: 10001 }}
               >
                 ✕ 關閉
               </button>
@@ -236,7 +267,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
           {/* 移動端提示 */}
           {isMobile && (
             <div className="bg-gray-800 text-white px-3 py-2 text-center">
-              <p className="text-xs">💡 拖曳移動來瀏覽賽程表</p>
+              <p className="text-xs">💡 拖曳移動來瀏覽賽程表 • 按 ESC 退出全螢幕</p>
             </div>
           )}
 

@@ -14,6 +14,7 @@ export const LAYOUT = {
   championTopMargin: 8,
   championToFinalGap: 50,
   sceneHeightExtra: 40,
+  titlePadding: 8,
 };
 
 // 視口設置

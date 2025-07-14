@@ -1,4 +1,39 @@
-// 統一樣式常數
+// 佈局常數
+export const LAYOUT = {
+  boxWidth: 100,
+  boxHeight: 100,
+  gamerSpacing: 110,
+  roundHeight: 130, // 統一的輪次間距
+  titleWidth: 180,
+  headerHeight: 40,
+  canvasLeftPadding: 0,
+  canvasRightPadding: 0,
+  canvasBottomPadding: 60,
+  championBoxWidth: 150,
+  championBoxHeight: 50,
+  championTopMargin: 8,
+  championToFinalGap: 0, // 設為 0，使用統一間距
+  sceneHeightExtra: 40,
+  titlePadding: 8, // 標題與邊緣的間距
+};
+
+// 視口設置
+export const VIEWPORT_CONFIG = {
+  defaultViewport: {
+    x: 28.99,
+    y: 21.04,
+    zoom: 0.71,
+  },
+};
+
+// 節點類型常數
+export const NODE_TYPES = {
+  MATCH: 'match',
+  CHAMPION: 'champion',
+  ROUND_TITLE: 'roundTitle',
+} as const;
+
+// 樣式常數
 export const STYLES = {
   // 比賽節點樣式
   matchNode: 'bg-gray-800 border border-gray-600 rounded shadow-sm overflow-hidden',
@@ -11,6 +46,7 @@ export const STYLES = {
   // 選手框樣式
   gamerBox: 'h-full flex items-center justify-center text-sm font-medium px-1 text-gray-100',
   gamerBoxLeft: 'border-r border-gray-600',
+  gamerBoxRight: '',
   gamerBoxWinner: 'bg-yellow-900 border-orange-400 text-yellow-100',
   gamerBoxEmpty: 'text-gray-500 bg-gray-700',
   gamerBoxDisabled: 'bg-gray-700 text-gray-500',
@@ -23,6 +59,9 @@ export const STYLES = {
   // 遊戲局數框樣式
   gamesBox: 'w-12 h-6 bg-gray-700 border border-gray-600 rounded text-xs flex items-center justify-center text-gray-200',
   gamesBoxEdit: 'w-12 h-6 bg-gray-600 border border-blue-400 rounded text-xs flex items-center justify-center text-gray-100',
+  // 圖標樣式
+  lockIcon: 'absolute top-1 right-1 text-xs opacity-60',
+  crownIcon: 'text-base ml-1',
   // 編輯輸入框樣式
   editInputFocused:
     'w-full h-full text-center border-2 border-blue-400 rounded bg-blue-900 text-blue-100 font-bold outline-none px-1',

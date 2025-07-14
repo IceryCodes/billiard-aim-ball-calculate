@@ -3,16 +3,11 @@ import { Gamer, Match } from '@/domains/tournament';
 import { LAYOUT, NODE_TYPES } from './reactFlowConstants';
 import { TournamentEdge, TournamentNode } from './reactFlowTypes';
 
-// 位置計算 - 與原 Konva 算法完全一致
+// 位置計算 - 修正對齊問題
 export const calculateMatchPosition = (round: number, matchIndex: number, totalRounds: number): { x: number; y: number } => {
   if (round === 1) {
-    const x = LAYOUT.titleWidth + LAYOUT.canvasLeftPadding + matchIndex * LAYOUT.gamerSpacing + LAYOUT.boxHeight;
-    const y =
-      LAYOUT.headerHeight +
-      (totalRounds - 1) * LAYOUT.roundHeight +
-      LAYOUT.canvasBottomPadding -
-      LAYOUT.boxHeight +
-      LAYOUT.boxHeight / 2;
+    const x = LAYOUT.titleWidth + LAYOUT.canvasLeftPadding + matchIndex * LAYOUT.gamerSpacing + LAYOUT.boxWidth;
+    const y = LAYOUT.headerHeight + (totalRounds - 1) * LAYOUT.roundHeight + LAYOUT.canvasBottomPadding;
     return { x, y };
   } else {
     // 遞迴計算前一輪位置
@@ -22,37 +17,44 @@ export const calculateMatchPosition = (round: number, matchIndex: number, totalR
     const prevMatch2Pos = calculateMatchPosition(round - 1, prevMatch2Index, totalRounds);
 
     const x = (prevMatch1Pos.x + prevMatch2Pos.x) / 2;
-    const y =
-      LAYOUT.headerHeight +
-      (totalRounds - round) * LAYOUT.roundHeight +
-      LAYOUT.canvasBottomPadding -
-      LAYOUT.boxHeight +
-      LAYOUT.boxHeight / 2;
+    const y = LAYOUT.headerHeight + (totalRounds - round) * LAYOUT.roundHeight + LAYOUT.canvasBottomPadding;
 
     return { x, y };
   }
 };
 
-// 計算冠軍位置
+// 修正：計算冠軍位置 - 保持一致間距
 export const calculateChampionPosition = (totalRounds: number): { x: number; y: number } => {
   const finalMatchPos = calculateMatchPosition(totalRounds, 0, totalRounds);
   return {
     x: finalMatchPos.x + (LAYOUT.boxWidth - LAYOUT.championBoxWidth) / 2,
-    y: LAYOUT.headerHeight + LAYOUT.championTopMargin,
+    // 修正：使用與其他輪次一致的間距計算
+    y:
+      LAYOUT.headerHeight +
+      -1 * LAYOUT.roundHeight +
+      LAYOUT.canvasBottomPadding +
+      (LAYOUT.boxHeight - LAYOUT.championBoxHeight) / 2,
   };
 };
 
-// 計算輪次標題位置
+// 修正：計算輪次標題位置 - 與比賽位置完全對齊
 export const calculateRoundTitlePosition = (roundNumber: number, totalRounds: number): { x: number; y: number } => {
-  const titleY =
-    LAYOUT.headerHeight +
-    (totalRounds - roundNumber) * LAYOUT.roundHeight +
-    LAYOUT.canvasBottomPadding -
-    LAYOUT.boxHeight +
-    LAYOUT.boxHeight / 2 -
-    8 +
-    LAYOUT.roundHeight / 2;
-  return { x: 0, y: titleY };
+  // 使用與比賽相同的 Y 位置計算方式
+  const matchY = LAYOUT.headerHeight + (totalRounds - roundNumber) * LAYOUT.roundHeight + LAYOUT.canvasBottomPadding;
+
+  return {
+    x: LAYOUT.titlePadding,
+    y: matchY + LAYOUT.boxHeight / 2 - 20, // 微調讓文字垂直居中對齊
+  };
+};
+
+// 修正：計算冠軍標題位置
+export const calculateChampionTitlePosition = (totalRounds: number): { x: number; y: number } => {
+  const championPos = calculateChampionPosition(totalRounds);
+  return {
+    x: LAYOUT.titlePadding,
+    y: championPos.y + LAYOUT.championBoxHeight / 2 - 20, // 與冠軍框垂直居中對齊
+  };
 };
 
 // 生成輪次名稱
