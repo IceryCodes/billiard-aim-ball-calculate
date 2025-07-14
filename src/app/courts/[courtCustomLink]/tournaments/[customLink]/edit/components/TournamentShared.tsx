@@ -149,13 +149,29 @@ export const TournamentStatusBar = ({
           </div>
         </div>
 
-        {!!tournament.excerpt && (
-          <blockquote className="border-l-4 border-link pl-4 italic">
-            {<TournamentContentFormatter content={tournament.excerpt} />}
-          </blockquote>
-        )}
+        <div className="flex gap-4 flex-col md:flex-row">
+          {tournament.featuredImg && (
+            <Image
+              src={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`}
+              alt={tournament.title}
+              width={640}
+              height={360}
+              placeholder="blur"
+              blurDataURL={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`}
+              className="rounded-2xl"
+            />
+          )}
 
-        {!!tournament.content && <section>{<TournamentContentFormatter content={tournament.content} />}</section>}
+          <div>
+            {!!tournament.excerpt && (
+              <blockquote className="border-l-4 border-link pl-4 italic">
+                {<TournamentContentFormatter content={tournament.excerpt} />}
+              </blockquote>
+            )}
+
+            {!!tournament.content && <section>{<TournamentContentFormatter content={tournament.content} />}</section>}
+          </div>
+        </div>
       </div>
     </Card>
   );

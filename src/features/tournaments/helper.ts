@@ -1,3 +1,5 @@
+import { Edge, getNodesBounds, getViewportForBounds, ReactFlowInstance, Node as ReactFlowNode } from '@xyflow/react';
+import { toPng } from 'html-to-image';
 import { Collection } from 'mongodb';
 
 import { ConnectionQualityType } from '@/app/courts/[courtCustomLink]/tournaments/[customLink]/edit/components/interfaces';
@@ -181,4 +183,45 @@ export const generateTournament = ({
     matches,
     tournamentType,
   };
+};
+
+export const downloadImage = async (
+  reactFlowInstance: ReactFlowInstance<ReactFlowNode, Edge>,
+  fileName: string
+): Promise<void> => {
+  try {
+    const nodes = reactFlowInstance.getNodes();
+    const nodesBounds = getNodesBounds(nodes);
+
+    const imageWidth = 1920;
+    const imageHeight = 1080;
+    const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0.1);
+
+    const viewportElement = document.querySelector('.react-flow__viewport') as HTMLElement | null;
+    if (!viewportElement) {
+      console.error('React Flow viewport element not found');
+      return;
+    }
+
+    const dataUrl = await toPng(viewportElement, {
+      backgroundColor: '#1F2937',
+      width: imageWidth,
+      height: imageHeight,
+      style: {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+      },
+    });
+
+    const link = document.createElement('a');
+
+    const finalFileName = `${fileName}賽程表 - ${process.env.NEXT_PUBLIC_SITENAME}.png`;
+
+    link.setAttribute('download', finalFileName);
+    link.setAttribute('href', dataUrl);
+    link.click();
+  } catch (error) {
+    console.error('Failed to download image:', error);
+  }
 };

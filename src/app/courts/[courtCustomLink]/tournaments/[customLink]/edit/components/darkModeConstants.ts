@@ -1,9 +1,9 @@
 // 佈局常數
 export const LAYOUT = {
   boxWidth: 100,
-  boxHeight: 100,
+  boxHeight: 130,
   gamerSpacing: 110,
-  roundHeight: 130, // 統一的輪次間距
+  roundHeight: 180, // 統一的輪次間距
   titleWidth: 180,
   headerHeight: 40,
   canvasLeftPadding: 0,

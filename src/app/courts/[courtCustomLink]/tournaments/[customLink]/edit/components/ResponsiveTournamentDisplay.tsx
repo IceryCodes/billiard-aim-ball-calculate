@@ -54,6 +54,11 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
     );
   }, [router, tournamentData.courtCustomLink, tournamentData.customLink]);
 
+  // 下載賽程表
+  const handleDownload = useCallback(() => {
+    reactFlowRef.current?.downloadImage(`${title}賽程表.png`);
+  }, [title]);
+
   // 新增：切換選手編輯模式
   const toggleGamerEditMode = useCallback(() => {
     const newMode = !gamerEditMode;
@@ -140,6 +145,14 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                   )}
 
                   <button
+                    onClick={handleDownload}
+                    className="px-3 py-1 bg-green-100 hover:bg-green-200 rounded text-xs text-green-600"
+                    title="下載賽程表"
+                  >
+                    📥 下載
+                  </button>
+
+                  <button
                     onClick={toggleFullscreen}
                     className="px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs text-blue-600"
                     title="全螢幕顯示"
@@ -173,6 +186,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                     ref={reactFlowRef}
                     gamers={tournament.gamers}
                     matches={tournament.matches}
+                    tournamentTitle={title}
                     onMatchUpdate={onMatchUpdate}
                     isEditMode={isEditMode}
                     editMode={gamerEditMode ? 'GAMER_EDIT' : 'NORMAL'}
@@ -180,7 +194,12 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                     onGamerGamesEdit={onGamerGamesEdit}
                   />
                 ) : (
-                  <TournamentViewer ref={reactFlowRef} gamers={tournament.gamers} matches={tournament.matches} />
+                  <TournamentViewer
+                    ref={reactFlowRef}
+                    gamers={tournament.gamers}
+                    matches={tournament.matches}
+                    tournamentTitle={title}
+                  />
                 )}
               </>
             )}
@@ -266,6 +285,7 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                     ref={reactFlowRef}
                     gamers={tournament.gamers}
                     matches={tournament.matches}
+                    tournamentTitle={title}
                     onMatchUpdate={onMatchUpdate}
                     isEditMode={isEditMode}
                     editMode={gamerEditMode ? 'GAMER_EDIT' : 'NORMAL'}
@@ -273,7 +293,12 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
                     onGamerGamesEdit={onGamerGamesEdit}
                   />
                 ) : (
-                  <TournamentViewer ref={reactFlowRef} gamers={tournament.gamers} matches={tournament.matches} />
+                  <TournamentViewer
+                    ref={reactFlowRef}
+                    gamers={tournament.gamers}
+                    matches={tournament.matches}
+                    tournamentTitle={title}
+                  />
                 )}
               </>
             )}

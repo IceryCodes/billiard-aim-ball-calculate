@@ -11,6 +11,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+import { downloadImage } from '@/features/tournaments/helper';
+
 import { createTournamentEdges, matchesToNodes } from './dataTransformers';
 import { viewOnlyNodeTypes } from './nodes/viewOnlyNodeTypes';
 import { VIEWPORT_CONFIG } from './reactFlowConstants';
@@ -46,8 +48,8 @@ const VIEWER_CONFIG = {
 // 內部組件
 const TournamentViewerInner = forwardRef<
   SingleEliminationReactFlowRef,
-  Pick<SingleEliminationReactFlowProps, 'gamers' | 'matches'>
->(({ gamers, matches }, ref) => {
+  Pick<SingleEliminationReactFlowProps, 'gamers' | 'matches' | 'tournamentTitle'>
+>(({ gamers, matches, tournamentTitle }, ref) => {
   const reactFlowInstance = useReactFlow();
 
   // 生成節點和邊線
@@ -115,6 +117,7 @@ const TournamentViewerInner = forwardRef<
     zoomIn: () => reactFlowInstance.zoomIn(),
     zoomOut: () => reactFlowInstance.zoomOut(),
     setEditMode: emptyHandler, // 觀看模式不支援編輯
+    downloadImage: () => downloadImage(reactFlowInstance, tournamentTitle),
   }));
 
   return (
@@ -148,7 +151,7 @@ TournamentViewerInner.displayName = 'TournamentViewerInner';
 // 主要的觀看模式組件
 const TournamentViewer = forwardRef<
   SingleEliminationReactFlowRef,
-  Pick<SingleEliminationReactFlowProps, 'gamers' | 'matches'>
+  Pick<SingleEliminationReactFlowProps, 'gamers' | 'matches' | 'tournamentTitle'>
 >((props, ref) => {
   return (
     <ReactFlowProvider>

@@ -14,6 +14,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { Gamer } from '@/domains/tournament';
+import { downloadImage } from '@/features/tournaments/helper';
 
 import { createTournamentEdges, matchesToNodes } from './dataTransformers';
 import { optimizedNodeTypes } from './nodes/optimizedNodeTypes';
@@ -52,7 +53,19 @@ const createFlowConfig = (isEditMode: boolean, editMode: string) => ({
 
 // 內部組件（移除繪圖功能）
 const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, SingleEliminationReactFlowProps>(
-  ({ gamers, matches, isEditMode = false, onMatchUpdate, editMode = 'NORMAL', onGamerNameEdit, onGamerGamesEdit }, ref) => {
+  (
+    {
+      gamers,
+      matches,
+      tournamentTitle,
+      isEditMode = false,
+      onMatchUpdate,
+      editMode = 'NORMAL',
+      onGamerNameEdit,
+      onGamerGamesEdit,
+    },
+    ref
+  ) => {
     const reactFlowInstance = useReactFlow();
     const [currentEditMode, setCurrentEditMode] = useState<string>(editMode);
     const [hasRenderError, setHasRenderError] = useState(false);
@@ -267,6 +280,7 @@ const FinalTournamentReactFlowInner = forwardRef<SingleEliminationReactFlowRef, 
       zoomIn: () => reactFlowInstance.zoomIn(),
       zoomOut: () => reactFlowInstance.zoomOut(),
       setEditMode: handleSetEditMode,
+      downloadImage: () => downloadImage(reactFlowInstance, tournamentTitle),
     }));
 
     // 流程配置（移除繪圖相關）
