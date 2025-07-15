@@ -293,7 +293,10 @@ const rules: RulesProps = {
     if (!value || value === '') return true;
     return /^(0[2-9]|0[2-9]-|\+886[2-9]-)?\d{6,8}$/.test(value) && value.length >= 8 && value.length <= 12;
   }),
-  defaultGames: number().required('預設局數是必填項目').min(1, '少於1局打屁喔').max(20, '預設局數不能超過20局，會死人'),
+  defaultGames: number()
+    .required('預設局數(顆數)是必填項目')
+    .min(1, '少於1局(顆)打屁喔')
+    .max(100, '預設局數(顆數)不能超過100，會死人'),
 
   // player
   professional: boolean().required('職業選手是必填項目'),

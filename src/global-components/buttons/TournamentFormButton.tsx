@@ -341,7 +341,7 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
 
           {/* 預設局數 */}
           <div className="flex flex-col col-span-3">
-            <label>預設局數</label>
+            <label>預設局數(顆數)</label>
             <Controller
               name="tournament.defaultGames"
               control={control}

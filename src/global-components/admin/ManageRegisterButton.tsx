@@ -23,12 +23,9 @@ const ManageRegisterButton = ({ title }: ManageRegisterButtonProps) => {
   const [display, setDisplay] = useState<boolean>(false);
 
   const onSubmit = useCallback(async () => {
-    const confirmed = window.confirm(`確定要申請${title}的管理權限嗎?`);
-    if (!confirmed) return;
-
     showToast({ message: '尚未開放此功能', toastStyle: ToastStyleType.Warning });
     setDisplay(false);
-  }, [showToast, title]);
+  }, [showToast]);
 
   const form = useMemo(
     (): ReactNode => (
@@ -50,11 +47,9 @@ const ManageRegisterButton = ({ title }: ManageRegisterButtonProps) => {
     [display, isAuthenticated, isLoading, onSubmit, title]
   );
 
-  const onClick = () => setDisplay(true);
-
   return (
     <>
-      <label onClick={onClick} className="cursor-pointer">
+      <label onClick={() => setDisplay(true)} className="cursor-pointer">
         📝
       </label>
       {form}
