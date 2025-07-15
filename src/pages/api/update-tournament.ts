@@ -2,6 +2,7 @@ import { Collection, ObjectId } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { TournamentDBProps } from '@/domains/tournament';
+import { convertTournamentDates } from '@/features/tournaments/helper';
 import { getTournamentsCollection } from '@/lib/mongodb';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
@@ -32,6 +33,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TournamentUpdat
 
     const updateData: Partial<TournamentDBProps> = {
       ...req.body,
+      tournament: convertTournamentDates(req.body.tournament),
       createdAt: new Date(req.body.createdAt),
       updatedAt: new Date(),
     };

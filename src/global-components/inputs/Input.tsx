@@ -10,6 +10,7 @@ export enum InputStyleType {
   Url = 'url',
   Search = 'search',
   Time = 'time',
+  DatetimeLocal = 'datetime-local',
 }
 
 export enum AutoCompleteType {

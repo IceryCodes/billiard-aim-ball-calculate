@@ -1,8 +1,8 @@
 import { Collection } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { TournamentDBProps, TournamentType } from '@/domains/tournament';
-import { generateTournament, generateUniqueCustomLink } from '@/features/tournaments/helper';
+import { TournamentDBProps } from '@/domains/tournament';
+import { convertTournamentDates, generateTournament, generateUniqueCustomLink } from '@/features/tournaments/helper';
 import { getTournamentsCollection } from '@/lib/mongodb';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
@@ -40,9 +40,21 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TournamentUpdat
       customLink: req.body.customLink || uniqueCustomLink,
       featuredImg: req.body.featuredImg || '',
       tags: req.body.tags || [],
-      tournament:
-        req.body.tournament ||
-        generateTournament({ gamerCount: req.body.gamerCount, tournamentType: TournamentType.SINGLE }),
+      tournament: convertTournamentDates(
+        generateTournament({
+          gamerCount: req.body.tournament.gamerCount,
+          tournamentType: req.body.tournament.tournamentType,
+          tournamentDate: new Date(req.body.tournament.tournamentDate),
+          tournamentDeadlineDate: new Date(req.body.tournament.tournamentDeadlineDate),
+          tournamentFee: req.body.tournament.tournamentFee,
+          prizeFirst: req.body.tournament.prizeFirst,
+          prizeSecond: req.body.tournament.prizeSecond,
+          prizeThird: req.body.tournament.prizeThird,
+          contactName: req.body.tournament.contactName,
+          contactPhone: req.body.tournament.contactPhone,
+          defaultGames: req.body.tournament.defaultGames,
+        })
+      ),
       drawingData: req.body.drawingData || {
         lines: [],
         lastUpdated: Date.now(),

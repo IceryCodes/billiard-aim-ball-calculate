@@ -1,8 +1,11 @@
 import { useCallback, useMemo } from 'react';
 
 import { GenderType, UserRoleType } from '@/domains/interface';
+import { TournamentType } from '@/domains/tournament';
 
 interface UsePatientSelectionTicketEnumReturnType {
+  tournamentTypeMap: Record<TournamentType, string>;
+  composeTournamentType: (genderToTrans: TournamentType) => string;
   roleMap: Record<UserRoleType, string>;
   composeRole: (genderToTrans: UserRoleType) => string;
   genderMap: Record<GenderType, string>;
@@ -10,6 +13,20 @@ interface UsePatientSelectionTicketEnumReturnType {
 }
 
 export const useEnum = (): UsePatientSelectionTicketEnumReturnType => {
+  const tournamentTypeMap = useMemo<Record<TournamentType, string>>(() => {
+    return {
+      [TournamentType.SINGLE]: '單敗制',
+      [TournamentType.DOUBLE]: '雙敗制',
+    };
+  }, []);
+
+  const composeTournamentType = useCallback(
+    (roleToTrans: TournamentType): string => {
+      return tournamentTypeMap[roleToTrans] ?? 'Unknown';
+    },
+    [tournamentTypeMap]
+  );
+
   const roleMap = useMemo<Record<UserRoleType, string>>(() => {
     return {
       [UserRoleType.None]: '一般用戶',
@@ -42,10 +59,12 @@ export const useEnum = (): UsePatientSelectionTicketEnumReturnType => {
 
   return useMemo<UsePatientSelectionTicketEnumReturnType>(() => {
     return {
+      tournamentTypeMap,
+      composeTournamentType,
       roleMap,
       composeRole,
       genderMap,
       composeGender,
     };
-  }, [roleMap, composeRole, genderMap, composeGender]);
+  }, [tournamentTypeMap, composeTournamentType, roleMap, composeRole, genderMap, composeGender]);
 };

@@ -92,6 +92,15 @@ export interface TournamentState {
   matches: Match[];
   tournamentType: TournamentType;
   gamerCount: GamerCountType;
+  tournamentDate: Date;
+  tournamentDeadlineDate: Date;
+  tournamentFee: number;
+  prizeFirst: number;
+  prizeSecond: number;
+  prizeThird: number;
+  contactName?: string;
+  contactPhone?: string;
+  defaultGames: number;
 }
 
 export interface GetTournamentDto {
@@ -102,6 +111,7 @@ export interface GetTournamentsDto {
   court?: string;
   page?: number;
   limit?: number;
+  excludeId?: string;
 }
 
 export interface TournamentProps {
@@ -127,10 +137,7 @@ export interface TournamentDBProps extends Omit<TournamentProps, '_id' | 'courtC
 
 export type UpdateTournamentDto = TournamentProps;
 
-export type CreateTournamentProps = Omit<
-  TournamentProps,
-  '_id' | 'createdAt' | 'updatedAt' | 'tags' | 'tournament' | 'drawingData'
-> & { gamerCount: number };
+export type CreateTournamentProps = Omit<TournamentProps, '_id' | 'createdAt' | 'updatedAt' | 'tags' | 'drawingData'>;
 
 // Toast 相關類型
 export interface ToastNotification {

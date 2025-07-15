@@ -14,12 +14,35 @@ import {
   TestUpdateMessage,
   TournamentUpdatedMessage,
 } from '@/domains/realtime';
-import { Gamer, Match, RealtimeMessageType, TournamentDBProps, TournamentState, TournamentType } from '@/domains/tournament';
+import {
+  Gamer,
+  GamerCountType,
+  Match,
+  RealtimeMessageType,
+  TournamentDBProps,
+  TournamentState,
+  TournamentType,
+} from '@/domains/tournament';
 
 interface ComposeStatusDisplayProps {
   isConnected: boolean;
   connectionQuality: ConnectionQualityType;
   isEditMode: boolean;
+}
+
+// 更新的 generateTournament 參數介面
+interface GenerateTournamentProps {
+  gamerCount: GamerCountType;
+  tournamentType: TournamentType;
+  tournamentDate: Date;
+  tournamentDeadlineDate: Date;
+  tournamentFee: number;
+  prizeFirst: number;
+  prizeSecond: number;
+  prizeThird: number;
+  contactName?: string;
+  contactPhone?: string;
+  defaultGames: number;
 }
 
 export const isGamerUpdateComplete = (message: RealtimeMessage): message is GamerUpdateCompleteMessage => {
@@ -131,10 +154,16 @@ export const generateUniqueCustomLink = async (
 export const generateTournament = ({
   gamerCount,
   tournamentType,
-}: {
-  gamerCount: number;
-  tournamentType: TournamentType;
-}): TournamentState => {
+  tournamentDate,
+  tournamentDeadlineDate,
+  tournamentFee,
+  prizeFirst,
+  prizeSecond,
+  prizeThird,
+  contactName,
+  contactPhone,
+  defaultGames,
+}: GenerateTournamentProps): TournamentState => {
   // 檢查是否為2的冪次方
   if (!Number.isInteger(Math.log2(gamerCount))) {
     throw new Error('玩家數量必須是2的冪次方 (2, 4, 8, 16, 32, 64...)');
@@ -144,7 +173,7 @@ export const generateTournament = ({
   const gamers: Gamer[] = Array.from({ length: gamerCount }, (_, index) => ({
     id: index + 1,
     name: '',
-    games: 7,
+    games: defaultGames,
   }));
 
   const matches: Match[] = [];
@@ -182,6 +211,27 @@ export const generateTournament = ({
     gamers,
     matches,
     tournamentType,
+    tournamentDate,
+    tournamentDeadlineDate,
+    tournamentFee,
+    prizeFirst,
+    prizeSecond,
+    prizeThird,
+    contactName,
+    contactPhone,
+    defaultGames,
+  };
+};
+
+export const convertTournamentDates = (tournament: TournamentState) => {
+  return {
+    ...tournament,
+    ...(tournament.tournamentDate && {
+      tournamentDate: new Date(tournament.tournamentDate),
+    }),
+    ...(tournament.tournamentDeadlineDate && {
+      tournamentDeadlineDate: new Date(tournament.tournamentDeadlineDate),
+    }),
   };
 };
 

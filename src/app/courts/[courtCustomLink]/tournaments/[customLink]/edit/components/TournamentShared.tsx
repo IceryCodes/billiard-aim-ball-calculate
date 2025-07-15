@@ -94,8 +94,8 @@ export const TournamentStatusBar = ({
   }, [router, tournament.courtCustomLink]);
 
   return (
-    <Card className="w-full">
-      <div className="flex flex-col gap-4">
+    <>
+      <Card className="w-full">
         <div className="flex flex-row items-center justify-between gap-x-4">
           <div>
             <div className="flex flex-row items-center gap-x-2">
@@ -148,8 +148,10 @@ export const TournamentStatusBar = ({
             <span>最後更新: {lastUpdateTime}</span>
           </div>
         </div>
+      </Card>
 
-        <div className="flex gap-4 flex-col md:flex-row">
+      <Card className="w-full">
+        <div className="flex gap-8 flex-col md:flex-row">
           {tournament.featuredImg && (
             <Image
               src={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`}
@@ -162,18 +164,18 @@ export const TournamentStatusBar = ({
             />
           )}
 
-          <div>
+          <div className="p-4">
             {!!tournament.excerpt && (
               <blockquote className="border-l-4 border-link pl-4 italic">
-                {<TournamentContentFormatter content={tournament.excerpt} />}
+                <TournamentContentFormatter content={tournament.excerpt} />
               </blockquote>
             )}
 
-            {!!tournament.content && <section>{<TournamentContentFormatter content={tournament.content} />}</section>}
+            {!!tournament.content && <TournamentContentFormatter content={tournament.content} />}
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </>
   );
 };
 

@@ -8,7 +8,7 @@ import { GetTournamentsReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentsReturnType>) => {
-  const { court = '', page = '1', limit = '10' } = req.query;
+  const { court = '', page = '1', limit = '10', excludeId = '' } = req.query;
 
   // Parse page and limit as integers
   const currentPage = Number(page);
@@ -28,6 +28,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentsR
 
     if (court) {
       mongoQuery.court = court;
+    }
+
+    if (excludeId) {
+      mongoQuery._id = { $ne: new ObjectId(excludeId.toString()) };
     }
 
     const total: number = await tournamentsCollection.countDocuments(mongoQuery);

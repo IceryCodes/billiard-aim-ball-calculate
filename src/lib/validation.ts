@@ -6,6 +6,7 @@ import {
   boolean,
   BooleanSchema,
   date,
+  DateSchema,
   mixed,
   MixedSchema,
   number,
@@ -23,7 +24,7 @@ import {
   GenderType,
   UserRoleType,
 } from '@/domains/interface';
-import { GameTypesType } from '@/domains/tournament';
+import { GameTypesType, TournamentType } from '@/domains/tournament';
 
 interface RulesProps {
   //user
@@ -68,10 +69,19 @@ interface RulesProps {
   courtTitle: StringSchema<string | undefined, AnyObject>;
   courtCustomLink: StringSchema<string | undefined, AnyObject>;
   gamerCount: NumberSchema<number, AnyObject>;
+  tournamentDate: DateSchema<Date, AnyObject>;
+  tournamentDeadlineDate: DateSchema<Date, AnyObject>;
+  tournamentType: MixedSchema<TournamentType, AnyObject>;
+  tournamentFee: NumberSchema<number, AnyObject>;
+  prizeFirst: NumberSchema<number, AnyObject>;
+  prizeSecond: NumberSchema<number, AnyObject>;
+  prizeThird: NumberSchema<number, AnyObject>;
+  contactName: StringSchema<string | undefined, AnyObject>;
+  contactPhone: StringSchema<string | undefined, AnyObject>;
+  defaultGames: NumberSchema<number, AnyObject>;
 
   // player
   professional: BooleanSchema<boolean, AnyObject>;
-  // 修正這裡：licenses 應該是包含 { type: string, date: Date } 物件的陣列
   licenses: ArraySchema<Array<{ type: string; date: Date }> | undefined, AnyObject, '', ''>;
 
   // feedback
@@ -128,43 +138,36 @@ const rules: RulesProps = {
     .required('機構代碼是必填項目')
     .matches(/^[^\s#!@*()\\"';/%^=_$`,.?:+]+$/, '機構代碼不能包含空格或特殊字符'),
   owner: string().test('is-owner-or-empty', '負責人名稱不能包含特殊字符', (value) => {
-    // 如果是空字串或未定義，就通過驗證
     if (!value || value === '') return true;
-    // 如果有值，就進行驗證
     return value.length >= 1;
   }),
   genderOptional: mixed<GenderType>().oneOf([GenderType.None, GenderType.Male, GenderType.Female], '性別必須為有效選項'),
   gameTypes: array().of(mixed<GameTypesType>().required()).required('種類是必填項目'),
   websiteUrl: string().test('is-valid-url', '無效的網址格式', (value) => {
-    if (!value) return true; // 空字串通過驗證
+    if (!value) return true;
 
     try {
       const url = new URL(value);
 
-      // 檢查是否以 https:// 開頭
       if (!url.protocol.startsWith('https:')) {
         return false;
       }
 
-      // 檢查主機名稱格式（支援大小寫字母、數字、連字符和點）
       const hostnameRegex = /^[a-zA-Z0-9.-]+$/;
       if (!hostnameRegex.test(url.hostname)) {
         return false;
       }
 
-      // 檢查是否至少有一個點（確保有頂級域名）
       if (!url.hostname.includes('.')) {
         return false;
       }
 
-      // 檢查頂級域名至少2個字元
       const parts = url.hostname.split('.');
       const tld = parts[parts.length - 1];
       if (tld.length < 2) {
         return false;
       }
 
-      // 檢查是否包含不允許的特殊字符
       if (/[<>()[\]\\,;\s@"]/.test(value)) {
         return false;
       }
@@ -179,15 +182,11 @@ const rules: RulesProps = {
     .min(8, '電話號碼過短')
     .max(12, '電話號碼過長'),
   phoneOptional: string().test('is-phone-or-empty', '請輸入有效的台灣電話號碼格式', (value) => {
-    // 如果是空字串或未定義，就通過驗證
     if (!value || value === '') return true;
-    // 如果有值，就進行完整的電話號碼格式驗證
     return /^(0[2-9]|0[2-9]-|\+886[2-9]-)?\d{6,8}$/.test(value) && value.length >= 8 && value.length <= 12;
   }),
   emailOptional: string().test('is-email-or-empty', '無效的信箱格式', (value) => {
-    // 如果是空字串或未定義，就通過驗證
     if (!value || value === '') return true;
-    // 如果有值，就進行完整的 email 格式驗證
     return (
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value) &&
       value.length <= 254 &&
@@ -249,10 +248,55 @@ const rules: RulesProps = {
   courtTitle: string(),
   courtCustomLink: string(),
   gamerCount: number().required('參賽人數是必填項目'),
+  tournamentDate: date().required('比賽日期是必填項目'),
+  tournamentDeadlineDate: date()
+    .required('報名截止日期是必填項目')
+    .test('deadline-before-tournament', '報名截止日期必須早於比賽日期', function (value) {
+      const tournamentDate = this.parent.tournamentDate;
+      if (tournamentDate && value && value > tournamentDate) {
+        return false;
+      }
+      return true;
+    }),
+  tournamentType: mixed<TournamentType>()
+    .oneOf([TournamentType.SINGLE, TournamentType.DOUBLE], '比賽類型必須為有效選項')
+    .required('比賽類型是必填項目'),
+  tournamentFee: number().required('報名費是必填項目').min(0, '報名費不能為負數').max(10000, '報名費不能超過10000元'),
+  prizeFirst: number().required('冠軍獎金是必填項目').min(0, '冠軍獎金不能為負數').max(100000, '冠軍獎金不能超過100000元'),
+  prizeSecond: number()
+    .required('亞軍獎金是必填項目')
+    .min(0, '亞軍獎金不能為負數')
+    .max(100000, '亞軍獎金不能超過100000元')
+    .test('second-prize-validation', '亞軍獎金不能超過冠軍獎金', function (value) {
+      const prizeFirst = this.parent.prizeFirst;
+      if (prizeFirst && value && value > prizeFirst) {
+        return false;
+      }
+      return true;
+    }),
+  prizeThird: number()
+    .required('季軍獎金是必填項目')
+    .min(0, '季軍獎金不能為負數')
+    .max(100000, '季軍獎金不能超過100000元')
+    .test('third-prize-validation', '季軍獎金不能超過亞軍獎金', function (value) {
+      const prizeSecond = this.parent.prizeSecond;
+      if (prizeSecond && value && value > prizeSecond) {
+        return false;
+      }
+      return true;
+    }),
+  contactName: string().test('is-contact-name-or-empty', '聯絡人姓名不能包含特殊字符', (value) => {
+    if (!value || value === '') return true;
+    return value.length >= 1 && /^[^#!@*()\\";/%^=_$`,.?:]+$/.test(value);
+  }),
+  contactPhone: string().test('is-contact-phone-or-empty', '請輸入有效的台灣電話號碼格式', (value) => {
+    if (!value || value === '') return true;
+    return /^(0[2-9]|0[2-9]-|\+886[2-9]-)?\d{6,8}$/.test(value) && value.length >= 8 && value.length <= 12;
+  }),
+  defaultGames: number().required('預設局數是必填項目').min(1, '少於1局打屁喔').max(20, '預設局數不能超過20局，會死人'),
 
   // player
   professional: boolean().required('職業選手是必填項目'),
-  // 修正這裡：使用正確的驗證規則和錯誤訊息
   licenses: array()
     .of(
       object({
@@ -260,7 +304,7 @@ const rules: RulesProps = {
         date: date().required('證照日期是必填項目'),
       })
     )
-    .required('證照是必填項目'), // 修正錯誤訊息：從「照片」改為「證照」
+    .required('證照是必填項目'),
 
   // feedback
   message: string().required('回饋是必填項目'),
@@ -330,6 +374,18 @@ export const tournamentValidationSchema = object({
   courtTitle: rules.courtTitle.default(''),
   courtCustomLink: rules.courtCustomLink.default(''),
   gamerCount: rules.gamerCount.default(32),
+  tournament: object({
+    tournamentDate: rules.tournamentDate.default(new Date()),
+    tournamentDeadlineDate: rules.tournamentDeadlineDate.default(new Date()),
+    tournamentType: rules.tournamentType.default(TournamentType.SINGLE),
+    tournamentFee: rules.tournamentFee.default(0),
+    prizeFirst: rules.prizeFirst.default(0),
+    prizeSecond: rules.prizeSecond.default(0),
+    prizeThird: rules.prizeThird.default(0),
+    contactName: rules.contactName.default(''),
+    contactPhone: rules.contactPhone.default(''),
+    defaultGames: rules.defaultGames.default(1),
+  }).required(),
 }).required();
 
 export const playerValidationSchema = object({
