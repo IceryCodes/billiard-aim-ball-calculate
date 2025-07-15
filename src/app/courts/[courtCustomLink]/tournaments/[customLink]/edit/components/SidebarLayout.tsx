@@ -24,6 +24,7 @@ const SidebarLayout = ({ pageId, children }: SidebarLayoutProps) => {
   } = useTournamentsQuery({
     page: 1,
     limit: 6,
+    excludeId: pageId,
   });
 
   return (
@@ -51,23 +52,17 @@ const SidebarLayout = ({ pageId, children }: SidebarLayoutProps) => {
           {/* Tournament list */}
           <div className="grid grid-cols-1 gap-4 p-4">
             {!tournaments.length && <label>沒有符合球場賽程資料</label>}
-            {tournaments
-              .filter(({ _id }: TournamentProps) => _id !== pageId)
-              .map(({ _id, title, excerpt, customLink, tags, featuredImg, courtCustomLink }: TournamentProps) => (
-                <TournamentListItemCard
-                  key={_id}
-                  image={
-                    featuredImg
-                      ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
-                      : process.env.NEXT_PUBLIC_FEATURED_IMAGE
-                  }
-                  title={title}
-                  excerpt={excerpt}
-                  customLink={customLink}
-                  tags={tags}
-                  courtCustomLink={courtCustomLink}
-                />
-              ))}
+            {tournaments.map((tournament: TournamentProps) => (
+              <TournamentListItemCard
+                key={tournament._id}
+                image={
+                  tournament.featuredImg
+                    ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`
+                    : process.env.NEXT_PUBLIC_FEATURED_IMAGE
+                }
+                tournament={tournament}
+              />
+            ))}
           </div>
         </div>
       </div>

@@ -117,3 +117,38 @@
 .react-flow__attribution {
   display: none;
 }
+
+
+.icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+.icon-md {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+.medal-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  margin: 0 auto;
+}
+.medal-gold {
+  background: linear-gradient(135deg, #ffd700, #ffed4a);
+  border: 1px solid #d4af37;
+}
+.medal-silver {
+  background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+  border: 1px solid #a8a8a8;
+}
+.medal-bronze {
+  background: linear-gradient(135deg, #cd7f32, #d4a574);
+  border: 1px solid #a0522d;
+}

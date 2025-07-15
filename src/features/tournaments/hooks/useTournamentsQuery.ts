@@ -18,10 +18,11 @@ export const useTournamentsQuery = ({
   court,
   page,
   limit,
+  excludeId,
 }: UseTournamentsQueryProps): QueryBaseReturnType<GetTournamentsReturnType> => {
   const queryResult = useQuery({
-    queryKey: [...queryPrefixKey, tournamentQueryKeys.getTournaments, page, limit],
-    queryFn: () => getTournaments({ court, page, limit }),
+    queryKey: [...queryPrefixKey, tournamentQueryKeys.getTournaments, page, limit, excludeId],
+    queryFn: () => getTournaments({ court, page, limit, excludeId }),
     enabled,
   });
 

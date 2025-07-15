@@ -37,10 +37,11 @@ export const getTournaments = async ({
   court = '',
   page = 1,
   limit = 10,
+  excludeId = '',
 }: GetTournamentsDto): Promise<GetTournamentsReturnType> => {
   try {
     const { data } = await apiOrigin.get('/get-tournaments', {
-      params: { court, page, limit },
+      params: { court, page, limit, excludeId },
     });
 
     return {
