@@ -17,12 +17,15 @@ import {
 import {
   Gamer,
   GamerCountType,
+  GameTypesType,
   Match,
   RealtimeMessageType,
   TournamentDBProps,
+  TournamentProps,
   TournamentState,
   TournamentType,
 } from '@/domains/tournament';
+import { TournamentFormData } from '@/global-components/buttons/TournamentFormButton';
 
 interface ComposeStatusDisplayProps {
   isConnected: boolean;
@@ -43,6 +46,7 @@ interface GenerateTournamentProps {
   contactName?: string;
   contactPhone?: string;
   defaultGames: number;
+  gameType: GameTypesType;
 }
 
 export const isGamerUpdateComplete = (message: RealtimeMessage): message is GamerUpdateCompleteMessage => {
@@ -163,6 +167,7 @@ export const generateTournament = ({
   contactName,
   contactPhone,
   defaultGames,
+  gameType,
 }: GenerateTournamentProps): TournamentState => {
   // 檢查是否為2的冪次方
   if (!Number.isInteger(Math.log2(gamerCount))) {
@@ -220,6 +225,7 @@ export const generateTournament = ({
     contactName,
     contactPhone,
     defaultGames,
+    gameType,
   };
 };
 
@@ -274,4 +280,38 @@ export const downloadImage = async (
   } catch (error) {
     console.error('Failed to download image:', error);
   }
+};
+
+// 轉換 tournament 資料為表單格式
+export const tournamentToFormData = (tournament: TournamentProps): TournamentFormData => ({
+  title: tournament.title,
+  featuredImg: tournament.featuredImg,
+  excerpt: tournament.excerpt,
+  content: tournament.content,
+  customLink: tournament.customLink,
+  court: tournament.court,
+  courtTitle: tournament.courtTitle,
+  courtCustomLink: tournament.courtCustomLink,
+  gamerCount: tournament.tournament.gamerCount,
+  tournament: {
+    tournamentDate: tournament.tournament.tournamentDate,
+    tournamentDeadlineDate: tournament.tournament.tournamentDeadlineDate,
+    tournamentType: tournament.tournament.tournamentType,
+    tournamentFee: tournament.tournament.tournamentFee,
+    prizeFirst: tournament.tournament.prizeFirst,
+    prizeSecond: tournament.tournament.prizeSecond,
+    prizeThird: tournament.tournament.prizeThird,
+    contactName: tournament.tournament.contactName || '',
+    contactPhone: tournament.tournament.contactPhone || '',
+    defaultGames: tournament.tournament.defaultGames,
+    gameType: tournament.tournament.gameType,
+  },
+});
+
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('zh-TW', {
+    style: 'currency',
+    currency: 'TWD',
+    minimumFractionDigits: 0,
+  }).format(amount);
 };

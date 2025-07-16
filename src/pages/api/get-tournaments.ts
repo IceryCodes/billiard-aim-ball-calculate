@@ -38,6 +38,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentsR
 
     const tournaments: WithId<TournamentDBProps>[] = await tournamentsCollection
       .find(mongoQuery)
+      .sort({ createdAt: -1 })
       .skip(pageSize ? (currentPage - 1) * pageSize : 0)
       .limit(pageSize ?? total)
       .toArray();

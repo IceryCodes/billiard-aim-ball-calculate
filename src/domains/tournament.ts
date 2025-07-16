@@ -101,6 +101,7 @@ export interface TournamentState {
   contactName?: string;
   contactPhone?: string;
   defaultGames: number;
+  gameType: GameTypesType;
 }
 
 export interface GetTournamentDto {

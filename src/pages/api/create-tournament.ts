@@ -53,6 +53,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TournamentUpdat
           contactName: req.body.tournament.contactName,
           contactPhone: req.body.tournament.contactPhone,
           defaultGames: req.body.tournament.defaultGames,
+          gameType: req.body.tournament.gameType,
         })
       ),
       drawingData: req.body.drawingData || {
