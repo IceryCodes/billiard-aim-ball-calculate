@@ -9,8 +9,9 @@ import { Controller, useForm } from 'react-hook-form';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { CreateTournamentProps, GamerCountType, TournamentProps, TournamentType } from '@/domains/tournament';
+import { CreateTournamentProps, GamerCountType, GameTypesType, TournamentProps, TournamentType } from '@/domains/tournament';
 import { useCourtQuery } from '@/features/courts/hooks/useCourtQuery';
+import { tournamentToFormData } from '@/features/tournaments/helper';
 import { useCreateTournamentMutation } from '@/features/tournaments/hooks/useCreateTournamentMutation';
 import { useUpdateTournamentMutation } from '@/features/tournaments/hooks/useUpdateTournamentMutation';
 import { Button } from '@/global-components/buttons/Button';
@@ -38,7 +39,7 @@ interface TournamentFormProps {
 }
 
 // 表單資料結構，符合驗證 schema
-interface TournamentFormData {
+export interface TournamentFormData {
   title: string;
   featuredImg: string;
   excerpt: string;
@@ -59,6 +60,7 @@ interface TournamentFormData {
     contactName: string;
     contactPhone: string;
     defaultGames: number;
+    gameType: GameTypesType;
   };
 }
 
@@ -85,10 +87,11 @@ const defaultTournament: TournamentFormData = {
     contactName: '',
     contactPhone: '',
     defaultGames: 7,
+    gameType: GameTypesType.NineBall,
   },
 };
 
-export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: TournamentFormProps) => {
+export const TournamentFormButton = ({ mode, title, tournament, onSuccess: refetch }: TournamentFormProps) => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const params = useParams();
@@ -101,35 +104,10 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
     isLoading,
     isError,
   } = useCourtQuery({ customLink: courtCustomLink, enabled: !!courtCustomLink });
-  const { mutateAsync: createTournament, isLoading: isCreateLoading } = useCreateTournamentMutation();
-  const { mutateAsync: updateTournament, isLoading: isUpdateLoading } = useUpdateTournamentMutation();
+  const { mutateAsync: createTournament, isLoading: isCreateLoading } = useCreateTournamentMutation({ onSuccess: refetch });
+  const { mutateAsync: updateTournament, isLoading: isUpdateLoading } = useUpdateTournamentMutation({ onSuccess: refetch });
 
   const [display, setDisplay] = useState<boolean>(false);
-
-  // 轉換 tournament 資料為表單格式
-  const tournamentToFormData = (tournament: TournamentProps): TournamentFormData => ({
-    title: tournament.title,
-    featuredImg: tournament.featuredImg,
-    excerpt: tournament.excerpt,
-    content: tournament.content,
-    customLink: tournament.customLink,
-    court: tournament.court,
-    courtTitle: tournament.courtTitle,
-    courtCustomLink: tournament.courtCustomLink,
-    gamerCount: tournament.tournament.gamerCount,
-    tournament: {
-      tournamentDate: tournament.tournament.tournamentDate,
-      tournamentDeadlineDate: tournament.tournament.tournamentDeadlineDate,
-      tournamentType: tournament.tournament.tournamentType,
-      tournamentFee: tournament.tournament.tournamentFee,
-      prizeFirst: tournament.tournament.prizeFirst,
-      prizeSecond: tournament.tournament.prizeSecond,
-      prizeThird: tournament.tournament.prizeThird,
-      contactName: tournament.tournament.contactName || '',
-      contactPhone: tournament.tournament.contactPhone || '',
-      defaultGames: tournament.tournament.defaultGames,
-    },
-  });
 
   const {
     control,
@@ -179,6 +157,7 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
           prizeSecond: data.tournament.prizeSecond,
           prizeThird: data.tournament.prizeThird,
           defaultGames: data.tournament.defaultGames,
+          gameType: data.tournament.gameType,
         },
       };
 
@@ -205,16 +184,14 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
 
         const { message } = result;
         if (message) showToast({ message });
-
-        reset(data);
-        setDisplay(false);
-
-        if (onSuccess) onSuccess();
       } catch (error) {
         console.error(`${mode} error:`, error);
+      } finally {
+        setDisplay(false);
+        mode === TournamentFormMode.Create ? reset() : reset(data);
       }
     },
-    [mode, user, court, tournament, updateTournament, createTournament, showToast, reset, onSuccess]
+    [mode, user, court, tournament, updateTournament, createTournament, showToast, reset]
   );
 
   const form = useMemo(
@@ -295,7 +272,7 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
           </div>
 
           {/* 比賽類型 */}
-          <div className="flex flex-col col-span-3">
+          <div className="flex flex-col col-span-2">
             <label>比賽類型</label>
             <Controller
               name="tournament.tournamentType"
@@ -319,7 +296,7 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
           </div>
 
           {/* 參賽人數 */}
-          <div className="flex flex-col col-span-3">
+          <div className="flex flex-col col-span-2">
             <label>參賽人數</label>
             <Controller
               name="gamerCount"
@@ -332,6 +309,26 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess }: Tou
                     onChange={field.onChange}
                     defaultValue="選擇參賽人數"
                     options={Object.values(GamerCountType).filter((item) => typeof item === 'number')}
+                  />
+                  <FieldErrorlabel error={error} />
+                </>
+              )}
+            />
+          </div>
+
+          {/* 比賽項目 */}
+          <div className="flex flex-col col-span-2">
+            <label>比賽項目</label>
+            <Controller
+              name="tournament.gameType"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <Select
+                    value={field.value}
+                    onChange={field.onChange}
+                    defaultValue="選擇比賽項目"
+                    options={Object.values(GameTypesType)}
                   />
                   <FieldErrorlabel error={error} />
                 </>

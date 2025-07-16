@@ -20,7 +20,14 @@ const TournamentContent = (): ReactNode => {
   if (isError) return <span>搜尋時發生錯誤</span>;
   if (!tournament) return <span>沒有符合的球場賽程資料</span>;
 
-  return <TournamentBoard tournamentData={tournament} refetch={refetch} />;
+  return (
+    <TournamentBoard
+      tournamentData={tournament}
+      refetch={() => {
+        refetch();
+      }}
+    />
+  );
 };
 
 export default TournamentContent;
