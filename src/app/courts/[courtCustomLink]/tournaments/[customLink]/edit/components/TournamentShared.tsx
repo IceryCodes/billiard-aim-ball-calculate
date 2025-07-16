@@ -1,27 +1,16 @@
-import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import QRCode from 'qrcode';
 import useImage from 'use-image';
 
-import { getPageUrlByType, PageType } from '@/domains/interface';
+import { PageType } from '@/domains/interface';
 import { BroadcastTestType, ToastType } from '@/domains/tournament';
 import { composeStatusDisplay } from '@/features/tournaments/helper';
 import { Button, ButtonStyleType } from '@/global-components/buttons/Button';
-import DeleteTournamentContent from '@/global-components/buttons/DeleteTournamentButton';
-import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
-import Card from '@/global-components/Card';
 import Popup from '@/global-components/Popup';
-import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 
-import {
-  ConnectionQualityType,
-  ResponsiveWarningProps,
-  TournamentControlsProps,
-  TournamentStatusBarProps,
-  TournamentToastProps,
-} from './interfaces';
+import { ResponsiveWarningProps, TournamentControlsProps, TournamentToastProps } from './interfaces';
 
 // QR Code Image Hook
 const useQRCodeImage = (url: string, size = 100) => {
@@ -72,110 +61,6 @@ export const QRCodeNode: React.FC<{ id: string }> = () => {
     <div className="bg-white p-2 rounded shadow-lg border border-gray-300">
       <Image src={qrImage.src} alt="Page QR Code" width={150} height={150} placeholder="blur" blurDataURL={qrImage.src} />
     </div>
-  );
-};
-
-export const TournamentStatusBar = ({
-  isConnected,
-  onlineCount,
-  lastUpdateTime,
-  isEditMode = false,
-  tournament,
-  reconnect,
-  refetch,
-  connectionQuality = ConnectionQualityType.DISCONNECTED,
-}: TournamentStatusBarProps): ReactElement => {
-  const router = useRouter();
-
-  const statusDisplay = composeStatusDisplay({ isConnected, connectionQuality, isEditMode });
-
-  const redirectToCourt = useCallback(() => {
-    router.push(`${getPageUrlByType(PageType.COURTS)}/${tournament.courtCustomLink}`);
-  }, [router, tournament.courtCustomLink]);
-
-  return (
-    <>
-      <Card className="w-full">
-        <div className="flex flex-row items-center justify-between gap-x-4">
-          <div>
-            <div className="flex flex-row items-center gap-x-2">
-              <h1 className="text-2xl font-bold">{tournament.title}</h1>
-              <ManagerCourtProtected pageId={tournament.customLink}>
-                <TournamentFormButton mode={TournamentFormMode.Edit} tournament={tournament} onSuccess={refetch} />
-                <DeleteTournamentContent
-                  _id={tournament._id}
-                  tournamentTitle={tournament.title}
-                  onSuccess={redirectToCourt}
-                />
-              </ManagerCourtProtected>
-            </div>
-
-            <div className="space-x-2">
-              <span>撞球場地:</span>
-              <span className="truncate hover:text-link cursor-pointer" onClick={redirectToCourt}>
-                {tournament.courtTitle}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-x-4">
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${statusDisplay.dotColor}`}></div>
-                <span className={`${statusDisplay.color} font-medium`}>{statusDisplay.text}</span>
-
-                {/* 連線品質指示器 */}
-                {isConnected && connectionQuality === 'poor' && (
-                  <span className="text-yellow-600 text-xs bg-yellow-100 px-2 py-1 rounded">連線不穩</span>
-                )}
-
-                {!isConnected && reconnect && (
-                  <button
-                    onClick={reconnect}
-                    className="text-blue-600 hover:text-blue-800 underline text-xs bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
-                  >
-                    重新連線
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-4 items-center">
-                {onlineCount > 0 && (
-                  <span>👁️ {isEditMode ? `${onlineCount} 人正在觀看您的編輯` : `${onlineCount} 人在線`}</span>
-                )}
-              </div>
-            </div>
-            <span>最後更新: {lastUpdateTime}</span>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="w-full">
-        <div className="flex gap-8 flex-col md:flex-row">
-          {tournament.featuredImg && (
-            <Image
-              src={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`}
-              alt={tournament.title}
-              width={640}
-              height={360}
-              placeholder="blur"
-              blurDataURL={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`}
-              className="rounded-2xl"
-            />
-          )}
-
-          <div className="p-4">
-            {!!tournament.excerpt && (
-              <blockquote className="border-l-4 border-link pl-4 italic">
-                <TournamentContentFormatter content={tournament.excerpt} />
-              </blockquote>
-            )}
-
-            {!!tournament.content && <TournamentContentFormatter content={tournament.content} />}
-          </div>
-        </div>
-      </Card>
-    </>
   );
 };
 

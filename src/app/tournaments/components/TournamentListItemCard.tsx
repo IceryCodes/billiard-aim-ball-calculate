@@ -59,8 +59,8 @@ const TournamentListItemCard = ({ image, tournament }: TournamentListItemCardPro
             <Image
               src={image}
               alt={title}
-              width={720}
-              height={200}
+              width={512}
+              height={288}
               className="w-full h-32 md:h-72 object-cover transition-transform duration-300 group-hover:scale-105 rounded-lg"
               placeholder="blur"
               blurDataURL={image}

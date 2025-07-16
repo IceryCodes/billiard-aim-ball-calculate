@@ -112,9 +112,9 @@ const ResponsiveTournamentDisplay: React.FC<TournamentDisplayProps> = ({
           {/* 標題列 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-3 sm:px-6 pt-3 sm:pt-4 pb-2 gap-2 sm:gap-0">
             <div className="flex gap-x-2 items-center">
-              <h3 className="text-base sm:text-lg font-semibold text-background">
+              <h2 className="text-base sm:text-lg font-semibold text-background">
                 {`${tournament.tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'}賽程表 (${validGamersCount}/${tournament.gamerCount}人)`}
-              </h3>
+              </h2>
             </div>
 
             {/* 控制按鈕 */}

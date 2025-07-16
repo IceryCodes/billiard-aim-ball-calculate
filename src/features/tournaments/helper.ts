@@ -307,3 +307,11 @@ export const tournamentToFormData = (tournament: TournamentProps): TournamentFor
     gameType: tournament.tournament.gameType,
   },
 });
+
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('zh-TW', {
+    style: 'currency',
+    currency: 'TWD',
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
