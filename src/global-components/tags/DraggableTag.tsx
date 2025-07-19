@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import { Button } from '../buttons/Button';
+import { Input } from '../inputs/Input';
+
 interface DraggableTagProps {
   text: string;
   index: number;
@@ -8,6 +11,7 @@ interface DraggableTagProps {
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (targetIndex: number) => void;
+  onTextChange: (index: number, newText: string) => void;
   isDragging: boolean;
   isDropTarget: boolean;
 }
@@ -20,10 +24,13 @@ const DraggableTag = ({
   onDragEnd,
   onDragOver,
   onDrop,
+  onTextChange,
   isDragging,
   isDropTarget,
 }: DraggableTagProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(text);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'move';
@@ -54,15 +61,43 @@ const DraggableTag = ({
     }
   };
 
+  const handleDoubleClick = () => {
+    if (!isDragging) {
+      setIsEditing(true);
+      setEditValue(text);
+    }
+  };
+
+  const handleEditSubmit = () => {
+    if (editValue.trim() && editValue.trim() !== text) {
+      onTextChange(index, editValue.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleEditCancel = () => {
+    setEditValue(text);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleEditSubmit();
+    } else if (e.key === 'Escape') {
+      handleEditCancel();
+    }
+  };
+
   return (
     <div
-      draggable
+      draggable={!isEditing}
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
+      onDoubleClick={handleDoubleClick}
       className={`
         flex items-center gap-2 p-3 rounded border cursor-move select-none
         transition-all duration-200 ease-in-out
@@ -82,10 +117,21 @@ const DraggableTag = ({
         </svg>
       </div>
 
-      <span className="flex-1 text-sm text-foreground">{text}</span>
+      {isEditing ? (
+        <Input
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleEditSubmit}
+          onKeyDown={handleKeyDown}
+          className="flex-1 text-sm text-foreground bg-transparent border-none outline-none"
+          autoFocus
+        />
+      ) : (
+        <span className="flex-1 text-sm text-foreground">{text}</span>
+      )}
 
       {onRemove && (
-        <button
+        <Button
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -93,9 +139,8 @@ const DraggableTag = ({
           }}
           className="text-red-400 hover:text-red-600 transition-colors text-lg leading-none"
           title="移除此項目"
-        >
-          ×
-        </button>
+          element="×"
+        />
       )}
     </div>
   );

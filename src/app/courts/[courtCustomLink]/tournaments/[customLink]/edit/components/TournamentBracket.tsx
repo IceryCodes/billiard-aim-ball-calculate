@@ -1,14 +1,16 @@
 'use client';
 
-import { ReactElement } from 'react';
+import { ReactElement, useCallback } from 'react';
 
 import Link from 'next/link';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { TournamentProps, UpdateTournamentDto } from '@/domains/tournament';
+import { importTournamentNames } from '@/features/tournaments/helper';
 import { useTournamentState } from '@/features/tournaments/hooks/useTournamentState';
 import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
+import QRButton from '@/global-components/QRButton';
 import { TournamentUpdateReturnType } from '@/services/interfaces';
 
 import ResponsiveTournamentDisplay from './ResponsiveTournamentDisplay';
@@ -45,6 +47,14 @@ const TournamentBracket = ({
     isEditMode: true,
   });
 
+  const onImportNames = useCallback(
+    (names: string[]) => {
+      updateTournament(importTournamentNames(currentTournament, names));
+      refetchTournament();
+    },
+    [currentTournament, refetchTournament, updateTournament]
+  );
+
   if (authLoading) return <span>載入中...</span>;
 
   return (
@@ -61,6 +71,7 @@ const TournamentBracket = ({
             <h1 className="text-2xl font-bold">{tournamentData.title}</h1>
           </Link>
           <TournamentFormButton mode={TournamentFormMode.Edit} tournament={tournamentData} onSuccess={refetchTournament} />
+          <QRButton onImportNames={onImportNames} />
         </div>
       </section>
 

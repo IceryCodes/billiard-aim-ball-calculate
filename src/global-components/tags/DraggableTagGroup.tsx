@@ -60,13 +60,19 @@ export const DraggableTagGroup = ({ initialTags, onConfirm, onCancel, allowRemov
     setTags(initialTags);
   }, [initialTags]);
 
+  const handleTextChange = useCallback((index: number, newText: string) => {
+    setTags((prevTags) => {
+      const newTags = [...prevTags];
+      newTags[index] = newText;
+      return newTags;
+    });
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center text-sm">
         <span>拖拉以調整順序 ({tags.length} 個項目)</span>
-        <button onClick={handleReset} className="underline">
-          重置順序
-        </button>
+        <Button onClick={handleReset} text="重置排序" />
       </div>
 
       <div className="space-y-2 max-h-96 overflow-y-auto bg-gray-50 p-3 rounded border">
@@ -86,6 +92,7 @@ export const DraggableTagGroup = ({ initialTags, onConfirm, onCancel, allowRemov
                   onDragEnd={handleDragEnd}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
+                  onTextChange={handleTextChange}
                   isDragging={draggedIndex === index}
                   isDropTarget={draggedIndex !== null && draggedIndex !== index}
                 />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Image from 'next/image';
 
@@ -8,6 +8,7 @@ import { getImportNamesFromText } from '@/features/tournaments/helper';
 
 import { Button } from './buttons/Button';
 import Card from './Card';
+import Popup from './Popup';
 import { DraggableTagGroup } from './tags/DraggableTagGroup';
 
 interface QRSession {
@@ -28,12 +29,17 @@ interface SessionStatusResponse {
 
 type ViewState = 'initial' | 'session' | 'result' | 'editing' | 'final';
 
-const QRButton: React.FC = () => {
+interface QRButtonProps {
+  onImportNames: (names: string[]) => void;
+}
+
+const QRButton = ({ onImportNames }: QRButtonProps): ReactElement => {
   const [session, setSession] = useState<QRSession | null>(null);
   const [result, setResult] = useState<OCRResult | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [viewState, setViewState] = useState<ViewState>('initial');
   const [cleanedNames, setCleanedNames] = useState<string[]>([]);
+  const [display, setDisplay] = useState<boolean>(false);
   const [finalOrder, setFinalOrder] = useState<string[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -47,7 +53,8 @@ const QRButton: React.FC = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-  }, []);
+    setDisplay(false);
+  }, [setFinalOrder]);
 
   const startPolling = useCallback(
     (sessionId: string): void => {
@@ -85,6 +92,8 @@ const QRButton: React.FC = () => {
         setTimeLeft(300);
         setViewState('session');
         startPolling(data.sessionId);
+
+        setDisplay(true);
       }
     } catch (error) {
       console.error('生成 QR 碼失敗:', error);
@@ -105,18 +114,27 @@ const QRButton: React.FC = () => {
       setFinalOrder(names);
       setViewState('final');
     }
-  }, [result]);
+  }, [result, setFinalOrder]);
 
-  const handleConfirmOrder = useCallback((orderedNames: string[]) => {
-    setFinalOrder(orderedNames);
-    setViewState('final');
-  }, []);
+  const handleConfirmOrder = useCallback(
+    (orderedNames: string[]) => {
+      setFinalOrder(orderedNames);
+      setViewState('final');
+    },
+    [setFinalOrder]
+  );
 
   const handleCancelEdit = useCallback(() => {
     setViewState('result');
   }, []);
 
-  const handleSubmit = useCallback(() => console.log('提交名單', finalOrder), [finalOrder]);
+  const handleSubmit = useCallback(() => {
+    const confirmed = window.confirm('導入選手姓名會重置賽程表喔，確定嗎?');
+    if (!confirmed) return;
+
+    onImportNames(finalOrder);
+    reset();
+  }, [finalOrder, onImportNames, reset]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -267,12 +285,24 @@ const QRButton: React.FC = () => {
     );
   }, [viewState, session, timeLeft, reset]);
 
-  if (viewState === 'final') return finalUI;
-  if (viewState === 'editing') return editingUI;
-  if (viewState === 'result') return resultUI;
-  if (viewState === 'session') return sessionUI;
+  const content = useMemo(
+    () => (
+      <Popup title="新增球場賽程" display={display} onClose={() => setDisplay(false)}>
+        {viewState === 'final' && finalUI && finalUI}
+        {viewState === 'editing' && editingUI && editingUI}
+        {viewState === 'result' && resultUI && resultUI}
+        {viewState === 'session' && sessionUI && sessionUI}
+      </Popup>
+    ),
+    [display, editingUI, finalUI, resultUI, sessionUI, viewState]
+  );
 
-  return <Button text="📸 生成上傳 QR 碼" onClick={generateQR} />;
+  return (
+    <>
+      <Button text="從手機導入選手名單" onClick={generateQR} />
+      {content}
+    </>
+  );
 };
 
 export default QRButton;

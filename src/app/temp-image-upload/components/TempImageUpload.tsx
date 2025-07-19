@@ -179,14 +179,7 @@ const TempImageUpload: React.FC = () => {
 
         {inputMode === 'select' && (
           <div className="space-y-3">
-            <Button
-              text="📸 拍照識別"
-              onClick={() => {
-                setInputMode('camera');
-                cameraInputRef.current?.click();
-              }}
-              className="w-full"
-            />
+            <Button text="✏️ 直接輸入文字" onClick={() => setInputMode('text')} className="w-full" />
             <Button
               text="🖼️ 選擇相簿圖片"
               onClick={() => {
@@ -195,7 +188,14 @@ const TempImageUpload: React.FC = () => {
               }}
               className="w-full"
             />
-            <Button text="✏️ 直接輸入文字" onClick={() => setInputMode('text')} className="w-full" />
+            <Button
+              text="📸 拍照識別"
+              onClick={() => {
+                setInputMode('camera');
+                cameraInputRef.current?.click();
+              }}
+              className="w-full"
+            />
           </div>
         )}
 
