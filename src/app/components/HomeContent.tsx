@@ -2,6 +2,7 @@ import { AiFillCopyrightCircle } from 'react-icons/ai';
 
 import GradientText from '@/global-components/effects/GradientText';
 import TrueFocus from '@/global-components/effects/TrueFocus';
+import QRButton from '@/global-components/QRButton';
 
 const HomeContent = () => {
   return (
@@ -10,6 +11,8 @@ const HomeContent = () => {
         <h1 className="text-2xl font-bold">
           <TrueFocus sentence="瞄 一 個" manualMode borderColor="" />
         </h1>
+
+        <QRButton />
       </section>
 
       <div className="flex flex-col items-center">
