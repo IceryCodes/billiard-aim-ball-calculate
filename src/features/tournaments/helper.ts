@@ -315,3 +315,22 @@ export const formatCurrency = (amount: number) => {
     minimumFractionDigits: 0,
   }).format(amount);
 };
+
+export const getImportNamesFromText = (text: string): string[] => {
+  // 分行
+  const lines = text.split('\n');
+
+  // 找出第一個符合「數字+冒號」的 index 當作起始點
+  const startIndex = lines.findIndex((line) => /^\s*1[:：]/.test(line));
+
+  // 如果沒找到就回傳空陣列
+  if (startIndex === -1) return [];
+
+  // 使用 flatMap 攤平回傳值
+  return lines.slice(startIndex).flatMap((line) => {
+    const match = line.match(/^\s*\d+[:：](.*)/);
+    if (!match) return [];
+    const name = match[1].replace(/\d+/g, '').trim();
+    return name ? [name] : [];
+  });
+};

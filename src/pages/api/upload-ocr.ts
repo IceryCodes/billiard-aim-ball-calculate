@@ -114,7 +114,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
 
       return res.status(404).json({
         success: false,
-        error: 'Session 不存在',
+        error: 'Session 不存在，請重新產生並掃描QR Code!',
       });
     }
 
@@ -132,7 +132,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
 
       return res.status(410).json({
         success: false,
-        error: 'Session 已過期',
+        error: 'Session 已過期，請重新產生並掃描QR Code!',
       });
     }
 

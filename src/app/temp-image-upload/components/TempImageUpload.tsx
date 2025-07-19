@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import Image from 'next/image';
 
+import { Button } from '@/global-components/buttons/Button';
+import Card from '@/global-components/Card';
+
 interface UploadSuccessResult {
   success: true;
   text: string;
@@ -30,7 +33,6 @@ const TempImageUpload: React.FC = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 使用原生 URL API 獲取參數
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -56,7 +58,6 @@ const TempImageUpload: React.FC = () => {
   const handleSubmit = async (): Promise<void> => {
     if (!sessionId) return;
 
-    // 檢查是否有內容要提交
     if (inputMode === 'text' && !textInput.trim()) {
       alert('請輸入文字內容');
       return;
@@ -70,7 +71,6 @@ const TempImageUpload: React.FC = () => {
     const formData = new FormData();
     formData.append('sessionId', sessionId);
 
-    // 根據輸入模式添加對應的數據
     if (inputMode === 'text') {
       formData.append('directText', textInput.trim());
     } else if (file) {
@@ -109,7 +109,6 @@ const TempImageUpload: React.FC = () => {
     setPreview(null);
   };
 
-  // 清理預覽 URL
   useEffect(() => {
     return () => {
       if (preview) {
@@ -121,9 +120,9 @@ const TempImageUpload: React.FC = () => {
   if (!isReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-white p-6 rounded shadow">
+        <Card>
           <div>載入中...</div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -131,9 +130,9 @@ const TempImageUpload: React.FC = () => {
   if (!sessionId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-white p-6 rounded shadow">
+        <Card>
           <div className="text-red-500">無效的連結</div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -141,35 +140,32 @@ const TempImageUpload: React.FC = () => {
   if (result) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-white p-6 rounded shadow max-w-md w-full">
+        <Card className="max-w-md w-full">
           {result.success ? (
             <div>
               <div className="text-green-600 font-medium mb-4">
                 {result.confidence === 100 ? '文字已提交' : `識別完成 (${result.confidence.toFixed(1)}%)`}
               </div>
               <pre className="whitespace-pre-wrap text-sm p-3 rounded border max-h-48 overflow-auto">{result.text}</pre>
-              <div className="mt-4 text-sm text-gray-500">2秒後自動關閉...</div>
+              <div className="mt-4 text-sm">2秒後自動關閉...</div>
             </div>
           ) : (
             <div>
               <div className="text-red-600 font-medium mb-2">處理失敗</div>
-              <div className="text-sm text-gray-600">{result.error}</div>
-              <button onClick={() => setResult(null)} className="mt-4 px-4 py-2 text-white rounded">
-                重試
-              </button>
+              <div className="text-sm">{result.error}</div>
+              <Button text="重試" onClick={() => setResult(null)} className="mt-4" />
             </div>
           )}
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="p-6 rounded shadow max-w-md w-full">
+      <Card className="max-w-md w-full">
         <h1 className="text-lg font-medium mb-4">圖片文字識別</h1>
 
-        {/* 拍照輸入 - 強制使用相機 */}
         <input
           ref={cameraInputRef}
           type="file"
@@ -179,41 +175,33 @@ const TempImageUpload: React.FC = () => {
           className="hidden"
         />
 
-        {/* 選擇文件輸入 - 可以選擇相簿 */}
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
 
         {inputMode === 'select' && (
           <div className="space-y-3">
-            <button
+            <Button
+              text="📸 拍照識別"
               onClick={() => {
                 setInputMode('camera');
                 cameraInputRef.current?.click();
               }}
-              className="w-full px-4 py-3 text-white rounded flex items-center justify-center gap-2"
-            >
-              📸 拍照識別
-            </button>
-            <button
+              className="w-full"
+            />
+            <Button
+              text="🖼️ 選擇相簿圖片"
               onClick={() => {
                 setInputMode('file');
                 fileInputRef.current?.click();
               }}
-              className="w-full px-4 py-3 text-white rounded flex items-center justify-center gap-2"
-            >
-              🖼️ 選擇相簿圖片
-            </button>
-            <button
-              onClick={() => setInputMode('text')}
-              className="w-full px-4 py-3 text-white rounded flex items-center justify-center gap-2"
-            >
-              ✏️ 直接輸入文字
-            </button>
+              className="w-full"
+            />
+            <Button text="✏️ 直接輸入文字" onClick={() => setInputMode('text')} className="w-full" />
           </div>
         )}
 
-        {(inputMode === 'camera' || inputMode === 'file') && file && (
+        {(inputMode === 'camera' || inputMode === 'file') && (
           <div>
-            {preview && (
+            {preview && file && (
               <Image
                 src={preview}
                 alt={`${process.env.NEXT_PUBLIC_SITENAME} 名單導入QR code`}
@@ -225,41 +213,41 @@ const TempImageUpload: React.FC = () => {
               />
             )}
             <div className="space-y-3">
-              <button onClick={handleSubmit} disabled={uploading} className="w-full px-4 py-3 text-white rounded">
-                {uploading ? '處理中...' : '開始識別'}
-              </button>
-              <button onClick={resetToSelection} className="w-full px-4 py-3 text-white rounded">
-                重新選擇
-              </button>
+              {file && (
+                <Button
+                  text={uploading ? '處理中...' : '開始識別'}
+                  onClick={handleSubmit}
+                  disabled={uploading}
+                  className="w-full"
+                />
+              )}
+              <Button text="重新選擇" onClick={resetToSelection} className="w-full" />
             </div>
           </div>
         )}
 
         {inputMode === 'text' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">輸入報名名單或其他文字內容：</label>
+            <label className="block text-sm font-medium mb-2">輸入報名名單或其他文字內容：</label>
             <textarea
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              placeholder="例如：&#10;7/14 夜光盃 19:00開賽（9號球）&#10;報名以下請接龍&#10;1：陳豐其&#10;2：朴孝律（韓國女選手）&#10;..."
-              className="w-full h-64 p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={`例如： (一位選手一行)\n選手一\n選手二\n...`}
+              className="w-full p-3 border border-gray-300 rounded-md"
               rows={12}
             />
             <div className="space-y-3 mt-4">
-              <button
+              <Button
+                text={uploading ? '提交中...' : '提交文字'}
                 onClick={handleSubmit}
                 disabled={uploading || !textInput.trim()}
-                className="w-full px-4 py-3 text-white rounded"
-              >
-                {uploading ? '提交中...' : '提交文字'}
-              </button>
-              <button onClick={resetToSelection} className="w-full px-4 py-3 text-white rounded">
-                返回選擇
-              </button>
+                className="w-full"
+              />
+              <Button text="返回選擇" onClick={resetToSelection} className="w-full" />
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
