@@ -10,6 +10,7 @@ interface QRResponse {
   success: boolean;
   sessionId: string;
   qrCodeDataUrl: string;
+  uploadUrl: string;
   expiresAt: string;
 }
 
@@ -60,6 +61,7 @@ const qrHandler = async (req: NextApiRequest, res: NextApiResponse<QRApiResponse
         success: true,
         sessionId,
         qrCodeDataUrl,
+        uploadUrl,
         expiresAt: new Date(expiresAt).toISOString(),
       });
     } catch (error) {

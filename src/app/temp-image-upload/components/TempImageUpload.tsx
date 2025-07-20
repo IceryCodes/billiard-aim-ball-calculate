@@ -29,7 +29,7 @@ const TempImageUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [textInput, setTextInput] = useState<string>('');
-  const [inputMode, setInputMode] = useState<InputMode>('select');
+  const [inputMode, setInputMode] = useState<InputMode>('text'); // 暫時只允許輸入模式，因為圖片分辨率過低
   const [uploading, setUploading] = useState<boolean>(false);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [isReady, setIsReady] = useState<boolean>(false);
@@ -90,7 +90,15 @@ const TempImageUpload: React.FC = () => {
       setResult(data);
 
       if (data.success) {
-        setTimeout(() => router.push(`${process.env.NEXT_PUBLIC_BASE_URL}`), 2000);
+        setTimeout(() => {
+          const redirect = window.confirm(`你要跳轉到${process.env.NEXT_PUBLIC_SITENAME}首頁嗎?\n按「取消」則關閉網頁`);
+
+          if (redirect) {
+            router.replace(`${process.env.NEXT_PUBLIC_BASE_URL}`);
+            return;
+          }
+          window.close();
+        }, 2000);
       }
     } catch (error) {
       console.error('提交錯誤:', error);
@@ -149,7 +157,13 @@ const TempImageUpload: React.FC = () => {
               <div className="text-green-600 font-medium mb-4">
                 {result.confidence === 100 ? '文字已提交' : `識別完成 (${result.confidence.toFixed(1)}%)`}
               </div>
-              <pre className="whitespace-pre-wrap text-sm p-3 rounded border max-h-48 overflow-auto">{result.text}</pre>
+              <textarea
+                className="w-full whitespace-pre-wrap text-sm p-3 rounded border max-h-48 overflow-auto"
+                disabled
+                value={result.text}
+                rows={12}
+              />
+
               <div className="mt-4 text-sm">2秒後自動跳轉...</div>
             </div>
           ) : (
@@ -166,7 +180,7 @@ const TempImageUpload: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <Card className="max-w-md w-full">
+      <Card className="max-w-2xl w-full">
         <h1 className="text-lg font-medium mb-4">選手名單導入</h1>
         <input
           ref={cameraInputRef}
@@ -228,38 +242,41 @@ const TempImageUpload: React.FC = () => {
           </div>
         )}
 
-        {inputMode === 'text' && (
-          <div>
-            <label className="block text-sm font-medium mb-2">輸入報名名單或其他文字內容：</label>
-            <textarea
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder={`※一位選手一行\n格式：[數字][冒號][選手名稱]\n\n例如：\n1：選手一\n2：選手二\n...`}
-              className="w-full p-3 border border-gray-300 rounded-md"
-              rows={12}
-            />
-            <div className="space-y-3 mt-4">
-              <Button
-                text={uploading ? '提交中...' : '提交文字'}
-                onClick={handleSubmit}
-                disabled={uploading || !textInput.trim()}
-                className="w-full"
+        <div className="flex flex-col md:flex-row gap-4">
+          {inputMode === 'text' && (
+            <div className="w-full">
+              <textarea
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder={`※一位選手一行(不需加空白)\n格式：[數字][冒號][選手名稱]\n\n例如：\n1：選手一\n2：選手二\n...`}
+                className="w-full p-3 border border-gray-300 rounded-md"
+                rows={12}
               />
-              <Button text="返回選擇" onClick={resetToSelection} className="w-full" />
+              <div className="space-y-3 mt-4">
+                <Button
+                  text={uploading ? '提交中...' : '提交文字'}
+                  onClick={handleSubmit}
+                  disabled={uploading || !textInput.trim()}
+                  className="w-full"
+                />
+                {/* <Button text="返回選擇" onClick={resetToSelection} className="w-full" /> */}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <span>範例</span>
-        <Image
-          src="/assets/gamers.jpg"
-          alt={`${process.env.NEXT_PUBLIC_SITENAME}選手名單導入`}
-          width={773}
-          height={281}
-          className="rounded-xl w-[281px] h-[773px] mx-auto"
-          placeholder="blur"
-          blurDataURL="/assets/gamers.jpg"
-        />
+          <div>
+            <label className="text-sm">Line群組報名可直接複製名單，但一樣要參照格式</label>
+            <Image
+              src="/assets/gamers.jpg"
+              alt={`${process.env.NEXT_PUBLIC_SITENAME}選手名單導入`}
+              width={773}
+              height={280}
+              className="rounded-xl w-[280px] h-fit mx-auto"
+              placeholder="blur"
+              blurDataURL="/assets/gamers.jpg"
+            />
+          </div>
+        </div>
       </Card>
     </div>
   );
