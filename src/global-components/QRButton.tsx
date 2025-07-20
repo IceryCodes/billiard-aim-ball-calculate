@@ -231,9 +231,12 @@ const QRButton = ({ onImportNames }: QRButtonProps): ReactElement => {
           <div className="text-sm">識別到 {names.length} 個名字</div>
         </div>
 
-        <div className="bg-foreground border rounded p-3 max-h-40 overflow-auto mb-4">
-          <pre className="whitespace-pre-wrap text-sm text-background">{names.join('\n')}</pre>
-        </div>
+        <textarea
+          disabled
+          value={names.join('\n')}
+          rows={12}
+          className="bg-foreground border rounded p-3 max-h-40 mb-4 whitespace-pre-wrap text-sm text-background"
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <Button text="✅ 直接確認" onClick={handleDirectConfirm} />
