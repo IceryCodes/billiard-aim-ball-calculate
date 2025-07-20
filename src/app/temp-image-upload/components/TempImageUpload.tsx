@@ -167,8 +167,7 @@ const TempImageUpload: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <Card className="max-w-md w-full">
-        <h1 className="text-lg font-medium mb-4">圖片文字識別</h1>
-
+        <h1 className="text-lg font-medium mb-4">選手名單導入</h1>
         <input
           ref={cameraInputRef}
           type="file"
@@ -235,7 +234,7 @@ const TempImageUpload: React.FC = () => {
             <textarea
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              placeholder={`例如： (一位選手一行)\n選手一\n選手二\n...`}
+              placeholder={`※一位選手一行\n格式：[數字][冒號][選手名稱]\n\n例如：\n1：選手一\n2：選手二\n...`}
               className="w-full p-3 border border-gray-300 rounded-md"
               rows={12}
             />
@@ -250,6 +249,17 @@ const TempImageUpload: React.FC = () => {
             </div>
           </div>
         )}
+
+        <span>範例</span>
+        <Image
+          src="/assets/gamers.jpg"
+          alt={`${process.env.NEXT_PUBLIC_SITENAME}選手名單導入`}
+          width={773}
+          height={281}
+          className="rounded-xl w-[281px] h-[773px] mx-auto"
+          placeholder="blur"
+          blurDataURL="/assets/gamers.jpg"
+        />
       </Card>
     </div>
   );
