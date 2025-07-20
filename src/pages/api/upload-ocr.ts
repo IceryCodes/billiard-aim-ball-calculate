@@ -1,3 +1,7 @@
+// ===================================================================
+// 📁 pages/api/upload-ocr.ts - 修復文件內容掃描邏輯
+// ===================================================================
+
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -30,7 +34,7 @@ interface UploadResponse {
 // 修復：手機格式友好的文件類型檢測
 const detectFileType = async (filePath: string): Promise<string | null> => {
   try {
-    const buffer = Buffer.alloc(16); // 增加到 16 bytes 以支持更多格式
+    const buffer = Buffer.alloc(16);
     const fd = fs.openSync(filePath, 'r');
     fs.readSync(fd, buffer, 0, 16, 0);
     fs.closeSync(fd);
@@ -47,7 +51,6 @@ const detectFileType = async (filePath: string): Promise<string | null> => {
     if (hex.startsWith('474946383761') || hex.startsWith('474946383961')) return 'image/gif';
 
     // WebP: 52 49 46 46 xx xx xx xx 57 45 42 50
-    // 修復：使用 substring 替代 deprecated 的 substr
     if (hex.startsWith('52494646') && hex.substring(16, 24) === '57454250') return 'image/webp';
 
     // HEIC: 00 00 00 xx 66 74 79 70 68 65 69 63 (ftyp heic)
@@ -65,13 +68,42 @@ const detectFileType = async (filePath: string): Promise<string | null> => {
   }
 };
 
-// 增強的文件內容掃描
-const scanFileContent = async (filePath: string): Promise<boolean> => {
+// 🔧 修復：智能文件內容掃描（針對圖片文件優化）
+const scanFileContent = async (filePath: string, fileType: string): Promise<boolean> => {
   try {
     const stats = fs.statSync(filePath);
     if (stats.size > SECURITY_LIMITS.MAX_FILE_SIZE) return false;
 
-    const buffer = Buffer.alloc(Math.min(2048, stats.size)); // 增加掃描範圍
+    // 🎯 如果是圖片文件，使用更寬鬆的檢查
+    if (fileType && fileType.startsWith('image/')) {
+      console.info(`🖼️ Image file detected (${fileType}), using relaxed content scan`);
+
+      // 對圖片文件，只檢查文件開頭是否有明顯的腳本標籤
+      const buffer = Buffer.alloc(Math.min(512, stats.size)); // 只檢查前512字節
+      const fd = fs.openSync(filePath, 'r');
+      fs.readSync(fd, buffer, 0, buffer.length, 0);
+      fs.closeSync(fd);
+
+      const content = buffer.toString('utf8', 0, Math.min(256, buffer.length)); // 只轉換前256字節為文本
+
+      // 只檢查明顯的腳本注入攻擊
+      const criticalPatterns = ['<script', '<iframe', 'javascript:', 'data:text/html', '<?php'];
+
+      const foundPattern = criticalPatterns.find((pattern) => content.toLowerCase().includes(pattern.toLowerCase()));
+
+      if (foundPattern) {
+        console.info(`⚠️ Found suspicious pattern in image: ${foundPattern}`);
+        return false;
+      }
+
+      console.info(`✅ Image content scan passed`);
+      return true;
+    }
+
+    // 🔒 非圖片文件使用嚴格檢查
+    console.info(`📄 Non-image file detected, using strict content scan`);
+
+    const buffer = Buffer.alloc(Math.min(2048, stats.size));
     const fd = fs.openSync(filePath, 'r');
     fs.readSync(fd, buffer, 0, buffer.length, 0);
     fs.closeSync(fd);
@@ -83,54 +115,80 @@ const scanFileContent = async (filePath: string): Promise<boolean> => {
       'data:text/html',
       '<?php',
       '#!/bin/',
-      'MZ',
+      'MZ', // PE executable header
       'PK', // ZIP/executable headers
       '\x7fELF', // Linux executable
     ];
 
-    return !suspiciousPatterns.some((pattern) => content.toLowerCase().includes(pattern.toLowerCase()));
-  } catch {
+    const foundPattern = suspiciousPatterns.find((pattern) => content.toLowerCase().includes(pattern.toLowerCase()));
+
+    if (foundPattern) {
+      console.info(`❌ Found suspicious pattern: ${foundPattern}`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Content scan error:', error);
     return false;
   }
 };
 
-// 文件驗證函數
+// 🔧 修復：文件驗證函數
 const validateFile = async (filePath: string): Promise<FileValidationResult> => {
   try {
+    console.info(`🔍 Starting file validation for: ${filePath}`);
+
     if (!fs.existsSync(filePath)) {
+      console.info(`❌ File does not exist: ${filePath}`);
       return { isValid: false, error: '文件不存在' };
     }
 
     const stats = fs.statSync(filePath);
+    console.info(`📊 File stats: size=${stats.size} bytes`);
+
     if (stats.size > SECURITY_LIMITS.MAX_FILE_SIZE) {
+      console.info(`❌ File too large: ${stats.size} > ${SECURITY_LIMITS.MAX_FILE_SIZE}`);
       return { isValid: false, error: `文件過大，最大允許 ${Math.round(SECURITY_LIMITS.MAX_FILE_SIZE / 1024 / 1024)}MB` };
     }
+
     if (stats.size === 0) {
+      console.info(`❌ File is empty`);
       return { isValid: false, error: '文件為空' };
     }
 
     const actualType = await detectFileType(filePath);
+    console.info(`🔍 Detected file type: ${actualType}`);
+
     if (!actualType) {
+      console.info(`❌ Could not detect file type`);
       return { isValid: false, error: '無法識別的文件格式' };
     }
 
     if (!SECURITY_LIMITS.ALLOWED_FILE_TYPES.includes(actualType)) {
+      console.info(`❌ File type not allowed: ${actualType}`);
+      console.info(`📋 Allowed types: ${SECURITY_LIMITS.ALLOWED_FILE_TYPES.join(', ')}`);
       return { isValid: false, error: '不支持的文件格式', actualType };
     }
 
-    const isContentSafe = await scanFileContent(filePath);
+    console.info(`✅ File type validation passed: ${actualType}`);
+
+    // 🎯 傳遞文件類型給內容掃描函數
+    const isContentSafe = await scanFileContent(filePath, actualType);
     if (!isContentSafe) {
+      console.info(`❌ Content scan failed`);
       return { isValid: false, error: '文件內容不安全' };
     }
 
+    console.info(`✅ All validations passed for: ${actualType}`);
     return { isValid: true, actualType };
   } catch (error) {
-    console.error('File validation error:', error);
+    console.error('❌ File validation error:', error);
     return { isValid: false, error: '文件驗證失敗' };
   }
 };
 
-// 修復：帶超時的 OCR 處理 - 移除不必要的 async
+// 修復：帶超時的 OCR 處理
 const performOCRWithTimeout = (filePath: string): Promise<OCRResult> => {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -139,23 +197,21 @@ const performOCRWithTimeout = (filePath: string): Promise<OCRResult> => {
 
     const processOCR = async () => {
       try {
-        console.info(`開始 OCR 處理: ${filePath}`);
+        console.info(`🔤 開始 OCR 處理: ${filePath}`);
         const startTime = Date.now();
 
         const worker = await Tesseract.createWorker('chi_tra+eng', 1, {
           cachePath: path.join(os.tmpdir(), 'tesseract-cache'),
-          // 修復：提供有效的 logger 函數
           logger: (m) => {
-            if (process.env.NODE_ENV === 'development') {
+            if (process.env.NODE_ENV === 'development' && process.env.ENABLE_SECURITY_LOGGING === 'true') {
               console.info('Tesseract:', m);
             }
           },
         });
 
-        // 優化設置以提高處理速度
         await worker.setParameters({
           tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-          tessedit_char_whitelist: '', // 可以根據需要限制字符集
+          tessedit_char_whitelist: '',
           preserve_interword_spaces: '1',
         });
 
@@ -165,7 +221,7 @@ const performOCRWithTimeout = (filePath: string): Promise<OCRResult> => {
         clearTimeout(timeout);
 
         const processingTime = Date.now() - startTime;
-        console.info(`OCR 處理完成，耗時: ${processingTime}ms`);
+        console.info(`✅ OCR 處理完成，耗時: ${processingTime}ms`);
 
         const text = result.data.text.trim();
         const finalText =
@@ -197,15 +253,13 @@ const parseForm = (req: NextApiRequest): Promise<{ fields: formidable.Fields; fi
       keepExtensions: true,
       maxFileSize: SECURITY_LIMITS.MAX_FILE_SIZE,
       maxFiles: 1,
-      // 放寬過濾條件以支持手機格式
       filter: ({ mimetype, originalFilename }) => {
         if (!mimetype || !originalFilename) return false;
 
-        // 允許所有 image/* 類型（瀏覽器會自動轉換很多格式）
         const isImage = mimetype.startsWith('image/');
         const hasValidExtension = /\.(jpg|jpeg|png|gif|webp|heic|heif|avif)$/i.test(originalFilename);
 
-        return isImage || hasValidExtension; // 更寬鬆的條件
+        return isImage || hasValidExtension;
       },
     });
 
@@ -236,7 +290,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  // 每次請求都清理過期 session（Vercel 優化）
   cleanup();
 
   const startTime = Date.now();
@@ -266,7 +319,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
       return res.status(410).json({ success: false, error: 'Session 已過期，請重新產生並掃描QR Code!' });
     }
 
-    // 檢查是否已被使用
     if (session.used) {
       if (imageFile?.filepath) cleanupFile(imageFile.filepath);
       return res.status(400).json({ success: false, error: 'Session 已被使用過' });
@@ -283,7 +335,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
         });
       }
 
-      // XSS 防護
       const sanitizedText = directText
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
         .replace(/javascript:/gi, '')
@@ -294,10 +345,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
     // 處理圖片 OCR
     else if (imageFile?.filepath) {
       try {
-        // 增加文件計數
         incrementFileCount(sessionId);
 
-        // 檢查文件數量限制
         if (session.fileCount > SECURITY_LIMITS.MAX_FILES_PER_SESSION) {
           cleanupFile(imageFile.filepath);
           return res.status(400).json({
@@ -306,20 +355,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
           });
         }
 
-        console.info(`開始處理文件: ${imageFile.originalFilename}, 大小: ${imageFile.size} bytes`);
+        console.info(`📁 開始處理文件: ${imageFile.originalFilename}, 大小: ${imageFile.size} bytes`);
 
         const validation = await validateFile(imageFile.filepath);
         if (!validation.isValid) {
           cleanupFile(imageFile.filepath);
+          console.info(`❌ 文件驗證失敗: ${validation.error}`);
           return res.status(400).json({ success: false, error: validation.error || '文件驗證失敗' });
         }
 
-        console.info(`文件驗證通過，檢測到格式: ${validation.actualType}`);
+        console.info(`✅ 文件驗證通過，檢測到格式: ${validation.actualType}`);
 
-        // 執行帶超時的 OCR
         result = await performOCRWithTimeout(imageFile.filepath);
 
-        console.info(`OCR 完成，耗時: ${Date.now() - startTime}ms, 置信度: ${result.confidence}%`);
+        console.info(`🎉 OCR 完成，耗時: ${Date.now() - startTime}ms, 置信度: ${result.confidence}%`);
       } catch (error) {
         console.error('OCR error:', error);
         cleanupFile(imageFile.filepath);
@@ -339,12 +388,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UploadResponse>
       return res.status(400).json({ success: false, error: '缺少圖片文件或文字內容' });
     }
 
-    // 標記 session 為已使用並更新結果
     markSessionAsUsed(sessionId);
     session.result = result;
 
     console.info(
-      `請求處理成功: sessionId=${sessionId}, IP=${clientIP}, textLength=${result.text.length}, confidence=${result.confidence}%`
+      `✅ 請求處理成功: sessionId=${sessionId}, IP=${clientIP}, textLength=${result.text.length}, confidence=${result.confidence}%`
     );
 
     return res.status(200).json({
