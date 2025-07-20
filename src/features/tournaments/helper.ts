@@ -315,3 +315,87 @@ export const formatCurrency = (amount: number) => {
     minimumFractionDigits: 0,
   }).format(amount);
 };
+
+export const getImportNamesFromText = (text: string): string[] => {
+  const lines = text.split('\n');
+  const startIndex = lines.findIndex((line) => /^\s*1[:：]/.test(line));
+
+  if (startIndex === -1) return [];
+
+  return lines.slice(startIndex).flatMap((line) => {
+    const match = line.match(/^\s*\d+[:：](.*)/);
+    return match ? [match[1].replace(/\d+/g, '').trim()] : [];
+  });
+};
+
+export const importTournamentNames = (currentTournament: TournamentProps, newNames: string[]): TournamentProps => {
+  // 更新選手名單
+  const updatedGamers: Gamer[] = currentTournament.tournament.gamers.map((gamer, index) => ({
+    ...gamer,
+    name: index < newNames.length ? newNames[index] : gamer.name,
+  }));
+
+  // 重置所有比賽：只有第一輪更新選手名稱，其他輪次清空
+  const updatedMatches: Match[] = currentTournament.tournament.matches.map((match) => {
+    // 如果是第一輪，更新選手名稱
+    if (match.round === 1) {
+      // 處理 gamer1
+      let updatedGamer1: Gamer | null = null;
+      if (match.gamer1) {
+        const foundGamer1 = updatedGamers.find((g) => g.id === match.gamer1?.id);
+        if (foundGamer1) {
+          updatedGamer1 = {
+            id: match.gamer1.id,
+            name: foundGamer1.name,
+            games: match.gamer1.games,
+          };
+        } else {
+          updatedGamer1 = match.gamer1;
+        }
+      }
+
+      // 處理 gamer2
+      let updatedGamer2: Gamer | null = null;
+      if (match.gamer2) {
+        const foundGamer2 = updatedGamers.find((g) => g.id === match.gamer2?.id);
+        if (foundGamer2) {
+          updatedGamer2 = {
+            id: match.gamer2.id,
+            name: foundGamer2.name,
+            games: match.gamer2.games,
+          };
+        } else {
+          updatedGamer2 = match.gamer2;
+        }
+      }
+
+      return {
+        id: match.id,
+        gamer1: updatedGamer1,
+        gamer2: updatedGamer2,
+        winner: null, // 清除勝者
+        round: match.round,
+        matchIndex: match.matchIndex,
+      };
+    } else {
+      // 第二輪以上的比賽，清空所有選手和勝者
+      return {
+        id: match.id,
+        gamer1: null,
+        gamer2: null,
+        winner: null,
+        round: match.round,
+        matchIndex: match.matchIndex,
+      };
+    }
+  });
+
+  return {
+    ...currentTournament,
+    tournament: {
+      ...currentTournament.tournament,
+      gamers: updatedGamers,
+      matches: updatedMatches,
+    },
+  };
+};

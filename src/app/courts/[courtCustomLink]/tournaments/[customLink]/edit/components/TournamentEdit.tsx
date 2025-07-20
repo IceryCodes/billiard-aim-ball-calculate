@@ -16,7 +16,11 @@ const TournamentEdit = (): ReactNode => {
   useTournamentProtected();
 
   const { data: { tournament } = {}, isError, refetch: refetchTournament } = useTournamentQuery({ customLink: paramsId });
-  const { mutateAsync: updateTournament } = useUpdateTournamentMutation();
+  const { mutateAsync: updateTournament } = useUpdateTournamentMutation({
+    onSuccess: () => {
+      refetchTournament();
+    },
+  });
 
   if (isError) return <span>搜尋時發生錯誤</span>;
   if (!tournament) return <span>沒有符合的球場賽程資料</span>;
