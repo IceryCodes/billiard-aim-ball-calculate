@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/global-components/buttons/Button';
 import Card from '@/global-components/Card';
@@ -22,6 +23,8 @@ type UploadResult = UploadSuccessResult | UploadErrorResult;
 type InputMode = 'select' | 'camera' | 'file' | 'text';
 
 const TempImageUpload: React.FC = () => {
+  const router = useRouter();
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -87,9 +90,7 @@ const TempImageUpload: React.FC = () => {
       setResult(data);
 
       if (data.success) {
-        setTimeout(() => {
-          window.close();
-        }, 2000);
+        setTimeout(() => router.push(`${process.env.NEXT_PUBLIC_BASE_URL}`), 2000);
       }
     } catch (error) {
       console.error('提交錯誤:', error);
@@ -128,10 +129,12 @@ const TempImageUpload: React.FC = () => {
   }
 
   if (!sessionId) {
+    setTimeout(() => router.push(`${process.env.NEXT_PUBLIC_BASE_URL}`), 5000);
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card>
-          <div className="text-red-500">無效的連結</div>
+          <div className="text-red-500">無效的連結，5秒後跳轉至首頁!</div>
         </Card>
       </div>
     );
