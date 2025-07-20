@@ -3,6 +3,7 @@
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { getImportNamesFromText } from '@/features/tournaments/helper';
 
@@ -14,6 +15,7 @@ import { DraggableTagGroup } from './tags/DraggableTagGroup';
 interface QRSession {
   sessionId: string;
   qrCodeDataUrl: string;
+  uploadUrl: string;
   expiresAt: string;
 }
 
@@ -261,15 +263,17 @@ const QRButton = ({ onImportNames }: QRButtonProps): ReactElement => {
           </div>
 
           <div className="mb-4">
-            <Image
-              src={session.qrCodeDataUrl}
-              alt={`${process.env.NEXT_PUBLIC_SITENAME} 名單導入QR code`}
-              width={150}
-              height={150}
-              className="mx-auto border rounded-lg shadow-sm"
-              placeholder="blur"
-              blurDataURL={session.qrCodeDataUrl}
-            />
+            <Link href={session.uploadUrl} target="_blank" title={`${process.env.NEXT_PUBLIC_SITENAME}名單導入QR code`}>
+              <Image
+                src={session.qrCodeDataUrl}
+                alt={`${process.env.NEXT_PUBLIC_SITENAME}名單導入QR code`}
+                width={150}
+                height={150}
+                className="mx-auto border rounded-lg shadow-sm"
+                placeholder="blur"
+                blurDataURL={session.qrCodeDataUrl}
+              />
+            </Link>
           </div>
 
           <div className="mb-4">
