@@ -50,9 +50,8 @@ const TournamentBracket = ({
   const onImportNames = useCallback(
     (names: string[]) => {
       updateTournament(importTournamentNames(currentTournament, names));
-      refetchTournament();
     },
-    [currentTournament, refetchTournament, updateTournament]
+    [currentTournament, updateTournament]
   );
 
   if (authLoading) return <span>載入中...</span>;

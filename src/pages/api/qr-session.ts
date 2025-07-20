@@ -1,8 +1,10 @@
 import { nanoid } from 'nanoid';
 import { NextApiRequest, NextApiResponse } from 'next';
+// import { NextApiRequest, NextApiResponse } from 'next';
 import QRCode from 'qrcode';
 
-import { cleanup, setSession } from '../../lib/sessions';
+import { cleanup, deleteSession, getSession, setSession } from '@/lib/sessions';
+// import { cleanup, setSession, getSession, deleteSession } from '../../lib/sessions';
 
 interface QRResponse {
   success: boolean;
@@ -13,30 +15,31 @@ interface QRResponse {
 
 interface SessionStatusResponse {
   status: 'waiting' | 'completed' | 'expired' | 'not-found';
-  result?: {
-    text: string;
-    confidence: number;
-  };
+  result?: { text: string; confidence: number };
 }
 
-interface ErrorResponse {
-  error: string;
-}
+type QRApiResponse = QRResponse | SessionStatusResponse | { error: string };
 
-type ApiResponse = QRResponse | SessionStatusResponse | ErrorResponse;
-
-const handler = async (req: NextApiRequest, res: NextApiResponse<ApiResponse>) => {
+const qrHandler = async (req: NextApiRequest, res: NextApiResponse<QRApiResponse>) => {
+  // Vercel 環境每次請求都清理
   cleanup();
 
   if (req.method === 'POST') {
-    const sessionId = nanoid(12);
+    const sessionId = nanoid(16); // 增加長度提高安全性
     const now = Date.now();
     const expiresAt = now + 5 * 60 * 1000; // 5 minutes
+
+    const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'];
 
     setSession(sessionId, {
       id: sessionId,
       createdAt: now,
       expiresAt,
+      ip: clientIP as string,
+      userAgent,
+      fileCount: 0,
+      used: false,
     });
 
     const host = req.headers.host;
@@ -47,7 +50,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<ApiResponse>) =
       const qrCodeDataUrl = await QRCode.toDataURL(uploadUrl, {
         width: 200,
         margin: 1,
+        color: { dark: '#000000', light: '#FFFFFF' },
+        errorCorrectionLevel: 'M',
       });
+
+      console.info(`QR Code 生成成功: sessionId=${sessionId}, IP=${clientIP}`);
 
       return res.status(200).json({
         success: true,
@@ -68,7 +75,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<ApiResponse>) =
       return res.status(400).json({ error: 'Missing session ID' });
     }
 
-    const { getSession, deleteSession } = await import('../../lib/sessions');
     const session = getSession(id);
 
     if (!session) {
@@ -90,4 +96,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<ApiResponse>) =
   return res.status(405).json({ error: 'Method not allowed' });
 };
 
-export default handler;
+export default qrHandler;

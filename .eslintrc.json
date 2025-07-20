@@ -82,7 +82,7 @@
       "import/default": "off",
       "import/no-named-as-default": "off",
       "no-else-return": "off",
-      "no-console": ["warn", { "allow": ["warn", "error"] }],
+      "no-console": ["warn", { "allow": ["warn", "error", "info"] }],
       "no-continue": "off",
       "no-multiple-empty-lines": ["error", { "max": 1, "maxEOF": 0 }],
       "no-plusplus": "off",

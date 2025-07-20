@@ -150,7 +150,7 @@ const TempImageUpload: React.FC = () => {
                 {result.confidence === 100 ? '文字已提交' : `識別完成 (${result.confidence.toFixed(1)}%)`}
               </div>
               <pre className="whitespace-pre-wrap text-sm p-3 rounded border max-h-48 overflow-auto">{result.text}</pre>
-              <div className="mt-4 text-sm">2秒後自動關閉...</div>
+              <div className="mt-4 text-sm">2秒後自動跳轉...</div>
             </div>
           ) : (
             <div>
