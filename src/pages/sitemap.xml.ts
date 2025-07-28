@@ -1,9 +1,11 @@
 import { GetServerSideProps } from 'next';
 
+import { ArticleProps } from '@/domains/article';
 import { CourtProps } from '@/domains/court';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { PlayerProps } from '@/domains/player';
 import { TournamentProps } from '@/domains/tournament';
+import { getArticles } from '@/services/article';
 import { getCourts } from '@/services/court';
 import { getPlayers } from '@/services/player';
 import { getTournaments } from '@/services/tournament';
@@ -78,6 +80,12 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
         priority: 0.9,
       },
       {
+        loc: `${baseUrl}${getPageUrlByType(PageType.ARTICLES)}`,
+        lastmod: new Date().toISOString(),
+        changefreq: 'weekly',
+        priority: 0.8,
+      },
+      {
         loc: `${baseUrl}${getPageUrlByType(PageType.COURTS)}`,
         lastmod: new Date().toISOString(),
         changefreq: 'weekly',
@@ -98,7 +106,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     ];
 
     // 獲取動態資料
-    const [courtsRes, playersRes, tournamentsRes] = await Promise.allSettled([
+    const [courtsRes, playersRes, tournamentsRes, articlesRes] = await Promise.allSettled([
       getCourts({
         query: '',
         county: '',
@@ -119,11 +127,13 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
         page: 1,
         limit: 0,
       }),
+      getArticles({ page: 1, limit: 0 }),
     ]);
 
     let courtUrls: SitemapUrl[] = [];
     let playerUrls: SitemapUrl[] = [];
     let tournamentUrls: SitemapUrl[] = [];
+    let articleUrls: SitemapUrl[] = [];
 
     // 處理資料
     if (courtsRes.status === 'fulfilled') {
@@ -153,9 +163,18 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
         priority: 0.7,
       }));
     }
+    if (articlesRes.status === 'fulfilled') {
+      const { articles } = articlesRes.value;
+      articleUrls = (articles ?? []).map(({ customLink, updatedAt }: ArticleProps) => ({
+        loc: `${baseUrl}${getPageUrlByType(PageType.ARTICLES)}/${customLink}`,
+        lastmod: new Date(updatedAt).toISOString(),
+        changefreq: 'weekly',
+        priority: 0.7,
+      }));
+    }
 
     // 生成 XML
-    const xml = generateSitemapXml([...staticUrls, ...courtUrls, ...playerUrls, ...tournamentUrls]);
+    const xml = generateSitemapXml([...staticUrls, ...courtUrls, ...playerUrls, ...tournamentUrls, ...articleUrls]);
 
     // 設定響應標頭
     res.setHeader('Content-Type', 'application/xml');
