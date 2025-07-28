@@ -5,6 +5,7 @@ import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { TournamentType } from '@/domains/tournament';
 import { getImportNamesFromText } from '@/features/tournaments/helper';
 
 import { Button } from './buttons/Button';
@@ -32,10 +33,12 @@ interface SessionStatusResponse {
 type ViewState = 'initial' | 'session' | 'result' | 'editing' | 'final';
 
 interface QRButtonProps {
+  gamersCount: number;
+  tournamentType: TournamentType;
   onImportNames: (names: string[]) => void;
 }
 
-const QRButton = ({ onImportNames }: QRButtonProps): ReactElement => {
+const QRButton = ({ gamersCount, tournamentType, onImportNames }: QRButtonProps): ReactElement => {
   const [session, setSession] = useState<QRSession | null>(null);
   const [result, setResult] = useState<OCRResult | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
@@ -201,14 +204,21 @@ const QRButton = ({ onImportNames }: QRButtonProps): ReactElement => {
     return (
       <Card>
         <div className="mb-4">
-          <h3 className="font-medium">✏️ 調整名單順序</h3>
-          <p className="text-sm mt-1">拖拉下方的項目來調整順序，或移除不需要的項目</p>
+          <h3 className="font-medium">
+            ✏️ 調整名單順序 (左到右{gamersCount}強{tournamentType === TournamentType.SINGLE ? '單敗淘汰' : '雙敗淘汰'})
+          </h3>
+          <p className="text-sm mt-1">拖拉下方的選手來調整比賽順序，或移除不需要的選手</p>
         </div>
 
-        <TournamentSlotEditor initialTags={cleanedNames} onConfirm={handleConfirmOrder} onCancel={handleCancelEdit} />
+        <TournamentSlotEditor
+          gamersCount={gamersCount}
+          initialTags={cleanedNames}
+          onConfirm={handleConfirmOrder}
+          onCancel={handleCancelEdit}
+        />
       </Card>
     );
-  }, [viewState, cleanedNames, handleConfirmOrder, handleCancelEdit]);
+  }, [viewState, gamersCount, tournamentType, cleanedNames, handleConfirmOrder, handleCancelEdit]);
 
   const resultUI = useMemo(() => {
     if (viewState !== 'result') return null;

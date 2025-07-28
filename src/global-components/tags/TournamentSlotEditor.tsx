@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '../buttons/Button';
 
 interface TournamentSlotEditorProps {
+  gamersCount: number;
   initialTags: string[];
   onConfirm: (finalOrder: string[]) => void;
   onCancel?: () => void;
@@ -14,11 +15,11 @@ interface DragData {
   name: string;
 }
 
-export const TournamentSlotEditor = ({ initialTags, onConfirm, onCancel }: TournamentSlotEditorProps) => {
+export const TournamentSlotEditor = ({ gamersCount, initialTags, onConfirm, onCancel }: TournamentSlotEditorProps) => {
   // 左邊未分配的姓名
   const [availableNames, setAvailableNames] = useState<string[]>(initialTags);
   // 右邊32個位置的分配情況 (空字串表示空籤)
-  const [slots, setSlots] = useState<string[]>(new Array(32).fill(''));
+  const [slots, setSlots] = useState<string[]>(new Array(gamersCount).fill(''));
   const [draggedData, setDraggedData] = useState<DragData | null>(null);
 
   // 拖拉開始
@@ -104,8 +105,8 @@ export const TournamentSlotEditor = ({ initialTags, onConfirm, onCancel }: Tourn
   // 重置
   const handleReset = useCallback(() => {
     setAvailableNames(initialTags);
-    setSlots(new Array(32).fill(''));
-  }, [initialTags]);
+    setSlots(new Array(gamersCount).fill(''));
+  }, [gamersCount, initialTags]);
 
   // 確認
   const handleConfirm = useCallback(() => {
@@ -115,7 +116,7 @@ export const TournamentSlotEditor = ({ initialTags, onConfirm, onCancel }: Tourn
   // 計算比賽組別文字
   const getMatchLabel = (index: number): string => {
     const matchNumber = Math.floor(index / 2) + 1;
-    return `比賽${matchNumber}`;
+    return `第${matchNumber}組`;
   };
 
   // 雙擊移除位置上的名字
@@ -139,7 +140,9 @@ export const TournamentSlotEditor = ({ initialTags, onConfirm, onCancel }: Tourn
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center text-sm">
-        <span>拖拉姓名到右邊位置 (已分配: {assignedCount}/32)</span>
+        <span>
+          拖拉姓名到右邊位置 (已分配: {assignedCount}/{gamersCount})
+        </span>
         <Button onClick={handleReset} text="重置分配" />
       </div>
 
@@ -177,9 +180,9 @@ export const TournamentSlotEditor = ({ initialTags, onConfirm, onCancel }: Tourn
           </div>
         </div>
 
-        {/* 右邊：32個比賽位置 */}
+        {/* 右邊：gamersCount個比賽位置 */}
         <div className="flex-1 p-3 rounded border">
-          <div className="text-sm font-medium mb-3 text-center">比賽位置表 (32強單敗)</div>
+          <div className="text-sm font-medium mb-3 text-center">比賽位置表</div>
           <div className="grid grid-cols-2 gap-3 overflow-y-auto w-[350px]">
             {Array.from({ length: 16 }, (_, matchIndex) => (
               <div key={matchIndex} className="space-y-1">
@@ -247,16 +250,16 @@ export const TournamentSlotEditor = ({ initialTags, onConfirm, onCancel }: Tourn
       </div>
 
       <div className="pt-4 flex justify-end gap-4">
-        <Button text={`確定分配 (${assignedCount}/32)`} onClick={handleConfirm} />
+        <Button text={`確定分配 (${assignedCount}/${gamersCount})`} onClick={handleConfirm} />
         {onCancel && <Button text="取消" onClick={onCancel} />}
       </div>
 
-      <div className="text-xs text-gray-500 space-y-1">
+      <div className="text-xs text-foreground space-y-1">
         <div>💡 使用說明：</div>
         <div>• 從左邊拖拉選手姓名到右邊比賽位置</div>
         <div>• 雙擊右邊已分配的選手可移除回左邊</div>
         <div>• 右邊位置間也可以互相拖拉交換</div>
-        <div>• 空籤位置會自動儲存為空白</div>
+        <div>• 空白位置會自動儲存為空籤</div>
       </div>
     </div>
   );

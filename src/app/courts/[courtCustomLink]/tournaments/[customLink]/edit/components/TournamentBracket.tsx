@@ -70,7 +70,11 @@ const TournamentBracket = ({
             <h1 className="text-2xl font-bold">{tournamentData.title}</h1>
           </Link>
           <TournamentFormButton mode={TournamentFormMode.Edit} tournament={tournamentData} onSuccess={refetchTournament} />
-          <QRButton onImportNames={onImportNames} />
+          <QRButton
+            onImportNames={onImportNames}
+            gamersCount={tournamentData.tournament.gamerCount}
+            tournamentType={tournamentData.tournament.tournamentType}
+          />
         </div>
       </section>
 
