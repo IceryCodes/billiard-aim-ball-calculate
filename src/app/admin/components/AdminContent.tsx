@@ -2,11 +2,14 @@
 
 import { ReactNode, useCallback, useMemo, useState } from 'react';
 
+import { useToast } from '@/contexts/ToastContext';
 import { CourtProps, GetCourtsDto } from '@/domains/court';
 import { GetUsersDto, UserProps } from '@/domains/user';
+import { useArticleGenerateMutation } from '@/features/articles/hooks/useArticleGenerateMutation';
 import { useCourtsQuery } from '@/features/courts/hooks/useCourtsQuery';
 import { useUserQuery } from '@/features/user/hooks/useUserQuery';
 import { useUsersQuery } from '@/features/user/hooks/useUsersQuery';
+import { Button } from '@/global-components/buttons/Button';
 import Card from '@/global-components/Card';
 import useAdminProtected from '@/hooks/utils/protections/routes/useAdminProtected';
 
@@ -20,6 +23,7 @@ const limit = 50;
 
 const AdminContent = (): ReactNode => {
   useAdminProtected();
+  const { showToast } = useToast();
 
   // Separate search params for each manage type
   const initCourtSearchParams = useMemo(
@@ -37,6 +41,10 @@ const AdminContent = (): ReactNode => {
   const [usersSearch, setUsersSearch] = useState<GetUsersDto>({ email: '' });
   const [courtsSearch, setCourtsSearch] = useState<GetCourtsDto>(initCourtSearchParams);
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
+
+  const { mutateAsync: generateArticles, isLoading } = useArticleGenerateMutation({
+    onSuccess: ({ message }) => showToast({ message }),
+  });
 
   const { data: userData, refetch: refetchUser } = useUserQuery({
     _id: selectedUser?._id,
@@ -90,6 +98,12 @@ const AdminContent = (): ReactNode => {
 
   return (
     <div className="p-4 flex flex-col justify-center gap-y-4 w-full">
+      <Button
+        text={`${isLoading ? '生成中' : '生成文章'}`}
+        onClick={() => generateArticles({ maxArticles: 1 })}
+        disabled={isLoading}
+      />
+
       <div className="flex gap-x-4">
         <div className="flex flex-col min-w-[350px] gap-y-4">
           <Card>

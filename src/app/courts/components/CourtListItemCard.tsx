@@ -31,15 +31,7 @@ const CourtListItemCard = ({
     href={`${getPageUrlByType(PageType.COURTS)}/${customLink}`}
     className="flex flex-col gap-1 border rounded p-4 shadow-lg hover:scale-105 transition-transform duration-300 bg-backgroundLight"
   >
-    <Image
-      src={image}
-      alt="Court Image"
-      width={720}
-      height={480}
-      className="rounded"
-      placeholder="blur"
-      blurDataURL={image}
-    />
+    <Image src={image} alt={title} width={720} height={480} className="rounded" blurDataURL={image} />
     <div className="flex flex-col items-start">
       <span className="text-xl font-bold">{title}</span>
       {partner && <Tag text={`${process.env.NEXT_PUBLIC_SITENAME}合作夥伴`} />}

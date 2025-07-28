@@ -127,19 +127,25 @@ const CourtList = ({ switchMode }: CourtListProps): ReactNode => {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {!courts.length && <label>沒有符合的撞球場地</label>}
           {courts.map(
-            ({ title, partner, county, district, address, featuredImg, coachs, customLink }: CourtProps, index: number) => (
-              <CourtListItemCard
-                key={index}
-                image={featuredImg ? featuredImg : process.env.NEXT_PUBLIC_FEATURED_IMAGE}
-                title={title}
-                county={county}
-                district={district}
-                address={address}
-                coachs={coachs}
-                partner={partner}
-                customLink={customLink}
-              />
-            )
+            ({ title, partner, county, district, address, featuredImg, coachs, customLink }: CourtProps, index: number) => {
+              const featuredImageUrl = featuredImg
+                ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${featuredImg}`
+                : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`;
+
+              return (
+                <CourtListItemCard
+                  key={index}
+                  image={featuredImageUrl}
+                  title={title}
+                  county={county}
+                  district={district}
+                  address={address}
+                  coachs={coachs}
+                  partner={partner}
+                  customLink={customLink}
+                />
+              );
+            }
           )}
         </section>
 

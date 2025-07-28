@@ -1,15 +1,16 @@
 export enum PageType {
   HOME = '瞄一個',
-  REGISTER = '註冊',
-  LOGIN = '登入',
-  VERIFY = '帳號驗證',
 
   AIM = '瞄球角度',
   CUSHION = '顆星公式',
   COURTS = '撞球場地',
   PLAYERS = '撞球選手',
   TOURNAMENTS = '賽程列表',
+  ARTICLES = '文章列表',
 
+  REGISTER = '註冊',
+  LOGIN = '登入',
+  VERIFY = '帳號驗證',
   PROFILE = '個人帳號',
   ADMIN = '後台管理',
 }

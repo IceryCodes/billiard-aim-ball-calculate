@@ -79,17 +79,23 @@ const PlayerList = (): ReactNode => {
         {/* Player list */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {!players.length && <label>沒有符合的撞球選手</label>}
-          {players.map(({ title, partner, county, district, featuredImg, customLink }: PlayerProps, index: number) => (
-            <PlayerListItemCard
-              key={index}
-              image={featuredImg ? featuredImg : process.env.NEXT_PUBLIC_FEATURED_IMAGE}
-              title={title}
-              county={county}
-              district={district}
-              partner={partner}
-              customLink={customLink}
-            />
-          ))}
+          {players.map(({ title, partner, county, district, featuredImg, customLink }: PlayerProps, index: number) => {
+            const featuredImageUrl = featuredImg
+              ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_PLAYER_FEATURED_FOLDER}/${featuredImg}`
+              : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`;
+
+            return (
+              <PlayerListItemCard
+                key={index}
+                image={featuredImageUrl}
+                title={title}
+                county={county}
+                district={district}
+                partner={partner}
+                customLink={customLink}
+              />
+            );
+          })}
         </section>
 
         {/* Pagination */}
