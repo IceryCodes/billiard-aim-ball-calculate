@@ -224,6 +224,20 @@ const generateArticle = async (newsItem: RSSItem, existingArticles: string): Pro
 發布日期：${newsItem.published_date}
 新聞來源網址：${newsItem.source_url}
 
+**可用的外部連結清單（請從中選擇相關的網站，這些都是經過驗證的真實網站）：**
+- Icery.tw：https://www.Icery.tw
+- Icery Official影片工作室：https://www.IceryOfficial.com
+- 中華民國撞球協會：http://www.cuesports.org.tw
+- Matchroom Pool撞球賽事組織：https://matchroompool.com
+- AZ Billiards撞球資訊網：https://www.azbilliards.com
+- Billiards Digest撞球雜誌：https://www.billiardsdigest.com
+- 世界撞球協會WPA Pool：https://wpapool.com
+- 美國撞球協會APA：https://poolplayers.com
+- 世界撞球組織World Billiards：https://world-billiards.com
+- 專業撞球系列賽Pro Billiard Series：https://probilliardseries.com
+- AZ Billiards論壇：https://forums.azbilliards.com
+- 撞球論壇Billiards Forum：http://www.billiardsforum.com
+
 請產生以下JSON格式的內容：
 {
   "title": "文章標題（15-25字，包含撞球關鍵字）",
@@ -255,7 +269,7 @@ const generateArticle = async (newsItem: RSSItem, existingArticles: string): Pro
   - 不需要包含完整標題在內文中
   - 內文不需包含引言或簡要等段落
   - 標題必須出現"撞球"兩個字
-  - 內容主題不可與現有文章高度相似
+  - 內容主題不可與現有文章相似，必須是不同主題
   - 最後必須包含"總結"段落
   - 內文不可以出現單引號或雙引號，請用粗體表示強調
 
