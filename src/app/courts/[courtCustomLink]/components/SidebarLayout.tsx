@@ -124,23 +124,25 @@ const SidebarLayout = ({ pageId, county, children }: SidebarLayoutProps) => {
             {!courts.length && <label>附近沒有符合{PageType.COURTS}</label>}
             {courts
               .filter(({ _id }: CourtProps) => _id !== pageId)
-              .map(({ _id, title, partner, county, district, address, featuredImg, customLink, coachs }: CourtProps) => (
-                <CourtListItemCard
-                  key={_id}
-                  image={
-                    featuredImg
-                      ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
-                      : process.env.NEXT_PUBLIC_FEATURED_IMAGE
-                  }
-                  title={title}
-                  county={county}
-                  district={district}
-                  address={address}
-                  partner={partner}
-                  customLink={customLink}
-                  coachs={coachs}
-                />
-              ))}
+              .map(({ _id, title, partner, county, district, address, featuredImg, customLink, coachs }: CourtProps) => {
+                const featuredImageUrl = featuredImg
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${featuredImg}`
+                  : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`;
+
+                return (
+                  <CourtListItemCard
+                    key={_id}
+                    image={featuredImageUrl}
+                    title={title}
+                    county={county}
+                    district={district}
+                    address={address}
+                    partner={partner}
+                    customLink={customLink}
+                    coachs={coachs}
+                  />
+                );
+              })}
           </div>
         </div>
       </div>

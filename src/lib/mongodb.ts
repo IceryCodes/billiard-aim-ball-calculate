@@ -1,5 +1,6 @@
 import { Collection, MongoClient } from 'mongodb';
 
+import { ArticleDBProps } from '@/domains/article';
 import { CourtDBProps } from '@/domains/court';
 import { ManageDBProps } from '@/domains/manage';
 import { PaymentProps } from '@/domains/payment';
@@ -84,4 +85,11 @@ export const getTournamentsCollection = async (): Promise<Collection<TournamentD
   const client = await connectToDatabase();
   const database = client.db('billiards');
   return database.collection<TournamentDBProps>('tournaments');
+};
+
+// Function to get the articles collection
+export const getArticlesCollection = async (): Promise<Collection<Omit<ArticleDBProps, '_id'>>> => {
+  const client = await connectToDatabase();
+  const database = client.db('billiards');
+  return database.collection<Omit<ArticleDBProps, '_id'>>('articles');
 };

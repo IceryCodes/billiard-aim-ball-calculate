@@ -52,17 +52,13 @@ const SidebarLayout = ({ pageId, children }: SidebarLayoutProps) => {
           {/* Tournament list */}
           <div className="grid grid-cols-1 gap-4 p-4">
             {!tournaments.length && <label>沒有符合球場賽程資料</label>}
-            {tournaments.map((tournament: TournamentProps) => (
-              <TournamentListItemCard
-                key={tournament._id}
-                image={
-                  tournament.featuredImg
-                    ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`
-                    : process.env.NEXT_PUBLIC_FEATURED_IMAGE
-                }
-                tournament={tournament}
-              />
-            ))}
+            {tournaments.map((tournament: TournamentProps) => {
+              const featuredImageUrl = tournament.featuredImg
+                ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${tournament.featuredImg}`
+                : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`;
+
+              return <TournamentListItemCard key={tournament._id} image={featuredImageUrl} tournament={tournament} />;
+            })}
           </div>
         </div>
       </div>

@@ -21,11 +21,10 @@ const PlayerListItemCard = ({ image, title, county, district, customLink }: Play
   >
     <Image
       src={image}
-      alt="Player Image"
+      alt={title}
       width={720}
       height={480}
       className="w-24 h-24 rounded-full object-cover"
-      placeholder="blur"
       blurDataURL={image}
     />
     <div>

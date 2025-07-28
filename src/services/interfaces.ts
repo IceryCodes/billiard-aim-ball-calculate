@@ -1,3 +1,4 @@
+import { ArticleProps } from '@/domains/article';
 import { CourtProps } from '@/domains/court';
 import {
   GoogleAddressComponent,
@@ -172,5 +173,20 @@ export interface GetTournamentReturnType {
 export interface GetTournamentsReturnType {
   tournaments?: TournamentProps[];
   total?: number;
+  message: string;
+}
+
+export interface GetArticleReturnType {
+  article?: ArticleProps | null;
+  message: string;
+}
+
+export interface GetArticlesReturnType {
+  articles?: ArticleProps[];
+  total?: number;
+  message: string;
+}
+
+export interface GenerateArticleReturnType {
   message: string;
 }

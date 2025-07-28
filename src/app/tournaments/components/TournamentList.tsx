@@ -51,17 +51,13 @@ const TournamentList = ({ courtId = '', courtName = '' }: TournamentListProps): 
         {/* Hospital list */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {!tournaments.length && <label>沒有符合的球場賽程資料</label>}
-          {tournaments.map((tournament: TournamentProps) => (
-            <TournamentListItemCard
-              key={tournament._id}
-              image={
-                tournament.featuredImg
-                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament.featuredImg}`
-                  : process.env.NEXT_PUBLIC_FEATURED_IMAGE
-              }
-              tournament={tournament}
-            />
-          ))}
+          {tournaments.map((tournament: TournamentProps) => {
+            const featuredImageUrl = tournament.featuredImg
+              ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_PLAYER_FEATURED_FOLDER}/${tournament.featuredImg}`
+              : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`;
+
+            return <TournamentListItemCard key={tournament._id} image={featuredImageUrl} tournament={tournament} />;
+          })}
         </section>
       </div>
     </div>

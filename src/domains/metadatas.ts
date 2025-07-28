@@ -1,3 +1,4 @@
+import { ArticleProps } from './article';
 import { CourtProps } from './court';
 import { getPageUrlByType, PageType } from './interface';
 import { PlayerProps } from './player';
@@ -5,7 +6,7 @@ import { GameTypesType, TournamentProps } from './tournament';
 
 interface GetDescriptionProps {
   currentPath: string;
-  data?: CourtProps | PlayerProps | TournamentProps;
+  data?: CourtProps | PlayerProps | TournamentProps | ArticleProps;
 }
 
 interface MetadataInfoProps {
@@ -16,6 +17,15 @@ interface MetadataInfoProps {
   email?: string;
   featuredImage?: string;
   data?: CourtProps | PlayerProps | TournamentProps;
+}
+
+interface MetadataInfoArticleProps {
+  pageName: string;
+  currentPath: string;
+  description?: string;
+  tags?: string[];
+  featuredImage?: string;
+  data?: ArticleProps;
 }
 
 interface MetadataInfoTournamentProps {
@@ -62,6 +72,8 @@ export const getDescription = ({ currentPath, data }: GetDescriptionProps): stri
       return defaultPlayerExcerpt(data as PlayerProps);
     case currentPath.includes(`${getPageUrlByType(PageType.PLAYERS)}`):
       return `${PageType.PLAYERS}搜尋列表可以透過選手的名稱來進行搜尋，點進詳情頁面也能得知更多資訊及該選手所擅長的比賽類型，若有提供聯絡資訊則可以直接與該選手聯繫，教練亦可善用頁面來經營個人品牌並宣傳近期資訊。`;
+    case currentPath.includes(getPageUrlByType(PageType.ARTICLES)):
+      return `${process.env.NEXT_PUBLIC_SITENAME}製作許多撞球相關的文章，從最基本的瞄球方式、顆星公式，甚至一些簡單的撞球教學，藉由這些精選文章來推廣撞球，幫助撞球好手提升專業知識，也更容易了解跟撞球有關的一些時事脈動!`;
 
     default:
       return `${process.env.NEXT_PUBLIC_SITENAME}是${process.env.NEXT_PUBLIC_ICERY}日常開會無聊時開發的撞球網站，提供全台撞球場的搜尋之外，也讓撞球場可以自行編輯相關資訊，更能透過網站舉辦撞球比賽，實時更新的賽程表讓撞球場可投影於大螢幕且不需手動更新外，也能將比賽結果進行保留，選手除了可以使用瞄球角度跟顆星公式來提升技巧，也能善用自己的撞球選手頁面進行曝光。`;
@@ -134,6 +146,7 @@ export const metadataTournamentInfo = ({
   data,
 }: MetadataInfoTournamentProps) => {
   const pagedescription: string = description.replaceAll('\n', ' ') || getDescription({ currentPath, data });
+  const featuredImageUrl = `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${featuredImage}`;
 
   return {
     title: `${pageName} - ${process.env.NEXT_PUBLIC_SITENAME}`,
@@ -153,10 +166,63 @@ export const metadataTournamentInfo = ({
       siteName: process.env.NEXT_PUBLIC_SITENAME,
       images: {
         url: new URL(
-          `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${featuredImage}`
+          featuredImage ? featuredImageUrl : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`
         ),
         secureUrl: new URL(
-          `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${featuredImage}`
+          featuredImage ? featuredImageUrl : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`
+        ),
+        alt: process.env.NEXT_PUBLIC_SITENAME,
+        type: 'image/png',
+        width: 1920,
+        height: 1080,
+      },
+      url: currentPath,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      nocache: false,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
+  };
+};
+
+export const metadataArticleInfo = ({
+  pageName,
+  currentPath,
+  description = '',
+  tags = [],
+  featuredImage = '',
+  data,
+}: MetadataInfoArticleProps) => {
+  const pagedescription: string = description || getDescription({ currentPath, data });
+  const featuredImageUrl = `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_ARTICLE_FEATURED_FOLDER}/${featuredImage}`;
+
+  return {
+    title: `${pageName} - ${process.env.NEXT_PUBLIC_SITENAME}`,
+    description: pagedescription,
+    authors: [{ name: pageName, url: currentPath }],
+    publisher: process.env.NEXT_PUBLIC_SITENAME,
+    creator: process.env.NEXT_PUBLIC_SITENAME,
+    generator: process.env.NEXT_PUBLIC_SITENAME,
+    applicationName: process.env.NEXT_PUBLIC_SITENAME,
+    keywords: [process.env.NEXT_PUBLIC_SITENAME, pageName, ...tags],
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL),
+    openGraph: {
+      type: 'website',
+      title: process.env.NEXT_PUBLIC_SITENAME,
+      description: pagedescription,
+      emails: [process.env.ADMIN_EMAIL],
+      siteName: process.env.NEXT_PUBLIC_SITENAME,
+      images: {
+        url: new URL(
+          featuredImage ? featuredImageUrl : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`
+        ),
+        secureUrl: new URL(
+          featuredImage ? featuredImageUrl : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`
         ),
         alt: process.env.NEXT_PUBLIC_SITENAME,
         type: 'image/png',

@@ -10,35 +10,49 @@ const baseUrlDev = process.env.BASE_URL_DEV;
 const baseUrlDevSSL = process.env.BASE_URL_DEV_SSL;
 const usedUrl = process.env.NODE_ENV === 'production' ? baseUrl : process.env.HTTPS === 'true' ? baseUrlDevSSL : baseUrlDev;
 
+// 基本的 remote patterns
+const baseRemotePatterns = [
+  {
+    protocol: 'https',
+    hostname: 'lh3.googleusercontent.com',
+    port: '',
+    pathname: '/**',
+  },
+  {
+    protocol: 'https',
+    hostname: 'maps.gstatic.com',
+    port: '',
+    pathname: '/**',
+  },
+  {
+    protocol: 'https',
+    hostname: 'maps.googleapis.com',
+    port: '',
+    pathname: '/**',
+  },
+  {
+    protocol: 'https',
+    hostname: '**.icery.tw',
+    port: '',
+    pathname: '/**',
+  },
+];
+
+// 開發環境額外加入 localhost
+const developmentRemotePatterns = [
+  {
+    protocol: 'http',
+    hostname: 'localhost',
+    port: '3000',
+    pathname: '/**',
+  },
+];
+
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'maps.gstatic.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'maps.googleapis.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.icery.tw',
-        port: '',
-        pathname: '/**',
-      },
-    ],
+    remotePatterns:
+      process.env.NODE_ENV === 'production' ? baseRemotePatterns : [...baseRemotePatterns, ...developmentRemotePatterns],
   },
   env: {
     NEXT_PUBLIC_ICERY: process.env.ICERY,
@@ -52,7 +66,10 @@ const nextConfig = {
     NEXT_PUBLIC_GOOGLE_MAP_ID_LIGHT: process.env.GOOGLE_MAP_ID_LIGHT,
     NEXT_PUBLIC_GOOGLE_MAP_ID_DARK: process.env.GOOGLE_MAP_ID_DARK,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID,
+    NEXT_PUBLIC_ARTICLE_FEATURED_FOLDER: process.env.ARTICLE_FEATURED_FOLDER,
     NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER: process.env.TOURNAMENT_FEATURED_FOLDER,
+    NEXT_PUBLIC_COURT_FEATURED_FOLDER: process.env.COURT_FEATURED_FOLDER,
+    NEXT_PUBLIC_PLAYER_FEATURED_FOLDER: process.env.PLAYER_FEATURED_FOLDER,
     NEXT_PUBLIC_SUPABASE_URL: process.env.SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   },

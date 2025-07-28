@@ -87,21 +87,23 @@ const SidebarLayout = ({ pageId, children }: SidebarLayoutProps) => {
             {!players.length && <label>附近沒有符合{PageType.PLAYERS}</label>}
             {players
               .filter(({ _id }: PlayerProps) => _id !== pageId)
-              .map(({ _id, title, partner, county, district, featuredImg, customLink }: PlayerProps) => (
-                <PlayerListItemCard
-                  key={_id}
-                  image={
-                    featuredImg
-                      ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
-                      : process.env.NEXT_PUBLIC_FEATURED_IMAGE
-                  }
-                  title={title}
-                  county={county}
-                  district={district}
-                  partner={partner}
-                  customLink={customLink}
-                />
-              ))}
+              .map(({ _id, title, partner, county, district, featuredImg, customLink }: PlayerProps) => {
+                const featuredImageUrl = featuredImg
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_PLAYER_FEATURED_FOLDER}/${featuredImg}`
+                  : `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_FEATURED_IMAGE}`;
+
+                return (
+                  <PlayerListItemCard
+                    key={_id}
+                    image={featuredImageUrl}
+                    title={title}
+                    county={county}
+                    district={district}
+                    partner={partner}
+                    customLink={customLink}
+                  />
+                );
+              })}
           </div>
         </div>
       </div>
