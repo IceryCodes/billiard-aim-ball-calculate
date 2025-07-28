@@ -10,7 +10,7 @@ import { getImportNamesFromText } from '@/features/tournaments/helper';
 import { Button } from './buttons/Button';
 import Card from './Card';
 import Popup from './Popup';
-import { DraggableTagGroup } from './tags/DraggableTagGroup';
+import { TournamentSlotEditor } from './tags/TournamentSlotEditor';
 
 interface QRSession {
   sessionId: string;
@@ -177,7 +177,7 @@ const QRButton = ({ onImportNames }: QRButtonProps): ReactElement => {
                 <span className="text-xs bg-background px-2 py-1 rounded font-mono">
                   {(index + 1).toString().padStart(2, '0')}
                 </span>
-                <span className="text-sm text-background">{name}</span>
+                <span className={`text-sm text-background ${name ? 'font-bold' : ''}`}>{name ? name : '空籤'}</span>
               </div>
             </div>
           ))}
@@ -205,12 +205,7 @@ const QRButton = ({ onImportNames }: QRButtonProps): ReactElement => {
           <p className="text-sm mt-1">拖拉下方的項目來調整順序，或移除不需要的項目</p>
         </div>
 
-        <DraggableTagGroup
-          initialTags={cleanedNames}
-          onConfirm={handleConfirmOrder}
-          onCancel={handleCancelEdit}
-          allowRemove={true}
-        />
+        <TournamentSlotEditor initialTags={cleanedNames} onConfirm={handleConfirmOrder} onCancel={handleCancelEdit} />
       </Card>
     );
   }, [viewState, cleanedNames, handleConfirmOrder, handleCancelEdit]);

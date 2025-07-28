@@ -322,10 +322,13 @@ export const getImportNamesFromText = (text: string): string[] => {
 
   if (startIndex === -1) return [];
 
-  return lines.slice(startIndex).flatMap((line) => {
-    const match = line.match(/^\s*\d+[:：](.*)/);
-    return match ? [match[1].replace(/\d+/g, '').trim()] : [];
-  });
+  return lines
+    .slice(startIndex)
+    .flatMap((line) => {
+      const match = line.match(/^\s*\d+[:：](.*)/);
+      return match ? [match[1].replace(/\d+/g, '').trim()] : [];
+    })
+    .filter((name) => name !== '');
 };
 
 export const importTournamentNames = (currentTournament: TournamentProps, newNames: string[]): TournamentProps => {
