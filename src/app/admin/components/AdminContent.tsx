@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useMemo, useState } from 'react';
 
 import { CourtProps, GetCourtsDto } from '@/domains/court';
 import { GetUsersDto, UserProps } from '@/domains/user';
@@ -37,7 +37,12 @@ const AdminContent = (): ReactNode => {
   const [usersSearch, setUsersSearch] = useState<GetUsersDto>({ email: '' });
   const [courtsSearch, setCourtsSearch] = useState<GetCourtsDto>(initCourtSearchParams);
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
-  const [selectedItems, setSelectedItems] = useState<CourtProps[]>([]);
+
+  const { data: userData, refetch: refetchUser } = useUserQuery({
+    _id: selectedUser?._id,
+    enabled: !!selectedUser?._id,
+  });
+  const [selectedItems, setSelectedItems] = useState<CourtProps[]>(userData?.manage?.courts ?? []);
 
   // Queries for each type
   const { data: { users = [], total: totalUsers = 0 } = {}, refetch: refetchUsers } = useUsersQuery({
@@ -53,11 +58,6 @@ const AdminContent = (): ReactNode => {
     partner: courtsSearch.partner,
     keywords: [],
     limit,
-  });
-
-  const { data: userData, refetch: refetchUser } = useUserQuery({
-    _id: selectedUser?._id,
-    enabled: !!selectedUser?._id,
   });
 
   // Handle court searches
@@ -87,10 +87,6 @@ const AdminContent = (): ReactNode => {
   const combinedList = useMemo((): CourtProps[] => {
     return [...selectedItems, ...courts].filter((item, index, self) => index === self.findIndex((t) => t._id === item._id));
   }, [courts, selectedItems]);
-
-  useEffect(() => {
-    setSelectedItems(userData?.manage?.courts ?? []);
-  }, [userData?.manage]);
 
   return (
     <div className="p-4 flex flex-col justify-center gap-y-4 w-full">
