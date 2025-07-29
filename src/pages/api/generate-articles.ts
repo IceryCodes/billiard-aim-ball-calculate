@@ -23,6 +23,8 @@ const EXCLUDED_KEYWORDS = [
 const FIXED_AUTHOR_ID = '673868d5becfbcdd168ebeb0';
 const EXCHANGE_RATE = 31.5;
 
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 import { Collection } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
@@ -76,11 +78,24 @@ interface ExecutionReport {
   article_urls: { title: string; url: string }[];
 }
 
+interface SiteConfig {
+  container: string;
+  title: string;
+  link: string;
+  description: string;
+  date: string;
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const rssParser = new Parser();
+const rssParser = new Parser({
+  timeout: 10000,
+  customFields: {
+    item: ['description', 'summary', 'dc:creator'],
+  },
+});
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
@@ -118,6 +133,86 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
+const parseHTMLAsRSS = async (url: string): Promise<RSSItem[]> => {
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; RSS Reader/1.0)',
+      },
+      timeout: 10000,
+    });
+
+    const $ = cheerio.load(response.data);
+    const articles: RSSItem[] = [];
+
+    // 針對不同網站的選擇器配置
+    const siteConfigs: Record<string, SiteConfig> = {
+      'matchroompool.com': {
+        container: '.news-item, .post, article, .entry',
+        title: 'h1, h2, h3, .title, .entry-title',
+        link: 'a',
+        description: '.excerpt, .summary, p',
+        date: '.date, .published, time',
+      },
+      'billiardsforum.com': {
+        container: '.post, .topic, .thread, .news-item',
+        title: 'h2, h3, .title, .subject',
+        link: 'a',
+        description: '.content, .excerpt, .summary',
+        date: '.date, .time, .posted',
+      },
+      // 通用配置作為fallback
+      default: {
+        container: 'article, .post, .news-item, .entry',
+        title: 'h1, h2, h3, .title',
+        link: 'a',
+        description: 'p, .excerpt, .summary',
+        date: '.date, time, .published',
+      },
+    };
+
+    const domain = new URL(url).hostname;
+    const config = siteConfigs[domain] || siteConfigs['default'];
+
+    $(config.container).each((i, elem) => {
+      if (i >= 10) return false; // 限制數量
+
+      const $elem = $(elem);
+      const title = $elem.find(config.title).first().text().trim();
+      const linkElem = $elem.find(config.link).first();
+      const link = linkElem.attr('href');
+      const description = $elem.find(config.description).first().text().trim();
+      const dateText = $elem.find(config.date).first().text().trim();
+
+      if (title && link) {
+        // 處理相對連結
+        const fullLink = link.startsWith('http') ? link : new URL(link, url).href;
+
+        // 處理日期
+        let publishedDate: string;
+        try {
+          publishedDate = dateText ? new Date(dateText).toISOString() : new Date().toISOString();
+        } catch {
+          publishedDate = new Date().toISOString();
+        }
+
+        articles.push({
+          title,
+          content: description || title, // 如果沒有描述就使用標題
+          published_date: publishedDate,
+          source_url: fullLink,
+          category: '撞球新聞',
+        });
+      }
+    });
+
+    return articles;
+  } catch (error) {
+    console.error(`HTML parsing failed for ${url}:`, error);
+    return [];
+  }
+};
+
 const fetchRSSNews = async (): Promise<RSSItem[]> => {
   const rssSources = process.env.RSS_SOURCES?.split(',') ?? [];
 
@@ -132,37 +227,51 @@ const fetchRSSNews = async (): Promise<RSSItem[]> => {
     try {
       console.error(`Processing RSS source: ${rssUrl}`);
 
-      const feed = await rssParser.parseURL(rssUrl);
+      // 首先嘗試RSS解析
+      let items: RSSItem[] = [];
 
-      const items = feed.items.map((item) => {
-        if (!item.title) {
-          throw new Error(`RSS item missing title from ${rssUrl}`);
-        }
-        if (!item.contentSnippet && !item.content) {
-          throw new Error(`RSS item missing content from ${rssUrl}`);
-        }
-        if (!item.isoDate) {
-          throw new Error(`RSS item missing date from ${rssUrl}`);
-        }
+      try {
+        const feed = await rssParser.parseURL(rssUrl);
+        items = feed.items
+          .map((item) => {
+            try {
+              if (!item.title) {
+                console.error(`RSS item missing title from ${rssUrl}, skipping...`);
+                return null;
+              }
 
-        const content = item.contentSnippet || item.content;
-        if (!content) {
-          throw new Error(`RSS item content is undefined from ${rssUrl}`);
-        }
+              const content = item.contentSnippet || item.content || item.title;
+              if (!content) {
+                console.error(`RSS item missing content from ${rssUrl}, skipping...`);
+                return null;
+              }
 
-        return {
-          title: item.title,
-          content,
-          published_date: item.isoDate,
-          source_url: item.link || '',
-          category: item.categories?.join(',') || '一般新聞',
-        };
-      });
+              const date = item.isoDate || item.pubDate || new Date().toISOString();
+
+              return {
+                title: String(item.title),
+                content: String(content),
+                published_date: String(date),
+                source_url: String(item.link || ''),
+                category: Array.isArray(item.categories) ? item.categories.join(',') : '一般新聞',
+              };
+            } catch (itemError) {
+              console.error(`Error processing individual RSS item from ${rssUrl}:`, itemError);
+              return null;
+            }
+          })
+          .filter((item): item is RSSItem => item !== null);
+      } catch (rssError) {
+        console.error(`RSS parsing failed for ${rssUrl}, trying HTML parsing:`, rssError);
+
+        // RSS解析失敗時，嘗試HTML解析
+        items = await parseHTMLAsRSS(rssUrl);
+      }
 
       allItems.push(...items);
       console.error(`Successfully processed ${items.length} items from ${rssUrl}`);
     } catch (error) {
-      console.error(`Failed to process RSS source ${rssUrl}:`, error);
+      console.error(`Failed to process source ${rssUrl}:`, error);
       failedSources.push(rssUrl);
     }
   }
