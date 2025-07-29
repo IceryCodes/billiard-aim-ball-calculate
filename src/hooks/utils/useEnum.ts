@@ -1,18 +1,39 @@
 import { useCallback, useMemo } from 'react';
 
+import { ArticleGenerationStatusType } from '@/domains/article-realtime';
 import { GenderType, UserRoleType } from '@/domains/interface';
 import { TournamentType } from '@/domains/tournament';
 
 interface UsePatientSelectionTicketEnumReturnType {
+  articleGenerationStatusTypeMap: Record<ArticleGenerationStatusType, string>;
+  composeArticleGenerationStatusType: (typeToTrans: ArticleGenerationStatusType) => string;
   tournamentTypeMap: Record<TournamentType, string>;
-  composeTournamentType: (genderToTrans: TournamentType) => string;
+  composeTournamentType: (typeToTrans: TournamentType) => string;
   roleMap: Record<UserRoleType, string>;
-  composeRole: (genderToTrans: UserRoleType) => string;
+  composeRole: (typeToTrans: UserRoleType) => string;
   genderMap: Record<GenderType, string>;
-  composeGender: (genderToTrans: GenderType) => string;
+  composeGender: (typeToTrans: GenderType) => string;
 }
 
 export const useEnum = (): UsePatientSelectionTicketEnumReturnType => {
+  const articleGenerationStatusTypeMap = useMemo<Record<ArticleGenerationStatusType, string>>(() => {
+    return {
+      [ArticleGenerationStatusType.STARTING]: '開始生成',
+      [ArticleGenerationStatusType.READING_CACHE]: '讀取資料',
+      [ArticleGenerationStatusType.GENERATING]: '生成中',
+      [ArticleGenerationStatusType.SAVING]: '儲存中',
+      [ArticleGenerationStatusType.COMPLETED]: '已完成',
+      [ArticleGenerationStatusType.ERROR]: '錯誤',
+    };
+  }, []);
+
+  const composeArticleGenerationStatusType = useCallback(
+    (roleToTrans: ArticleGenerationStatusType): string => {
+      return articleGenerationStatusTypeMap[roleToTrans] ?? 'Unknown';
+    },
+    [articleGenerationStatusTypeMap]
+  );
+
   const tournamentTypeMap = useMemo<Record<TournamentType, string>>(() => {
     return {
       [TournamentType.SINGLE]: '單敗制',
@@ -59,6 +80,8 @@ export const useEnum = (): UsePatientSelectionTicketEnumReturnType => {
 
   return useMemo<UsePatientSelectionTicketEnumReturnType>(() => {
     return {
+      articleGenerationStatusTypeMap,
+      composeArticleGenerationStatusType,
       tournamentTypeMap,
       composeTournamentType,
       roleMap,
@@ -66,5 +89,14 @@ export const useEnum = (): UsePatientSelectionTicketEnumReturnType => {
       genderMap,
       composeGender,
     };
-  }, [tournamentTypeMap, composeTournamentType, roleMap, composeRole, genderMap, composeGender]);
+  }, [
+    articleGenerationStatusTypeMap,
+    composeArticleGenerationStatusType,
+    tournamentTypeMap,
+    composeTournamentType,
+    roleMap,
+    composeRole,
+    genderMap,
+    composeGender,
+  ]);
 };

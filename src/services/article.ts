@@ -86,6 +86,8 @@ export const generateArticlesFromCache = async (params?: GenerateFromCacheDto): 
       message: data.message,
       executionTime: data.executionTime,
       report: data.report,
+      jobId: data.jobId,
+      status: data.status,
     };
   } catch (error) {
     const message = '從快取生成文章失敗!';
@@ -116,11 +118,15 @@ export const generateArticlesTwoStep = async (): Promise<GenerateFromCacheReturn
     try {
       const generateResult = await generateArticlesFromCache();
 
-      // 合併執行時間
+      // 合併執行時間 - 處理可選的 executionTime
+      const totalExecutionTime = fetchResult.executionTime + (generateResult.executionTime || 0);
+
       return {
         message: generateResult.message,
-        executionTime: fetchResult.executionTime + generateResult.executionTime,
+        executionTime: totalExecutionTime,
         report: generateResult.report,
+        jobId: generateResult.jobId,
+        status: generateResult.status,
       };
     } catch (generateError) {
       // 第二步失敗的特殊處理

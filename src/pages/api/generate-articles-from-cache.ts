@@ -3,10 +3,13 @@
 import { Collection } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
+import { v4 as uuidv4 } from 'uuid';
 
 import { ArticleDBProps, RSSItem } from '@/domains/article';
+import { ArticleGenerationMessage, ArticleGenerationStatusType } from '@/domains/article-realtime';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { getArticlesCollection, getRSSCacheCollection } from '@/lib/mongodb';
+import { supabase } from '@/lib/supabase';
 import { HttpStatus } from '@/utils/api';
 import sendEmail from '@/utils/sendEmail';
 import { isAdminToken } from '@/utils/token';
@@ -79,90 +82,137 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
   }
 
-  const startTime = Date.now();
+  // 生成 jobId 並立即回傳
+  const jobId = uuidv4();
 
-  // 設定10秒超時
-  const timeoutPromise = new Promise(() => {
-    setTimeout(() => console.error('Article generation timeout for 10 seconds'), 10000);
+  // 立即回傳處理狀態，避免 Vercel 超時
+  res.status(HttpStatus.Ok).json({
+    message: '文章生成已開始處理',
+    jobId,
+    status: 'processing',
   });
 
+  // 背景處理文章生成
+  processArticleGeneration(jobId, maxArticles, selectedItems).catch((error) => {
+    console.error('Background article generation failed:', error);
+  });
+};
+
+// WebSocket 推送函數
+const broadcastStatus = async (
+  jobId: string,
+  status: ArticleGenerationStatusType,
+  message: string,
+  data?: ArticleGenerationMessage['data']
+) => {
   try {
-    const generateProcess = async () => {
-      console.error(`Starting article generation at: ${new Date().toISOString()}`);
-
-      // 1. 從快取讀取資料
-      const cacheCollection = await getRSSCacheCollection();
-      let cachedItems;
-
-      if (selectedItems.length > 0) {
-        // 如果有選擇特定新聞，則根據sourceUrl篩選
-        cachedItems = await cacheCollection.find({ sourceUrl: { $in: selectedItems } }).toArray();
-        console.error(`Found ${cachedItems.length} selected cached items`);
-      } else {
-        // 如果沒有選擇，則取第一篇
-        cachedItems = await cacheCollection.find({}).limit(maxArticles).toArray();
-        console.error(`Found ${cachedItems.length} cached items (auto-selected)`);
-      }
-
-      if (cachedItems.length === 0) {
-        const executionTime = Date.now() - startTime;
-        return res.status(HttpStatus.NotFound).json({
-          message: selectedItems.length > 0 ? '找不到選中的RSS資料' : '找不到快取的RSS資料，請先執行RSS獲取',
-          executionTime,
-        });
-      }
-
-      // 2. 轉換格式為RSSItem數組
-      const rssItems: RSSItem[] = cachedItems.map((item) => ({
-        title: item.title,
-        content: item.content,
-        published_date: item.publishedDate,
-        source_url: item.sourceUrl,
-        category: item.category,
-      }));
-
-      // 3. 獲取現有文章
-      const existingArticles = await getExistingArticles();
-
-      // 4. 生成文章（可以處理多篇新聞）
-      console.error(`Generating article from ${rssItems.length} news items`);
-      const generatedArticle = await generateArticle(rssItems, existingArticles);
-
-      // 5. 儲存文章
-      const savedArticles = await saveArticlesToDB([generatedArticle]);
-      console.error(`Successfully saved ${savedArticles.length} articles`);
-
-      // 6. 清除快取（只清除已使用的）
-      if (selectedItems.length > 0) {
-        await cacheCollection.deleteMany({ sourceUrl: { $in: selectedItems } });
-        console.error(`Cleared selected RSS cache items: ${selectedItems.length}`);
-      } else {
-        await cacheCollection.deleteMany({});
-        console.error('Cleared all RSS cache');
-      }
-
-      // 7. 生成報告
-      const report = generateExecutionReport(rssItems, savedArticles, [generatedArticle]);
-
-      // 8. 異步發送報告
-      sendExecutionReport(report).catch((error) => {
-        console.error('Failed to send execution report:', error);
-      });
-
-      const executionTime = Date.now() - startTime;
-
-      return res.status(HttpStatus.Ok).json({
-        message: '文章生成完成',
-        executionTime,
-        report,
-      });
+    const channelName = `article_generation_${jobId}`;
+    const updateMessage: ArticleGenerationMessage = {
+      type: 'article_generation_update',
+      jobId,
+      status,
+      message,
+      timestamp: new Date().toISOString(),
+      data,
     };
 
-    await Promise.race([generateProcess(), timeoutPromise]);
-  } catch (error) {
-    console.error('Article generation failed:', error);
+    await supabase.channel(channelName).send({
+      type: 'broadcast',
+      event: 'article_generation_update',
+      payload: updateMessage,
+    });
 
-    // 發生錯誤時也清除快取，避免殘留
+    console.info(`📡 Broadcasted status: ${status} - ${message}`);
+  } catch (error) {
+    console.error('❌ 廣播狀態失敗:', error);
+  }
+};
+
+// 背景處理函數
+const processArticleGeneration = async (jobId: string, maxArticles: number, selectedItems: string[]) => {
+  const startTime = Date.now();
+
+  try {
+    console.info(`🚀 Starting background article generation for job: ${jobId}`);
+
+    await broadcastStatus(jobId, ArticleGenerationStatusType.STARTING, '開始處理文章生成請求');
+
+    // 1. 從快取讀取資料
+    await broadcastStatus(jobId, ArticleGenerationStatusType.READING_CACHE, '正在讀取快取的RSS資料');
+
+    const cacheCollection = await getRSSCacheCollection();
+    let cachedItems;
+
+    if (selectedItems.length > 0) {
+      cachedItems = await cacheCollection.find({ sourceUrl: { $in: selectedItems } }).toArray();
+      console.info(`📝 Found ${cachedItems.length} selected cached items`);
+    } else {
+      cachedItems = await cacheCollection.find({}).limit(maxArticles).toArray();
+      console.info(`📝 Found ${cachedItems.length} cached items (auto-selected)`);
+    }
+
+    if (cachedItems.length === 0) {
+      throw new Error(selectedItems.length > 0 ? '找不到選中的RSS資料' : '找不到快取的RSS資料，請先執行RSS獲取');
+    }
+
+    await broadcastStatus(jobId, ArticleGenerationStatusType.READING_CACHE, `成功讀取 ${cachedItems.length} 篇快取資料`, {
+      cachedCount: cachedItems.length,
+      selectedCount: selectedItems.length,
+    });
+
+    // 2. 轉換格式為RSSItem數組
+    const rssItems: RSSItem[] = cachedItems.map((item) => ({
+      title: item.title,
+      content: item.content,
+      published_date: item.publishedDate,
+      source_url: item.sourceUrl,
+      category: item.category,
+    }));
+
+    // 3. 獲取現有文章
+    const existingArticles = await getExistingArticles();
+
+    // 4. 生成文章
+    await broadcastStatus(jobId, ArticleGenerationStatusType.GENERATING, `正在基於 ${rssItems.length} 篇新聞生成文章`);
+
+    console.info(`🤖 Generating article from ${rssItems.length} news items`);
+    const generatedArticle = await generateArticle(rssItems, existingArticles);
+
+    // 5. 儲存文章
+    await broadcastStatus(jobId, ArticleGenerationStatusType.SAVING, '正在儲存生成的文章');
+
+    const savedArticles = await saveArticlesToDB([generatedArticle]);
+    console.info(`💾 Successfully saved ${savedArticles.length} articles`);
+
+    // 6. 清除快取（只清除已使用的）
+    if (selectedItems.length > 0) {
+      await cacheCollection.deleteMany({ sourceUrl: { $in: selectedItems } });
+      console.info(`🗑️ Cleared selected RSS cache items: ${selectedItems.length}`);
+    } else {
+      await cacheCollection.deleteMany({});
+      console.info('🗑️ Cleared all RSS cache');
+    }
+
+    // 7. 生成報告
+    const report = generateExecutionReport(rssItems, savedArticles, [generatedArticle]);
+
+    // 8. 異步發送報告
+    sendExecutionReport(report).catch((error) => {
+      console.error('Failed to send execution report:', error);
+    });
+
+    const executionTime = Date.now() - startTime;
+    console.info(`✅ Article generation completed in ${executionTime}ms`);
+
+    // 推送完成狀態
+    await broadcastStatus(jobId, ArticleGenerationStatusType.COMPLETED, '文章生成完成！', {
+      articleTitle: savedArticles[0].title,
+      articleUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}${getPageUrlByType(PageType.ARTICLES)}/${savedArticles[0].customLink}`,
+    });
+  } catch (error) {
+    console.error('❌ Background article generation failed:', error);
+
+    // 清除快取
     try {
       const cacheCollection = await getRSSCacheCollection();
       if (selectedItems.length > 0) {
@@ -170,15 +220,51 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       } else {
         await cacheCollection.deleteMany({});
       }
-      console.error('Cleared RSS cache due to error');
+      console.info('🗑️ Cleared RSS cache due to error');
     } catch (cleanupError) {
-      console.error('Cache cleanup failed:', cleanupError);
+      console.error('❌ Cache cleanup failed:', cleanupError);
     }
 
-    return res.status(HttpStatus.InternalServerError).json({
-      message: `Article generation error: ${error}`,
-      executionTime: Date.now() - startTime,
+    // 推送錯誤狀態
+    await broadcastStatus(jobId, ArticleGenerationStatusType.ERROR, '文章生成失敗', {
+      error: error instanceof Error ? error.message : String(error),
     });
+
+    // 發送錯誤報告
+    await sendErrorNotification(error, startTime);
+  }
+};
+
+// 錯誤通知函數
+const sendErrorNotification = async (error: unknown, startTime: number) => {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const siteName = process.env.NEXT_PUBLIC_SITENAME || '';
+
+  if (!adminEmail) return;
+
+  const executionTime = Date.now() - startTime;
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : '';
+
+  try {
+    await sendEmail({
+      to: adminEmail,
+      subject: `❌ ${siteName} - 文章生成失敗通知`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #e74c3c;">文章生成處理失敗</h2>
+          <p><strong>錯誤時間：</strong> ${new Date().toISOString()}</p>
+          <p><strong>執行時間：</strong> ${executionTime}ms</p>
+          <p><strong>錯誤訊息：</strong> ${errorMessage}</p>
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <pre style="white-space: pre-wrap; font-size: 12px;">${errorStack}</pre>
+          </div>
+          <p>請檢查系統狀態並手動重試。</p>
+        </div>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send error notification:', emailError);
   }
 };
 

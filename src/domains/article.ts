@@ -111,9 +111,3 @@ export interface FetchRSSReturnType {
     publishedDate: string;
   }[];
 }
-
-export interface GenerateFromCacheReturnType {
-  message: string;
-  executionTime: number;
-  report?: ExecutionReport;
-}

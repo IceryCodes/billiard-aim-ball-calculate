@@ -1,5 +1,3 @@
-// 更新後的 AdminContent.tsx
-
 'use client';
 
 import { ReactNode, useCallback, useMemo, useState } from 'react';
@@ -7,6 +5,7 @@ import { ReactNode, useCallback, useMemo, useState } from 'react';
 import { useToast } from '@/contexts/ToastContext';
 import { CourtProps, GetCourtsDto } from '@/domains/court';
 import { GetUsersDto, UserProps } from '@/domains/user';
+import { useArticleGeneration } from '@/features/articles/hooks/useArticleGeneration';
 import { useArticleTwoStepMutation } from '@/features/articles/hooks/useArticleTwoStepMutation';
 import { useFetchRSSMutation } from '@/features/articles/hooks/useFetchRSSMutation';
 import { useGenerateFromCacheMutation } from '@/features/articles/hooks/useGenerateFromCacheMutation';
@@ -16,6 +15,7 @@ import { useUsersQuery } from '@/features/user/hooks/useUsersQuery';
 import { Button } from '@/global-components/buttons/Button';
 import Card from '@/global-components/Card';
 import useAdminProtected from '@/hooks/utils/protections/routes/useAdminProtected';
+import { useEnum } from '@/hooks/utils/useEnum';
 
 import ItemsSearch from './ItemsSearch';
 import ItemsSelect from './ItemsSelect';
@@ -28,6 +28,7 @@ const limit = 50;
 const AdminContent = (): ReactNode => {
   useAdminProtected();
   const { showToast } = useToast();
+  const { composeArticleGenerationStatusType } = useEnum();
 
   // 新增狀態管理
   const [fetchResult, setFetchResult] = useState<{
@@ -37,6 +38,10 @@ const AdminContent = (): ReactNode => {
 
   // 新增選擇新聞的狀態
   const [selectedNewsItems, setSelectedNewsItems] = useState<string[]>([]);
+
+  // 新增 WebSocket 相關狀態
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Separate search params for each manage type
   const initCourtSearchParams = useMemo(
@@ -55,6 +60,27 @@ const AdminContent = (): ReactNode => {
   const [courtsSearch, setCourtsSearch] = useState<GetCourtsDto>(initCourtSearchParams);
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
 
+  // WebSocket hook
+  const { isConnected, currentStatus, currentMessage } = useArticleGeneration({
+    jobId: currentJobId,
+    enabled: isProcessing,
+    onStatusUpdate: (message) => {
+      console.info('📡 Status update:', message);
+    },
+    onComplete: (data) => {
+      showToast({ message: `文章生成完成：${data.articleTitle}` });
+      setIsProcessing(false);
+      setCurrentJobId(null);
+      setFetchResult(null);
+      setSelectedNewsItems([]);
+    },
+    onError: (error) => {
+      showToast({ message: `文章生成失敗：${error}` });
+      setIsProcessing(false);
+      setCurrentJobId(null);
+    },
+  });
+
   // 修正後的mutation hooks，加入適當的錯誤處理
   const { mutateAsync: fetchRSS, isLoading: isFetching } = useFetchRSSMutation({
     onSuccess: ({ message, cachedCount, items }) => {
@@ -70,15 +96,25 @@ const AdminContent = (): ReactNode => {
     },
   });
 
-  const { mutateAsync: generateFromCache, isLoading: isGenerating } = useGenerateFromCacheMutation({
-    onSuccess: ({ message }) => {
-      showToast({ message });
-      setFetchResult(null); // 清除快取狀態
-      setSelectedNewsItems([]); // 清空選擇
+  const { mutateAsync: generateFromCache, isLoading: isGeneratingOld } = useGenerateFromCacheMutation({
+    onSuccess: ({ message, jobId }) => {
+      if (jobId) {
+        // 使用新的 WebSocket 模式
+        setCurrentJobId(jobId);
+        setIsProcessing(true);
+        showToast({ message: '文章生成已開始，請等待即時更新...' });
+      } else {
+        // 舊模式的處理
+        showToast({ message });
+        setFetchResult(null);
+        setSelectedNewsItems([]);
+      }
     },
     onError: (error) => {
       console.error('Generate from cache error:', error);
       showToast({ message: '從快取生成文章失敗' });
+      setIsProcessing(false);
+      setCurrentJobId(null);
     },
   });
 
@@ -210,6 +246,9 @@ const AdminContent = (): ReactNode => {
     }
   }, [generateTwoStep]);
 
+  // 計算是否正在處理中
+  const isAnyGenerating = isGeneratingOld || isProcessing;
+
   return (
     <div className="p-4 flex flex-col justify-center gap-y-4 w-full">
       {/* 文章生成區域 */}
@@ -217,12 +256,30 @@ const AdminContent = (): ReactNode => {
         <div className="flex flex-col gap-y-4">
           <h3 className="text-lg font-semibold ">文章生成管理</h3>
 
+          {/* WebSocket 即時狀態顯示 */}
+          {isProcessing && (
+            <div className="border rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full animate-pulse bg-link"></div>
+                <span className="text-sm font-medium">即時處理狀態</span>
+                {isConnected && <span className="text-xs text-green-600">(已連線)</span>}
+                {!isConnected && <span className="text-xs text-orange-600">(連線中...)</span>}
+              </div>
+              {currentStatus && (
+                <div className="text-sm mb-1">
+                  狀態：<span className="font-medium">{composeArticleGenerationStatusType(currentStatus)}</span>
+                </div>
+              )}
+              {currentMessage && <div className="text-sm">{currentMessage}</div>}
+            </div>
+          )}
+
           {/* 一鍵生成按鈕 */}
           <div className="flex flex-col gap-y-2">
             <Button
               text={`${isTwoStepLoading ? '生成中...' : '一鍵生成文章'}`}
               onClick={handleOneClickGenerate}
-              disabled={isTwoStepLoading || isFetching || isGenerating}
+              disabled={isTwoStepLoading || isFetching || isAnyGenerating}
             />
             <p className="text-sm">自動執行RSS獲取和文章生成</p>
           </div>
@@ -236,7 +293,7 @@ const AdminContent = (): ReactNode => {
                 <Button
                   text={`${isFetching ? '獲取中...' : '步驟一：獲取RSS'}`}
                   onClick={handleFetchRSS}
-                  disabled={isFetching || isGenerating || isTwoStepLoading}
+                  disabled={isFetching || isAnyGenerating || isTwoStepLoading}
                   className="min-w-[140px]"
                 />
                 <span className="text-sm ">從RSS源獲取最新新聞並快取</span>
@@ -251,7 +308,7 @@ const AdminContent = (): ReactNode => {
                       <button
                         onClick={handleSelectAllNews}
                         className="text-xs px-2 py-1 border rounded"
-                        disabled={isGenerating || isTwoStepLoading}
+                        disabled={isAnyGenerating || isTwoStepLoading}
                       >
                         {selectedNewsItems.length === fetchResult.items.length ? '全不選' : '全選'}
                       </button>
@@ -268,7 +325,7 @@ const AdminContent = (): ReactNode => {
                               type="checkbox"
                               checked={selectedNewsItems.includes(item.sourceUrl)}
                               onChange={() => handleNewsItemToggle(item.sourceUrl)}
-                              disabled={isGenerating || isTwoStepLoading}
+                              disabled={isAnyGenerating || isTwoStepLoading}
                               className="mt-1 flex-shrink-0"
                             />
                             <span className="flex-1 text-sm">{item.title}</span>
@@ -287,10 +344,10 @@ const AdminContent = (): ReactNode => {
               {/* 步驟二 */}
               <div className="flex items-center gap-x-4">
                 <Button
-                  text={`${isGenerating ? '生成中...' : '步驟二：生成文章'}`}
+                  text={`${isAnyGenerating ? '生成中...' : '步驟二：生成文章'}`}
                   onClick={handleGenerateFromCache}
                   disabled={
-                    isGenerating ||
+                    isAnyGenerating ||
                     isFetching ||
                     isTwoStepLoading ||
                     !fetchResult ||
