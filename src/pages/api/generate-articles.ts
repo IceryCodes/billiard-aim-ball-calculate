@@ -51,6 +51,8 @@ interface ProcessedArticle {
   tags: string[];
   content: string;
   category: string;
+  sourceUrl: string;
+  sourceDate: Date;
 }
 
 interface ExecutionReport {
@@ -86,6 +88,19 @@ interface SiteConfig {
   date: string;
 }
 
+interface CategoryItem {
+  _?: string;
+  name?: string;
+  text?: string;
+}
+
+interface ArticleSourceData {
+  latestSourceDate: Date | null;
+  usedSourceUrls: string[];
+}
+
+type RSSCategoryType = string | CategoryItem;
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -115,7 +130,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const rssItems = await fetchRSSNews();
     console.error(`Fetched ${rssItems.length} RSS items`);
 
-    const filteredItems = filterNewsContent(rssItems);
+    // 一次性獲取所有需要的數據
+    const sourceData = await getArticleSourceData();
+    console.error(`Found ${sourceData.usedSourceUrls.length} used source URLs`);
+
+    // 使用組合數據進行過濾
+    const filteredItems = await filterNewsContent(rssItems, sourceData);
     console.error(`Filtered to ${filteredItems.length} items`);
 
     // 如果過濾後沒有文章，直接返回而不是拋出錯誤
@@ -125,7 +145,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         message: '已獲取RSS內容，但過濾後無符合條件的文章',
         report: {
           execution_time: new Date().toISOString(),
-          website_name: process.env.NEXT_PUBLIC_SITENAME,
+          website_name: process.env.NEXT_PUBLIC_SITENAME || '',
           total_articles_processed: 0,
           successful_imports: 0,
           failed_imports: 0,
@@ -150,7 +170,51 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       });
     }
 
-    const limitedItems = filteredItems.slice(0, req.body.maxArticles);
+    // 過濾掉已經使用過的源URL（直接使用已獲取的數據）
+    const uniqueItems = filteredItems.filter((item) => {
+      const isUsed = sourceData.usedSourceUrls.includes(item.source_url);
+      if (isUsed) {
+        console.error(`Skipping duplicate source: ${item.title} (${item.source_url})`);
+      }
+      return !isUsed;
+    });
+
+    console.error(`After removing duplicates: ${uniqueItems.length} items remaining`);
+
+    // 如果去重後沒有文章，直接返回
+    if (uniqueItems.length === 0) {
+      console.error('No unique items remaining after filtering duplicates');
+      return res.status(HttpStatus.Ok).json({
+        message: '已獲取RSS內容，但去除重複來源後無新文章可處理',
+        report: {
+          execution_time: new Date().toISOString(),
+          website_name: process.env.NEXT_PUBLIC_SITENAME || '',
+          total_articles_processed: 0,
+          successful_imports: 0,
+          failed_imports: 0,
+          cost_analysis: {
+            total_tokens_used: 0,
+            estimated_input_tokens: 0,
+            estimated_output_tokens: 0,
+            cost_usd: 0,
+            cost_twd: 0,
+            cost_breakdown: {
+              input_cost_usd: 0,
+              output_cost_usd: 0,
+            },
+          },
+          api_usage: {
+            openai_requests: 0,
+            mongodb_operations: 0,
+          },
+          token_estimation_note: '無新文章來源可處理',
+          article_urls: [],
+        },
+      });
+    }
+
+    const maxArticles = req.body.maxArticles || 10;
+    const limitedItems = uniqueItems.slice(0, maxArticles);
     console.error(`Limited to ${limitedItems.length} items for processing`);
 
     const existingArticles = await getExistingArticles();
@@ -169,6 +233,30 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       message: `Server error: ${error}`,
     });
   }
+};
+
+// 新增：組合函數，一次性獲取所需數據
+const getArticleSourceData = async (): Promise<ArticleSourceData> => {
+  const articlesCollection: Collection<Omit<ArticleDBProps, '_id'>> = await getArticlesCollection();
+
+  // 使用 Promise.all 並行執行兩個查詢
+  const [latestArticle, articles] = await Promise.all([
+    // 獲取最新的 source date
+    articlesCollection.findOne(
+      { sourceDate: { $exists: true } },
+      { sort: { sourceDate: -1 }, projection: { sourceDate: 1 } }
+    ),
+    // 獲取所有使用過的 source URLs
+    articlesCollection
+      .find({ sourceUrl: { $exists: true } })
+      .project({ sourceUrl: 1 })
+      .toArray(),
+  ]);
+
+  return {
+    latestSourceDate: latestArticle?.sourceDate || null,
+    usedSourceUrls: articles.map((article) => article.sourceUrl).filter((url): url is string => Boolean(url)),
+  };
 };
 
 const parseHTMLAsRSS = async (url: string): Promise<RSSItem[]> => {
@@ -424,12 +512,36 @@ const fetchRSSNews = async (): Promise<RSSItem[]> => {
 
               const date = item.isoDate || item.pubDate || new Date().toISOString();
 
+              // 修復 category 處理邏輯
+              let category = '一般新聞';
+              if (item.categories && Array.isArray(item.categories)) {
+                try {
+                  category =
+                    item.categories
+                      .map((cat: RSSCategoryType) => {
+                        if (typeof cat === 'string') {
+                          return cat;
+                        }
+                        if (typeof cat === 'object' && cat !== null) {
+                          const categoryObj = cat as CategoryItem;
+                          return categoryObj._ || categoryObj.name || categoryObj.text || '';
+                        }
+                        return '';
+                      })
+                      .filter((cat): cat is string => Boolean(cat))
+                      .join(',') || '一般新聞';
+                } catch (catError) {
+                  console.error(`Error processing categories for ${item.title}:`, catError);
+                  category = '一般新聞';
+                }
+              }
+
               return {
                 title: String(item.title),
                 content: String(content),
                 published_date: String(date),
                 source_url: String(item.link || ''),
-                category: Array.isArray(item.categories) ? item.categories.join(',') : '一般新聞',
+                category,
               };
             } catch (itemError) {
               console.error(`Error processing individual RSS item from ${rssUrl}:`, itemError);
@@ -465,16 +577,30 @@ const fetchRSSNews = async (): Promise<RSSItem[]> => {
   return allItems;
 };
 
-const filterNewsContent = (items: RSSItem[]): RSSItem[] => {
+// 修改後的 filterNewsContent 函數
+const filterNewsContent = async (items: RSSItem[], sourceData: ArticleSourceData): Promise<RSSItem[]> => {
   console.error(`Starting filter with ${items.length} items`);
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - DAYS_RANGE);
 
+  // 直接使用傳入的數據，不需要再次查詢數據庫
+  console.error(`Latest source date: ${sourceData.latestSourceDate ? sourceData.latestSourceDate.toISOString() : 'none'}`);
+
   const filteredItems = items.filter((item) => {
     const itemDate = new Date(item.published_date);
+
+    // 原有的日期範圍過濾
     if (itemDate < cutoffDate) {
-      console.error(`Item filtered out by date: ${item.title}`);
+      console.error(`Item filtered out by date range: ${item.title}`);
+      return false;
+    }
+
+    // 使用傳入的最新來源日期
+    if (sourceData.latestSourceDate && itemDate < sourceData.latestSourceDate) {
+      console.error(
+        `Item filtered out by latest source date: ${item.title} (${itemDate.toISOString()} < ${sourceData.latestSourceDate.toISOString()})`
+      );
       return false;
     }
 
@@ -490,8 +616,6 @@ const filterNewsContent = (items: RSSItem[]): RSSItem[] => {
   });
 
   console.error(`After filtering: ${filteredItems.length} items remaining`);
-
-  // 讓上層函數處理
   return filteredItems;
 };
 
@@ -507,8 +631,10 @@ const getExistingArticles = async (): Promise<string> => {
 };
 
 const generateArticle = async (newsItem: RSSItem, existingArticles: string): Promise<ProcessedArticle> => {
+  const siteName = process.env.NEXT_PUBLIC_SITENAME || '';
+
   const prompt = `
-你是${process.env.NEXT_PUBLIC_SITENAME}的專業撞球文案編輯。
+你是${siteName}的專業撞球文案編輯。
 
 基於以下新聞內容，請創建一篇與撞球相關的專業文章，不要用太論文的口吻來敘述，而是用專業但輕鬆的方式來說明，最好有點像一般網路文章或官網的小知識分享的感覺：
 
@@ -554,8 +680,8 @@ const generateArticle = async (newsItem: RSSItem, existingArticles: string): Pro
   - **其他外部連結請從上方清單中選擇最相關的網站，格式：[具體且有意義的連結文字](${newsItem.source_url})**
   - **嚴禁使用清單以外的網址，不可自行編造網址**
   - **連結文字必須具體說明連結內容**
-  - **需要至少2個${process.env.NEXT_PUBLIC_SITENAME}現有的文章內部連結，除非沒有現有文章可以參考**
-  - **如果連結到首頁，請使用：[${process.env.NEXT_PUBLIC_SITENAME}](/)**
+  - **需要至少2個${siteName}現有的文章內部連結，除非沒有現有文章可以參考**
+  - **如果連結到首頁，請使用：[${siteName}](/)**
   - **不要使用模糊的連結文字如"我們的網站"、"點擊這裡"、"這裡"、"點我"、"查看"、"這篇文章"、"這個網站"**
   - 內容要與原新聞結合撞球專業觀點
   - 使用SEO友善的寫作方式，盡量在文中多包涵相關關鍵字
@@ -574,7 +700,7 @@ const generateArticle = async (newsItem: RSSItem, existingArticles: string): Pro
 
 5. **文章分類**：統一歸類到「撞球趣聞」
 
-請確保內容原創且具有實用價值，所有外部連結都必須從提供的清單中選擇。
+請確保內容原創且具有實用價值，所有外部連結都必須從提供的清單中選擇，所有人名、場地、比賽名稱不用特地轉成繁體中文，可以用該名稱原語言真實名稱，但其餘部分需保持繁體中文。
 
 **重要：請只回傳純 JSON 格式，不要包含任何 markdown 標記、註解或其他文字。直接回傳 JSON 物件即可。**
 `;
@@ -619,7 +745,11 @@ const generateArticle = async (newsItem: RSSItem, existingArticles: string): Pro
     throw new Error('Generated article missing required fields');
   }
 
-  return parsed;
+  return {
+    ...parsed,
+    sourceUrl: newsItem.source_url,
+    sourceDate: new Date(newsItem.published_date),
+  };
 };
 
 const saveArticlesToDB = async (articles: ProcessedArticle[]): Promise<ArticleDBProps[]> => {
@@ -641,6 +771,8 @@ const saveArticlesToDB = async (articles: ProcessedArticle[]): Promise<ArticleDB
       featuredImg: '',
       customLink,
       tags: article.tags,
+      sourceUrl: article.sourceUrl,
+      sourceDate: article.sourceDate,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -680,9 +812,12 @@ const generateExecutionReport = (
   const totalCostUSD = inputCostUSD + outputCostUSD;
   const totalCostTWD = totalCostUSD * EXCHANGE_RATE;
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+  const siteName = process.env.NEXT_PUBLIC_SITENAME || '';
+
   return {
     execution_time: new Date().toISOString(),
-    website_name: process.env.NEXT_PUBLIC_SITENAME,
+    website_name: siteName,
     total_articles_processed: processedItems.length,
     successful_imports: savedArticles.length,
     failed_imports: processedItems.length - savedArticles.length,
@@ -704,13 +839,16 @@ const generateExecutionReport = (
     token_estimation_note: 'Token計數是根據字元數÷4估算的，實際使用情況可能會有所不同',
     article_urls: savedArticles.map((article) => ({
       title: article.title,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}${getPageUrlByType(PageType.ARTICLES)}/${article.customLink}`,
+      url: `${baseUrl}${getPageUrlByType(PageType.ARTICLES)}/${article.customLink}`,
     })),
   };
 };
 
 const sendExecutionReport = async (report: ExecutionReport): Promise<void> => {
-  if (!process.env.ADMIN_EMAIL) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const siteName = process.env.NEXT_PUBLIC_SITENAME || '';
+
+  if (!adminEmail) {
     throw new Error('Email configuration is missing');
   }
 
@@ -787,7 +925,7 @@ const sendExecutionReport = async (report: ExecutionReport): Promise<void> => {
         <div class="section">
             <div class="section-title">文章連結</div>
             <div class="cost-breakdown">
-                <ul>${report.article_urls.map(({ title, url }) => `<li><a href="${url}" target="_blank">${title}</a></li>`)}</ul>
+                <ul>${report.article_urls.map(({ title, url }) => `<li><a href="${url}" target="_blank">${title}</a></li>`).join('')}</ul>
             </div>
         </div>
 
@@ -800,15 +938,15 @@ const sendExecutionReport = async (report: ExecutionReport): Promise<void> => {
         </div>
 
         <div class="footer">
-            <p>此郵件由${process.env.NEXT_PUBLIC_SITENAME}自動化系統生成</p>
+            <p>此郵件由${siteName}自動化系統生成</p>
         </div>
     </div>
 </body>
 </html>`;
 
   await sendEmail({
-    to: process.env.ADMIN_EMAIL,
-    subject: `${process.env.NEXT_PUBLIC_SITENAME} - 自動文章生成報告 (${report.execution_time})`,
+    to: adminEmail,
+    subject: `${siteName} - 自動文章生成報告 (${report.execution_time})`,
     html: htmlContent,
   });
 };
