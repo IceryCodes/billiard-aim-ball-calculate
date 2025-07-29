@@ -190,3 +190,42 @@ export interface GetArticlesReturnType {
 export interface GenerateArticleReturnType {
   message: string;
 }
+export interface FetchRSSReturnType {
+  message: string;
+  cachedCount: number;
+  executionTime: number;
+  items?: {
+    title: string;
+    sourceUrl: string;
+    publishedDate: string;
+  }[];
+}
+
+export interface GenerateFromCacheReturnType {
+  message: string;
+  executionTime: number;
+  report?: {
+    execution_time: string;
+    website_name: string;
+    total_articles_processed: number;
+    successful_imports: number;
+    failed_imports: number;
+    cost_analysis: {
+      total_tokens_used: number;
+      estimated_input_tokens: number;
+      estimated_output_tokens: number;
+      cost_usd: number;
+      cost_twd: number;
+      cost_breakdown: {
+        input_cost_usd: number;
+        output_cost_usd: number;
+      };
+    };
+    api_usage: {
+      openai_requests: number;
+      mongodb_operations: number;
+    };
+    token_estimation_note: string;
+    article_urls: { title: string; url: string }[];
+  };
+}
