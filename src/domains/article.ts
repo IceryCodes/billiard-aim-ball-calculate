@@ -22,6 +22,8 @@ export interface ArticleProps {
   featuredImg: string;
   customLink: string;
   tags: string[];
+  sourceDate?: Date;
+  sourceUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }

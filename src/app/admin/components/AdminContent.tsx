@@ -66,6 +66,7 @@ const AdminContent = (): ReactNode => {
     partner: courtsSearch.partner,
     keywords: [],
     limit,
+    enabled: !!courtsSearch.query,
   });
 
   // Handle court searches

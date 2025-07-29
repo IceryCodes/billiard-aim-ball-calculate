@@ -43,7 +43,7 @@ export const logApiError = ({ error, message }: { error: unknown; message: strin
 
 // Base Axios configuration
 const axiosBaseConfig: CreateAxiosDefaults = {
-  timeout: 50000,
+  timeout: 80000,
   headers: {
     'Content-Type': 'application/json',
     Accept: '*/*',
