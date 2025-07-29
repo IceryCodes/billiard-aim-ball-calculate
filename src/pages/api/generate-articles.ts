@@ -113,8 +113,46 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const rssItems = await fetchRSSNews();
+    console.error(`Fetched ${rssItems.length} RSS items`);
+
     const filteredItems = filterNewsContent(rssItems);
+    console.error(`Filtered to ${filteredItems.length} items`);
+
+    // 如果過濾後沒有文章，直接返回而不是拋出錯誤
+    if (filteredItems.length === 0) {
+      console.error('No items remaining after filtering, but continuing...');
+      return res.status(HttpStatus.Ok).json({
+        message: '已獲取RSS內容，但過濾後無符合條件的文章',
+        report: {
+          execution_time: new Date().toISOString(),
+          website_name: process.env.NEXT_PUBLIC_SITENAME,
+          total_articles_processed: 0,
+          successful_imports: 0,
+          failed_imports: 0,
+          cost_analysis: {
+            total_tokens_used: 0,
+            estimated_input_tokens: 0,
+            estimated_output_tokens: 0,
+            cost_usd: 0,
+            cost_twd: 0,
+            cost_breakdown: {
+              input_cost_usd: 0,
+              output_cost_usd: 0,
+            },
+          },
+          api_usage: {
+            openai_requests: 0,
+            mongodb_operations: 0,
+          },
+          token_estimation_note: '未處理任何文章',
+          article_urls: [],
+        },
+      });
+    }
+
     const limitedItems = filteredItems.slice(0, req.body.maxArticles);
+    console.error(`Limited to ${limitedItems.length} items for processing`);
+
     const existingArticles = await getExistingArticles();
     const generatedArticles = await Promise.all(limitedItems.map((item) => generateArticle(item, existingArticles)));
     const savedArticles = await saveArticlesToDB(generatedArticles);
@@ -137,74 +175,212 @@ const parseHTMLAsRSS = async (url: string): Promise<RSSItem[]> => {
   try {
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; RSS Reader/1.0)',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        Connection: 'keep-alive',
       },
-      timeout: 10000,
+      timeout: 15000,
+      maxRedirects: 5,
+      validateStatus: (status) => status < 400,
     });
 
     const $ = cheerio.load(response.data);
     const articles: RSSItem[] = [];
 
-    // 針對不同網站的選擇器配置
+    console.error(`HTML parsing started for ${url}`);
+
+    // 針對不同網站的選擇器配置 - 更通用的選擇器
     const siteConfigs: Record<string, SiteConfig> = {
       'matchroompool.com': {
-        container: '.news-item, .post, article, .entry',
-        title: 'h1, h2, h3, .title, .entry-title',
-        link: 'a',
-        description: '.excerpt, .summary, p',
-        date: '.date, .published, time',
+        container: 'article, .news-item, .post, .entry, .content-item, [class*="news"], [class*="post"], [class*="article"]',
+        title: 'h1, h2, h3, h4, .title, .entry-title, .post-title, .news-title, [class*="title"], [class*="headline"]',
+        link: 'a[href]',
+        description: '.excerpt, .summary, p, .content, .description, [class*="excerpt"], [class*="summary"]',
+        date: '.date, .published, time, .timestamp, [class*="date"], [datetime]',
       },
       'billiardsforum.com': {
-        container: '.post, .topic, .thread, .news-item',
-        title: 'h2, h3, .title, .subject',
-        link: 'a',
-        description: '.content, .excerpt, .summary',
-        date: '.date, .time, .posted',
+        container: '.post, .topic, .thread, .news-item, article, [class*="post"], [class*="topic"]',
+        title: 'h1, h2, h3, .title, .subject, .topic-title, [class*="title"]',
+        link: 'a[href]',
+        description: '.content, .excerpt, .summary, p, [class*="content"]',
+        date: '.date, .time, .posted, time, [class*="date"], [class*="time"]',
       },
-      // 通用配置作為fallback
       default: {
-        container: 'article, .post, .news-item, .entry',
-        title: 'h1, h2, h3, .title',
-        link: 'a',
-        description: 'p, .excerpt, .summary',
-        date: '.date, time, .published',
+        container:
+          'article, .post, .news-item, .entry, .content-item, [class*="news"], [class*="post"], [class*="article"], [class*="item"]',
+        title: 'h1, h2, h3, h4, .title, .headline, [class*="title"], [class*="headline"]',
+        link: 'a[href]',
+        description:
+          'p, .excerpt, .summary, .content, .description, [class*="excerpt"], [class*="summary"], [class*="content"]',
+        date: '.date, time, .published, .timestamp, [datetime], [class*="date"], [class*="time"]',
       },
     };
 
     const domain = new URL(url).hostname;
     const config = siteConfigs[domain] || siteConfigs['default'];
 
-    $(config.container).each((i, elem) => {
+    console.error(`Using config for ${domain}:`, config);
+
+    // 嘗試找到所有可能的容器
+    let containers = $(config.container);
+    console.error(`Found ${containers.length} potential containers`);
+
+    // 如果沒找到容器，嘗試更通用的方法
+    if (containers.length === 0) {
+      console.error('No containers found, trying fallback selectors');
+
+      // 嘗試所有可能包含文章的元素
+      const fallbackSelectors = [
+        'article',
+        '.post',
+        '.news',
+        '.entry',
+        '.item',
+        '[class*="post"]',
+        '[class*="news"]',
+        '[class*="article"]',
+        '[class*="entry"]',
+        'main article',
+        'main .post',
+        '.content article',
+        '.content .post',
+      ];
+
+      for (const selector of fallbackSelectors) {
+        const elements = $(selector);
+        if (elements.length > 0) {
+          console.error(`Found ${elements.length} elements with fallback selector: ${selector}`);
+          containers = elements;
+          break;
+        }
+      }
+    }
+
+    containers.each((i, elem) => {
       if (i >= 10) return false; // 限制數量
 
-      const $elem = $(elem);
-      const title = $elem.find(config.title).first().text().trim();
-      const linkElem = $elem.find(config.link).first();
-      const link = linkElem.attr('href');
-      const description = $elem.find(config.description).first().text().trim();
-      const dateText = $elem.find(config.date).first().text().trim();
+      try {
+        // 添加 try-catch 包裝每個項目的處理
+        const $elem = $(elem);
 
-      if (title && link) {
-        // 處理相對連結
-        const fullLink = link.startsWith('http') ? link : new URL(link, url).href;
-
-        // 處理日期
-        let publishedDate: string;
-        try {
-          publishedDate = dateText ? new Date(dateText).toISOString() : new Date().toISOString();
-        } catch {
-          publishedDate = new Date().toISOString();
+        // 嘗試多種方式找標題
+        let title = '';
+        const titleSelectors = config.title.split(', ');
+        for (const selector of titleSelectors) {
+          try {
+            const titleText = $elem.find(selector).first().text().trim();
+            if (titleText) {
+              title = titleText;
+              break;
+            }
+          } catch (selectorError) {
+            console.error(`Title selector failed: ${selector}`, selectorError);
+          }
         }
 
-        articles.push({
-          title,
-          content: description || title, // 如果沒有描述就使用標題
-          published_date: publishedDate,
-          source_url: fullLink,
-          category: '撞球新聞',
-        });
+        // 如果還是沒找到標題，嘗試從元素本身或子元素中找
+        if (!title) {
+          try {
+            title = $elem.attr('title') || $elem.find('[title]').first().attr('title') || '';
+          } catch (attrError) {
+            console.error('Title attribute extraction failed:', attrError);
+          }
+        }
+
+        // 嘗試找連結 - 同樣加上容錯
+        let link = '';
+        try {
+          const linkElem = $elem.find(config.link).first();
+          if (linkElem.length > 0) {
+            link = linkElem.attr('href') || '';
+          } else {
+            // 嘗試從父級或子級找連結
+            link = $elem.closest('a').attr('href') || $elem.find('a').first().attr('href') || '';
+          }
+        } catch (linkError) {
+          console.error('Link extraction failed:', linkError);
+        }
+
+        // 嘗試找描述
+        let description = '';
+        const descSelectors = config.description.split(', ');
+        for (const selector of descSelectors) {
+          try {
+            const descText = $elem.find(selector).first().text().trim();
+            if (descText && descText.length > 20) {
+              // 確保描述有意義
+              description = descText.substring(0, 200);
+              break;
+            }
+          } catch (descError) {
+            console.error(`Description selector failed: ${selector}`, descError);
+          }
+        }
+
+        console.error(`Item ${i}: title="${title}", link="${link}", desc length=${description.length}`);
+
+        if (title && link) {
+          // 處理相對連結
+          let fullLink = '';
+          try {
+            fullLink = link.startsWith('http') ? link : new URL(link, url).href;
+          } catch (urlError) {
+            console.error(`Invalid URL: ${link}`, urlError);
+            return; // 跳過這個項目
+          }
+
+          // 處理日期 - 嘗試多種方式
+          let publishedDate = new Date().toISOString();
+          const dateSelectors = config.date.split(', ');
+          for (const selector of dateSelectors) {
+            try {
+              const dateElem = $elem.find(selector).first();
+              const dateText = dateElem.text().trim() || dateElem.attr('datetime') || dateElem.attr('title');
+              if (dateText) {
+                try {
+                  const parsedDate = new Date(dateText);
+                  if (!isNaN(parsedDate.getTime())) {
+                    publishedDate = parsedDate.toISOString();
+                    break;
+                  }
+                } catch {
+                  // 繼續嘗試下一個選擇器
+                }
+              }
+            } catch (dateError) {
+              console.error(`Date selector failed: ${selector}`, dateError);
+            }
+          }
+
+          articles.push({
+            title,
+            content: description || title,
+            published_date: publishedDate,
+            source_url: fullLink,
+            category: '撞球新聞',
+          });
+        }
+      } catch (itemError) {
+        console.error(`Error processing HTML item ${i}:`, itemError);
+        // 繼續處理下一個項目
       }
     });
+
+    console.error(`HTML parsing completed for ${url}, extracted ${articles.length} articles`);
+
+    // 如果還是沒有提取到內容，記錄更多調試信息
+    if (articles.length === 0) {
+      console.error(`Failed to extract articles from ${url}`);
+      console.error(`Page title: ${$('title').text()}`);
+      console.error(`Found h1-h6: ${$('h1, h2, h3, h4, h5, h6').length}`);
+      console.error(`Found links: ${$('a[href]').length}`);
+      console.error(`Found articles: ${$('article').length}`);
+      console.error(`Found posts: ${$('.post, [class*="post"]').length}`);
+      console.error(`Found news: ${$('.news, [class*="news"]').length}`);
+    }
 
     return articles;
   } catch (error) {
@@ -290,23 +466,32 @@ const fetchRSSNews = async (): Promise<RSSItem[]> => {
 };
 
 const filterNewsContent = (items: RSSItem[]): RSSItem[] => {
+  console.error(`Starting filter with ${items.length} items`);
+
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - DAYS_RANGE);
 
   const filteredItems = items.filter((item) => {
     const itemDate = new Date(item.published_date);
-    if (itemDate < cutoffDate) return false;
+    if (itemDate < cutoffDate) {
+      console.error(`Item filtered out by date: ${item.title}`);
+      return false;
+    }
 
     const fullText = `${item.title} ${item.content}`;
     const hasExcludedKeyword = EXCLUDED_KEYWORDS.some((keyword) => fullText.includes(keyword));
 
-    return !hasExcludedKeyword;
+    if (hasExcludedKeyword) {
+      console.error(`Item filtered out by keyword: ${item.title}`);
+      return false;
+    }
+
+    return true;
   });
 
-  if (filteredItems.length === 0) {
-    throw new Error('No items remaining after filtering');
-  }
+  console.error(`After filtering: ${filteredItems.length} items remaining`);
 
+  // 讓上層函數處理
   return filteredItems;
 };
 
