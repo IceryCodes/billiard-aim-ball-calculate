@@ -1,6 +1,6 @@
 import { Collection, MongoClient } from 'mongodb';
 
-import { ArticleDBProps } from '@/domains/article';
+import { ArticleDBProps, RSSCacheDBProps } from '@/domains/article';
 import { CourtDBProps } from '@/domains/court';
 import { ManageDBProps } from '@/domains/manage';
 import { PaymentProps } from '@/domains/payment';
@@ -92,4 +92,10 @@ export const getArticlesCollection = async (): Promise<Collection<Omit<ArticleDB
   const client = await connectToDatabase();
   const database = client.db('billiards');
   return database.collection<Omit<ArticleDBProps, '_id'>>('articles');
+};
+
+export const getRSSCacheCollection = async (): Promise<Collection<Omit<RSSCacheDBProps, '_id'>>> => {
+  const client = await connectToDatabase();
+  const database = client.db('billiards');
+  return database.collection<Omit<RSSCacheDBProps, '_id'>>('rss_cache');
 };

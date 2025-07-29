@@ -1,11 +1,13 @@
-import { GenerateArticleDto, GetArticleDto, GetArticlesDto } from '@/domains/article';
+import { GenerateFromCacheDto, GetArticleDto, GetArticlesDto } from '@/domains/article';
 import { apiOrigin, logApiError } from '@/utils/api';
 
-import { GenerateArticleReturnType, GetArticleReturnType, GetArticlesReturnType } from './interfaces';
+import { FetchRSSReturnType, GenerateFromCacheReturnType, GetArticleReturnType, GetArticlesReturnType } from './interfaces';
 
 export const articleQueryKeys = {
   getArticle: 'getArticle',
   getArticles: 'getArticles',
+  fetchRSS: 'fetchRSS',
+  generateFromCache: 'generateFromCache',
 } as const;
 
 export const getArticle = async ({ customLink }: GetArticleDto): Promise<GetArticleReturnType> => {
@@ -48,19 +50,102 @@ export const getArticles = async ({ page = 1, limit = 10 }: GetArticlesDto): Pro
   }
 };
 
-export const generateArticle = async (generateData: GenerateArticleDto): Promise<GenerateArticleReturnType> => {
+// 第一步：獲取RSS並快取
+export const fetchRSSNews = async (): Promise<FetchRSSReturnType> => {
   try {
-    const { data } = await apiOrigin.post(`/generate-articles`, generateData);
+    const { data } = await apiOrigin.post('/fetch-rss-news');
 
     return {
       message: data.message,
+      cachedCount: data.cachedCount,
+      executionTime: data.executionTime,
+      items: data.items || [],
     };
   } catch (error) {
-    const message = '新增撞球相關文章失敗!';
+    const message = 'RSS新聞獲取失敗!';
     logApiError({ error, message });
 
     return {
       message,
+      cachedCount: 0,
+      executionTime: 0,
+      items: [],
+    };
+  }
+};
+
+// 第二步：從快取生成文章（支援選擇新聞）
+export const generateArticlesFromCache = async (params?: GenerateFromCacheDto): Promise<GenerateFromCacheReturnType> => {
+  try {
+    const { data } = await apiOrigin.post('/generate-articles-from-cache', {
+      maxArticles: params?.maxArticles || 1,
+      selectedItems: params?.selectedItems || [],
+    });
+
+    return {
+      message: data.message,
+      executionTime: data.executionTime,
+      report: data.report,
+      jobId: data.jobId,
+      status: data.status,
+    };
+  } catch (error) {
+    const message = '從快取生成文章失敗!';
+    logApiError({ error, message });
+
+    return {
+      message,
+      executionTime: 0,
+    };
+  }
+};
+
+// 組合函數：執行完整的兩步驟流程
+export const generateArticlesTwoStep = async (): Promise<GenerateFromCacheReturnType> => {
+  try {
+    // 第一步：獲取RSS
+    const fetchResult = await fetchRSSNews();
+
+    // 檢查第一步是否有錯誤（根據cachedCount判斷）
+    if (fetchResult.cachedCount === 0) {
+      return {
+        message: fetchResult.message,
+        executionTime: fetchResult.executionTime,
+      };
+    }
+
+    // 第二步：生成文章（不傳selectedItems，使用第一篇）
+    try {
+      const generateResult = await generateArticlesFromCache();
+
+      // 合併執行時間 - 處理可選的 executionTime
+      const totalExecutionTime = fetchResult.executionTime + (generateResult.executionTime || 0);
+
+      return {
+        message: generateResult.message,
+        executionTime: totalExecutionTime,
+        report: generateResult.report,
+        jobId: generateResult.jobId,
+        status: generateResult.status,
+      };
+    } catch (generateError) {
+      // 第二步失敗的特殊處理
+      const message = '文章生成階段失敗!';
+      logApiError({ error: generateError, message });
+
+      return {
+        message,
+        executionTime: fetchResult.executionTime,
+      };
+    }
+  } catch (fetchError) {
+    // 第一步失敗的處理
+    const message = 'RSS獲取階段失敗!';
+    logApiError({ error: fetchError, message });
+
+    return {
+      message,
+      executionTime: 0,
     };
   }
 };

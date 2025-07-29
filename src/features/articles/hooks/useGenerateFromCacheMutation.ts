@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 
 import { useMutation } from '@tanstack/react-query';
 
-import { GenerateArticleDto } from '@/domains/article';
-import { generateArticle } from '@/services/article';
-import { GenerateArticleReturnType } from '@/services/interfaces';
+import { GenerateFromCacheDto } from '@/domains/article';
+import { generateArticlesFromCache } from '@/services/article';
+import { GenerateFromCacheReturnType } from '@/services/interfaces';
 import type { UseMutationFn } from '@/utils/reactQuery';
 
-export const useArticleGenerateMutation: UseMutationFn<GenerateArticleReturnType, GenerateArticleDto> = (args) => {
+export const useGenerateFromCacheMutation: UseMutationFn<GenerateFromCacheReturnType, GenerateFromCacheDto> = (args) => {
   const { onError, onSuccess, mutationPrefixKey = [] } = args ?? {};
   const {
     isPending: isLoading,
@@ -17,8 +17,8 @@ export const useArticleGenerateMutation: UseMutationFn<GenerateArticleReturnType
     mutate,
     mutateAsync,
   } = useMutation({
-    mutationKey: [...mutationPrefixKey],
-    mutationFn: generateArticle,
+    mutationKey: [...mutationPrefixKey, 'generateFromCache'],
+    mutationFn: generateArticlesFromCache,
     onSuccess,
     onError,
   });

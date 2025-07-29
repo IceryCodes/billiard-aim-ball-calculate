@@ -1,4 +1,4 @@
-import { ArticleProps } from '@/domains/article';
+import { ArticleProps, ExecutionReport } from '@/domains/article';
 import { CourtProps } from '@/domains/court';
 import {
   GoogleAddressComponent,
@@ -189,4 +189,22 @@ export interface GetArticlesReturnType {
 
 export interface GenerateArticleReturnType {
   message: string;
+}
+export interface FetchRSSReturnType {
+  message: string;
+  cachedCount: number;
+  executionTime: number;
+  items?: {
+    title: string;
+    sourceUrl: string;
+    publishedDate: string;
+  }[];
+}
+
+export interface GenerateFromCacheReturnType {
+  message: string;
+  executionTime?: number; // 改為可選，因為異步模式下可能沒有
+  report?: ExecutionReport;
+  jobId?: string; // 新增這一行
+  status?: string; // 新增這一行
 }
