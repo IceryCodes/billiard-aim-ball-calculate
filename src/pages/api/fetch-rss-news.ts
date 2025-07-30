@@ -1,5 +1,4 @@
-// pages/api/fetch-rss-news.ts
-
+import moment from 'moment';
 import { Collection } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Parser from 'rss-parser';
@@ -7,28 +6,8 @@ import Parser from 'rss-parser';
 import { ArticleDBProps, RSSCacheDBProps, RSSItem } from '@/domains/article';
 import { getArticlesCollection, getRSSCacheCollection } from '@/lib/mongodb';
 import { HttpStatus } from '@/utils/api';
+import { filterNewsContent } from '@/utils/generateArticle';
 import { isAdminToken } from '@/utils/token';
-
-// Global Variables (重複使用原有的)
-const DAYS_RANGE = 15;
-const EXCLUDED_KEYWORDS = [
-  '娛樂',
-  '藝人',
-  '明星',
-  '八卦',
-  '性愛',
-  '色情',
-  '賭博',
-  '暴力',
-  '血腥',
-  '犯罪',
-  '死亡',
-  '車禍',
-  '政治',
-  '選舉',
-  '抗議',
-  '示威',
-];
 
 interface CategoryItem {
   _?: string;
@@ -36,15 +15,10 @@ interface CategoryItem {
   text?: string;
 }
 
-interface ArticleSourceData {
-  latestSourceDate: Date | null;
-  usedSourceUrls: string[];
-}
-
 type RSSCategoryType = string | CategoryItem;
 
 const rssParser = new Parser({
-  timeout: 8000, // 縮短超時時間
+  timeout: 8000,
   customFields: {
     item: ['description', 'summary', 'dc:creator'],
   },
@@ -74,21 +48,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const startTime = Date.now();
 
-  // 設定8秒超時
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('RSS fetch timeout')), 8000);
   });
 
   try {
     const fetchProcess = async () => {
-      console.error(`Starting RSS fetch at: ${new Date().toISOString()}`);
+      console.error(`Starting RSS fetch at: ${moment().toISOString()}`);
 
-      // 1. 清空舊的cache
       const cacheCollection = await getRSSCacheCollection();
       await cacheCollection.deleteMany({});
       console.error('Cleared old RSS cache');
 
-      // 2. 獲取RSS內容
       const rssItems = await fetchRSSNewsOptimized();
       console.error(`Fetched ${rssItems.length} RSS items`);
 
@@ -102,17 +73,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         });
       }
 
-      // 3. 獲取現有資料進行過濾
-      const sourceData = await getArticleSourceData();
-      console.error(`Found ${sourceData.usedSourceUrls.length} used source URLs`);
+      const usedSourceUrls = await getUsedSourceUrls();
+      console.error(`Found ${usedSourceUrls.length} used source URLs`);
 
-      // 4. 過濾內容
-      const filteredItems = await filterNewsContent(rssItems, sourceData);
+      const filteredItems = filterNewsContent(rssItems);
       console.error(`Filtered to ${filteredItems.length} items`);
 
-      // 5. 去除重複的source URL
       const uniqueItems = filteredItems.filter((item) => {
-        const isUsed = sourceData.usedSourceUrls.includes(item.source_url);
+        const isUsed = usedSourceUrls.includes(item.source_url);
         if (isUsed) {
           console.error(`Skipping duplicate source: ${item.title}`);
         }
@@ -131,7 +99,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         });
       }
 
-      // 6. 儲存到RSS Cache (轉換格式為camelCase)
       const cacheItems: Omit<RSSCacheDBProps, '_id'>[] = uniqueItems.map((item) => ({
         title: item.title,
         content: item.content,
@@ -152,7 +119,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         items: cacheItems.map((item) => ({
           title: item.title,
           sourceUrl: item.sourceUrl,
-          publishedDate: item.publishedDate,
+          publishedDate: moment(item.publishedDate).toDate(),
         })),
       });
     };
@@ -169,7 +136,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-// 優化版的RSS獲取函數
 const fetchRSSNewsOptimized = async (): Promise<RSSItem[]> => {
   const rssSources = process.env.RSS_SOURCES?.split(',') ?? [];
 
@@ -178,8 +144,6 @@ const fetchRSSNewsOptimized = async (): Promise<RSSItem[]> => {
   }
 
   const allItems: RSSItem[] = [];
-
-  // 並行處理所有RSS源，每個源3秒超時
   const RSS_TIMEOUT_PER_SOURCE = 3000;
 
   const rssPromises = rssSources.map(async (rssUrl) => {
@@ -196,12 +160,12 @@ const fetchRSSNewsOptimized = async (): Promise<RSSItem[]> => {
         try {
           const feed = await rssParser.parseURL(rssUrl);
           items = feed.items
-            .slice(0, 10) // 每個源最多10項
+            .slice(0, 10)
             .map((item) => {
               if (!item.title || !item.link) return null;
 
               const content = item.contentSnippet || item.content || item.title;
-              const date = item.isoDate || item.pubDate || new Date().toISOString();
+              const date = item.isoDate || item.pubDate || moment().toISOString();
 
               let category = '一般新聞';
               if (item.categories && Array.isArray(item.categories)) {
@@ -235,7 +199,6 @@ const fetchRSSNewsOptimized = async (): Promise<RSSItem[]> => {
             })
             .filter((item): item is RSSItem => item !== null);
         } catch (rssError) {
-          // RSS失敗時跳過HTML解析（太慢），直接返回空陣列
           console.error(`RSS parsing failed for ${rssUrl}, skipping HTML parsing to save time`);
           return [];
         }
@@ -265,67 +228,15 @@ const fetchRSSNewsOptimized = async (): Promise<RSSItem[]> => {
   return allItems;
 };
 
-// 獲取文章來源資料
-const getArticleSourceData = async (): Promise<ArticleSourceData> => {
+const getUsedSourceUrls = async (): Promise<string[]> => {
   const articlesCollection: Collection<Omit<ArticleDBProps, '_id'>> = await getArticlesCollection();
 
-  const [latestArticle, articles] = await Promise.all([
-    articlesCollection.findOne(
-      { sourceDate: { $exists: true } },
-      { sort: { sourceDate: -1 }, projection: { sourceDate: 1 } }
-    ),
-    articlesCollection
-      .find({ sourceUrl: { $exists: true } })
-      .project({ sourceUrl: 1 })
-      .toArray(),
-  ]);
+  const articles = await articlesCollection
+    .find({ sourceUrl: { $exists: true } })
+    .project({ sourceUrl: 1 })
+    .toArray();
 
-  return {
-    latestSourceDate: latestArticle?.sourceDate || null,
-    usedSourceUrls: articles.map((article) => article.sourceUrl).filter((url): url is string => Boolean(url)),
-  };
-};
-
-// 過濾新聞內容
-const filterNewsContent = async (items: RSSItem[], sourceData: ArticleSourceData): Promise<RSSItem[]> => {
-  console.error(`Starting filter with ${items.length} items`);
-
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - DAYS_RANGE);
-
-  console.error(`Latest source date: ${sourceData.latestSourceDate ? sourceData.latestSourceDate.toISOString() : 'none'}`);
-
-  const filteredItems = items.filter((item) => {
-    const itemDate = new Date(item.published_date);
-
-    // 日期範圍過濾
-    if (itemDate < cutoffDate) {
-      console.error(`Item filtered out by date range: ${item.title}`);
-      return false;
-    }
-
-    // 最新來源日期過濾
-    if (sourceData.latestSourceDate && itemDate < sourceData.latestSourceDate) {
-      console.error(
-        `Item filtered out by latest source date: ${item.title} (${itemDate.toISOString()} < ${sourceData.latestSourceDate.toISOString()})`
-      );
-      return false;
-    }
-
-    // 關鍵字過濾
-    const fullText = `${item.title} ${item.content}`;
-    const hasExcludedKeyword = EXCLUDED_KEYWORDS.some((keyword) => fullText.includes(keyword));
-
-    if (hasExcludedKeyword) {
-      console.error(`Item filtered out by keyword: ${item.title}`);
-      return false;
-    }
-
-    return true;
-  });
-
-  console.error(`After filtering: ${filteredItems.length} items remaining`);
-  return filteredItems;
+  return articles.map((article) => article.sourceUrl).filter((url): url is string => Boolean(url));
 };
 
 export default handler;
