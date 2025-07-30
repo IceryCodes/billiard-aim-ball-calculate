@@ -2,6 +2,8 @@
 
 import { ReactNode, useCallback, useMemo, useState } from 'react';
 
+import moment from 'moment';
+
 import { useToast } from '@/contexts/ToastContext';
 import { CourtProps, GetCourtsDto } from '@/domains/court';
 import { GetUsersDto, UserProps } from '@/domains/user';
@@ -30,20 +32,15 @@ const AdminContent = (): ReactNode => {
   const { showToast } = useToast();
   const { composeArticleGenerationStatusType } = useEnum();
 
-  // 新增狀態管理
   const [fetchResult, setFetchResult] = useState<{
     cachedCount: number;
-    items: { title: string; sourceUrl: string; publishedDate: string }[];
+    items: { title: string; sourceUrl: string; publishedDate: Date }[];
   } | null>(null);
 
-  // 新增選擇新聞的狀態
   const [selectedNewsItems, setSelectedNewsItems] = useState<string[]>([]);
-
-  // 新增 WebSocket 相關狀態
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Separate search params for each manage type
   const initCourtSearchParams = useMemo(
     (): GetCourtsDto => ({
       query: '',
@@ -60,12 +57,11 @@ const AdminContent = (): ReactNode => {
   const [courtsSearch, setCourtsSearch] = useState<GetCourtsDto>(initCourtSearchParams);
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
 
-  // WebSocket hook
   const { isConnected, currentStatus, currentMessage } = useArticleGeneration({
     jobId: currentJobId,
     enabled: isProcessing,
     onStatusUpdate: (message) => {
-      console.info('📡 Status update:', message);
+      if (process.env.NODE_ENV === 'development') console.info('📡 Status update:', message);
     },
     onComplete: (data) => {
       showToast({ message: `文章生成完成：${data.articleTitle}` });
@@ -81,12 +77,17 @@ const AdminContent = (): ReactNode => {
     },
   });
 
-  // 修正後的mutation hooks，加入適當的錯誤處理
   const { mutateAsync: fetchRSS, isLoading: isFetching } = useFetchRSSMutation({
     onSuccess: ({ message, cachedCount, items }) => {
       showToast({ message });
-      setFetchResult({ cachedCount, items: items || [] });
-      setSelectedNewsItems([]); // 清空之前的選擇
+      setFetchResult({
+        cachedCount,
+        items: (items || []).map((item) => ({
+          ...item,
+          publishedDate: moment(item.publishedDate).toDate(),
+        })),
+      });
+      setSelectedNewsItems([]);
     },
     onError: (error) => {
       console.error('RSS fetch error:', error);
@@ -99,12 +100,10 @@ const AdminContent = (): ReactNode => {
   const { mutateAsync: generateFromCache, isLoading: isGeneratingOld } = useGenerateFromCacheMutation({
     onSuccess: ({ message, jobId }) => {
       if (jobId) {
-        // 使用新的 WebSocket 模式
         setCurrentJobId(jobId);
         setIsProcessing(true);
         showToast({ message: '文章生成已開始，請等待即時更新...' });
       } else {
-        // 舊模式的處理
         showToast({ message });
         setFetchResult(null);
         setSelectedNewsItems([]);
@@ -138,7 +137,6 @@ const AdminContent = (): ReactNode => {
   });
   const [selectedItems, setSelectedItems] = useState<CourtProps[]>(userData?.manage?.courts ?? []);
 
-  // Queries for each type
   const { data: { users = [], total: totalUsers = 0 } = {}, refetch: refetchUsers } = useUsersQuery({
     email: usersSearch.email,
     enabled: !!usersSearch.email,
@@ -155,7 +153,6 @@ const AdminContent = (): ReactNode => {
     enabled: !!courtsSearch.query,
   });
 
-  // Handle court searches
   const handleManageSearch = useCallback(
     async (formData: GetCourtsDto) => {
       setCourtsSearch(formData);
@@ -164,7 +161,6 @@ const AdminContent = (): ReactNode => {
     [refetchCourts]
   );
 
-  // Handle user search separately
   const handleUserSearch = useCallback(
     async (formData: GetUsersDto) => {
       if (formData.email) {
@@ -178,12 +174,10 @@ const AdminContent = (): ReactNode => {
     [refetchUsers]
   );
 
-  // Combine lists while removing duplicates
   const combinedList = useMemo((): CourtProps[] => {
     return [...selectedItems, ...courts].filter((item, index, self) => index === self.findIndex((t) => t._id === item._id));
   }, [courts, selectedItems]);
 
-  // 處理新聞項目選擇
   const handleNewsItemToggle = useCallback((sourceUrl: string) => {
     setSelectedNewsItems((prev) => {
       if (prev.includes(sourceUrl)) {
@@ -194,7 +188,6 @@ const AdminContent = (): ReactNode => {
     });
   }, []);
 
-  // 全選/全不選
   const handleSelectAllNews = useCallback(() => {
     if (!fetchResult) return;
 
@@ -205,7 +198,6 @@ const AdminContent = (): ReactNode => {
     }
   }, [fetchResult, selectedNewsItems.length]);
 
-  // 處理步驟一：獲取RSS
   const handleFetchRSS = useCallback(async () => {
     try {
       setFetchResult(null);
@@ -216,7 +208,6 @@ const AdminContent = (): ReactNode => {
     }
   }, [fetchRSS]);
 
-  // 處理步驟二：生成文章（支援選擇新聞）
   const handleGenerateFromCache = useCallback(async () => {
     if (!fetchResult || fetchResult.cachedCount === 0) {
       showToast({ message: '請先執行RSS獲取，且確保有快取的新聞資料' });
@@ -235,7 +226,6 @@ const AdminContent = (): ReactNode => {
     }
   }, [generateFromCache, fetchResult, selectedNewsItems, showToast]);
 
-  // 處理一鍵執行
   const handleOneClickGenerate = useCallback(async () => {
     try {
       setFetchResult(null);
@@ -246,17 +236,14 @@ const AdminContent = (): ReactNode => {
     }
   }, [generateTwoStep]);
 
-  // 計算是否正在處理中
   const isAnyGenerating = isGeneratingOld || isProcessing;
 
   return (
     <div className="p-4 flex flex-col justify-center gap-y-4 w-full">
-      {/* 文章生成區域 */}
       <Card className="p-4">
         <div className="flex flex-col gap-y-4">
           <h3 className="text-lg font-semibold ">文章生成管理</h3>
 
-          {/* WebSocket 即時狀態顯示 */}
           {isProcessing && (
             <div className="border rounded-lg p-3">
               <div className="flex items-center gap-2 mb-2">
@@ -274,7 +261,6 @@ const AdminContent = (): ReactNode => {
             </div>
           )}
 
-          {/* 一鍵生成按鈕 */}
           <div className="flex flex-col gap-y-2">
             <Button
               text={`${isTwoStepLoading ? '生成中...' : '一鍵生成文章'}`}
@@ -284,11 +270,9 @@ const AdminContent = (): ReactNode => {
             <p className="text-sm">自動執行RSS獲取和文章生成</p>
           </div>
 
-          {/* 分步驟操作 */}
           <div className="border-t pt-4">
             <h4 className="text-md font-medium  mb-3">手動分步驟操作</h4>
             <div className="flex flex-col gap-y-3">
-              {/* 步驟一 */}
               <div className="flex items-center gap-x-4">
                 <Button
                   text={`${isFetching ? '獲取中...' : '步驟一：獲取RSS'}`}
@@ -299,7 +283,6 @@ const AdminContent = (): ReactNode => {
                 <span className="text-sm ">從RSS源獲取最新新聞並快取</span>
               </div>
 
-              {/* 快取狀態顯示與新聞選擇 */}
               {fetchResult && (
                 <div className="ml-4 p-3 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
@@ -318,7 +301,7 @@ const AdminContent = (): ReactNode => {
                   {fetchResult.items.length > 0 && (
                     <div className="mt-2">
                       <p className="text-xs mb-2">請選擇要生成文章的新聞：</p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                      <div className="space-y-2 max-h-80 overflow-y-auto">
                         {fetchResult.items.map((item, index) => (
                           <label key={index} className="flex items-start gap-2 text-sm cursor-pointer p-1 rounded">
                             <input
@@ -328,7 +311,10 @@ const AdminContent = (): ReactNode => {
                               disabled={isAnyGenerating || isTwoStepLoading}
                               className="mt-1 flex-shrink-0"
                             />
-                            <span className="flex-1 text-sm">{item.title}</span>
+                            <div className="flex-1">
+                              <div className="text-sm">{item.title}</div>
+                              <div className="text-xs">{moment(item.publishedDate).format('YYYY-MM-DD HH:mm')}</div>
+                            </div>
                           </label>
                         ))}
                       </div>
@@ -341,7 +327,6 @@ const AdminContent = (): ReactNode => {
                 </div>
               )}
 
-              {/* 步驟二 */}
               <div className="flex items-center gap-x-4">
                 <Button
                   text={`${isAnyGenerating ? '生成中...' : '步驟二：生成文章'}`}
@@ -362,7 +347,6 @@ const AdminContent = (): ReactNode => {
         </div>
       </Card>
 
-      {/* 原有的用戶管理區域保持不變 */}
       <div className="flex gap-x-4">
         <div className="flex flex-col min-w-[350px] gap-y-4">
           <Card>
