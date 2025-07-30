@@ -1,5 +1,3 @@
-// pages/api/generate-articles-from-cache.ts
-
 import { Collection } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
@@ -85,6 +83,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // 生成 jobId 並立即回傳
   const jobId = uuidv4();
 
+  console.info(`🎯 [${jobId}] New article generation request received`, {
+    nodeEnv: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    maxArticles,
+    selectedItemsCount: selectedItems.length,
+    hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+    hasSupabaseConfig: !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+  });
+
   // 立即回傳處理狀態，避免 Vercel 超時
   res.status(HttpStatus.Ok).json({
     message: '文章生成已開始處理',
@@ -92,9 +99,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     status: 'processing',
   });
 
+  console.info(`✅ [${jobId}] Response sent to client, starting background process`);
+
   // 背景處理文章生成
   processArticleGeneration(jobId, maxArticles, selectedItems).catch((error) => {
-    console.error('Background article generation failed:', error);
+    console.info(`❌ [${jobId}] Background process catch block:`, error);
   });
 };
 
@@ -107,6 +116,19 @@ const broadcastStatus = async (
 ) => {
   try {
     const channelName = `article_generation_${jobId}`;
+    console.info(`📡 [${jobId}] Attempting broadcast: ${status} - ${message}`, {
+      channelName,
+      hasData: !!data,
+      timestamp: new Date().toISOString(),
+    });
+
+    // 檢查 Supabase 客戶端
+    console.info(`📡 [${jobId}] Supabase client status:`, {
+      hasSupabase: !!supabase,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    });
+
     const updateMessage: ArticleGenerationMessage = {
       type: 'article_generation_update',
       jobId,
@@ -116,15 +138,15 @@ const broadcastStatus = async (
       data,
     };
 
-    await supabase.channel(channelName).send({
+    const result = await supabase.channel(channelName).send({
       type: 'broadcast',
       event: 'article_generation_update',
       payload: updateMessage,
     });
 
-    console.info(`📡 Broadcasted status: ${status} - ${message}`);
+    console.info(`✅ [${jobId}] Broadcast completed: ${status}`, { result });
   } catch (error) {
-    console.error('❌ 廣播狀態失敗:', error);
+    console.info(`❌ [${jobId}] Broadcast exception:`, error);
   }
 };
 
@@ -133,11 +155,17 @@ const processArticleGeneration = async (jobId: string, maxArticles: number, sele
   const startTime = Date.now();
 
   try {
-    console.info(`🚀 Starting background article generation for job: ${jobId}`);
+    console.info(`🚀 [${jobId}] Starting background article generation`, {
+      nodeEnv: process.env.NODE_ENV,
+      timestamp: new Date().toISOString(),
+      selectedItemsCount: selectedItems.length,
+      maxArticles,
+    });
 
     await broadcastStatus(jobId, ArticleGenerationStatusType.STARTING, '開始處理文章生成請求');
 
     // 1. 從快取讀取資料
+    console.info(`📖 [${jobId}] Reading cache data`);
     await broadcastStatus(jobId, ArticleGenerationStatusType.READING_CACHE, '正在讀取快取的RSS資料');
 
     const cacheCollection = await getRSSCacheCollection();
@@ -145,14 +173,16 @@ const processArticleGeneration = async (jobId: string, maxArticles: number, sele
 
     if (selectedItems.length > 0) {
       cachedItems = await cacheCollection.find({ sourceUrl: { $in: selectedItems } }).toArray();
-      console.info(`📝 Found ${cachedItems.length} selected cached items`);
+      console.info(`📝 [${jobId}] Found ${cachedItems.length} selected cached items`);
     } else {
       cachedItems = await cacheCollection.find({}).limit(maxArticles).toArray();
-      console.info(`📝 Found ${cachedItems.length} cached items (auto-selected)`);
+      console.info(`📝 [${jobId}] Found ${cachedItems.length} cached items (auto-selected)`);
     }
 
     if (cachedItems.length === 0) {
-      throw new Error(selectedItems.length > 0 ? '找不到選中的RSS資料' : '找不到快取的RSS資料，請先執行RSS獲取');
+      const errorMsg = selectedItems.length > 0 ? '找不到選中的RSS資料' : '找不到快取的RSS資料，請先執行RSS獲取';
+      console.info(`❌ [${jobId}] No cached items found: ${errorMsg}`);
+      throw new Error(errorMsg);
     }
 
     await broadcastStatus(jobId, ArticleGenerationStatusType.READING_CACHE, `成功讀取 ${cachedItems.length} 篇快取資料`, {
@@ -169,28 +199,41 @@ const processArticleGeneration = async (jobId: string, maxArticles: number, sele
       category: item.category,
     }));
 
+    console.info(`🔄 [${jobId}] Converted to RSSItem format`, {
+      itemCount: rssItems.length,
+      firstItemTitle: rssItems[0]?.title,
+    });
+
     // 3. 獲取現有文章
+    console.info(`📚 [${jobId}] Getting existing articles`);
     const existingArticles = await getExistingArticles();
 
     // 4. 生成文章
+    console.info(`🤖 [${jobId}] Starting article generation with OpenAI`);
     await broadcastStatus(jobId, ArticleGenerationStatusType.GENERATING, `正在基於 ${rssItems.length} 篇新聞生成文章`);
 
-    console.info(`🤖 Generating article from ${rssItems.length} news items`);
     const generatedArticle = await generateArticle(rssItems, existingArticles);
+    console.info(`✅ [${jobId}] Article generated successfully`, {
+      title: generatedArticle.title,
+      contentLength: generatedArticle.content.length,
+      tagsCount: generatedArticle.tags.length,
+    });
 
     // 5. 儲存文章
+    console.info(`💾 [${jobId}] Saving article to database`);
     await broadcastStatus(jobId, ArticleGenerationStatusType.SAVING, '正在儲存生成的文章');
 
     const savedArticles = await saveArticlesToDB([generatedArticle]);
-    console.info(`💾 Successfully saved ${savedArticles.length} articles`);
+    console.info(`✅ [${jobId}] Successfully saved ${savedArticles.length} articles`);
 
     // 6. 清除快取（只清除已使用的）
+    console.info(`🗑️ [${jobId}] Clearing cache`);
     if (selectedItems.length > 0) {
       await cacheCollection.deleteMany({ sourceUrl: { $in: selectedItems } });
-      console.info(`🗑️ Cleared selected RSS cache items: ${selectedItems.length}`);
+      console.info(`🗑️ [${jobId}] Cleared selected RSS cache items: ${selectedItems.length}`);
     } else {
       await cacheCollection.deleteMany({});
-      console.info('🗑️ Cleared all RSS cache');
+      console.info(`🗑️ [${jobId}] Cleared all RSS cache`);
     }
 
     // 7. 生成報告
@@ -198,19 +241,25 @@ const processArticleGeneration = async (jobId: string, maxArticles: number, sele
 
     // 8. 異步發送報告
     sendExecutionReport(report).catch((error) => {
-      console.error('Failed to send execution report:', error);
+      console.info(`❌ [${jobId}] Failed to send execution report:`, error);
     });
 
     const executionTime = Date.now() - startTime;
-    console.info(`✅ Article generation completed in ${executionTime}ms`);
+    console.info(`✅ [${jobId}] Article generation completed in ${executionTime}ms`);
 
     // 推送完成狀態
+    const articleUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}${getPageUrlByType(PageType.ARTICLES)}/${savedArticles[0].customLink}`;
     await broadcastStatus(jobId, ArticleGenerationStatusType.COMPLETED, '文章生成完成！', {
       articleTitle: savedArticles[0].title,
-      articleUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}${getPageUrlByType(PageType.ARTICLES)}/${savedArticles[0].customLink}`,
+      articleUrl,
     });
   } catch (error) {
-    console.error('❌ Background article generation failed:', error);
+    const executionTime = Date.now() - startTime;
+    console.info(`❌ [${jobId}] Background article generation failed after ${executionTime}ms`, {
+      errorName: error instanceof Error ? error.name : 'Unknown',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined,
+    });
 
     // 清除快取
     try {
@@ -220,15 +269,14 @@ const processArticleGeneration = async (jobId: string, maxArticles: number, sele
       } else {
         await cacheCollection.deleteMany({});
       }
-      console.info('🗑️ Cleared RSS cache due to error');
+      console.info(`🗑️ [${jobId}] Cleared RSS cache due to error`);
     } catch (cleanupError) {
-      console.error('❌ Cache cleanup failed:', cleanupError);
+      console.info(`❌ [${jobId}] Cache cleanup failed:`, cleanupError);
     }
 
     // 推送錯誤狀態
-    await broadcastStatus(jobId, ArticleGenerationStatusType.ERROR, '文章生成失敗', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    await broadcastStatus(jobId, ArticleGenerationStatusType.ERROR, '文章生成失敗', { error: errorMessage });
 
     // 發送錯誤報告
     await sendErrorNotification(error, startTime);
@@ -264,7 +312,7 @@ const sendErrorNotification = async (error: unknown, startTime: number) => {
       `,
     });
   } catch (emailError) {
-    console.error('Failed to send error notification:', emailError);
+    console.info('Failed to send error notification:', emailError);
   }
 };
 
@@ -374,27 +422,57 @@ ${newsContent}
 **重要：請只回傳純 JSON 格式，不要包含任何 markdown 標記、註解或其他文字。直接回傳 JSON 物件即可。**
 `;
 
-  const response = await openai.chat.completions.create({
+  console.info(`🤖 About to call OpenAI API`, {
     model: OPENAI_MODEL,
-    messages: [
-      {
-        role: 'system',
-        content:
-          '你是一位專業的撞球文案編輯，擅長將時事新聞轉換為撞球相關的實用內容。請只回傳純 JSON 格式，不要使用 markdown 或其他格式包裝。',
-      },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    max_tokens: 2000,
-    temperature: 0.7,
+    promptLength: prompt.length,
+    hasApiKey: !!process.env.OPENAI_API_KEY,
+    apiKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 12) + '...',
+    newsItemsCount: newsItems.length,
   });
+
+  let response;
+  try {
+    response = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content:
+            '你是一位專業的撞球文案編輯，擅長將時事新聞轉換為撞球相關的實用內容。請只回傳純 JSON 格式，不要使用 markdown 或其他格式包裝。',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    });
+
+    console.info(`✅ OpenAI API response received`, {
+      usage: response.usage,
+      responseLength: response.choices[0]?.message?.content?.length || 0,
+      finishReason: response.choices[0]?.finish_reason,
+    });
+  } catch (openaiError) {
+    console.info(`❌ OpenAI API call failed`, {
+      errorName: openaiError instanceof Error ? openaiError.name : 'Unknown',
+      errorMessage: openaiError instanceof Error ? openaiError.message : String(openaiError),
+    });
+    throw new Error(`OpenAI API 調用失敗: ${openaiError instanceof Error ? openaiError.message : String(openaiError)}`);
+  }
 
   const content = response.choices[0]?.message?.content;
   if (!content) {
+    console.info(`❌ OpenAI response is empty`, { response: response.choices[0] });
     throw new Error('OpenAI response is empty');
   }
+
+  console.info(`📝 Processing OpenAI response`, {
+    rawLength: content.length,
+    startsWithJson: content.trim().startsWith('{'),
+    endsWithJson: content.trim().endsWith('}'),
+  });
 
   const cleanContent = content
     .replace(/^```json\s*/i, '')
@@ -404,14 +482,41 @@ ${newsContent}
   let parsed: ProcessedArticle;
   try {
     parsed = JSON.parse(cleanContent) as ProcessedArticle;
+    console.info(`✅ JSON parsed successfully`, {
+      hasTitle: !!parsed.title,
+      hasDescription: !!parsed.description,
+      hasContent: !!parsed.content,
+      hasTags: !!parsed.tags,
+      tagsCount: parsed.tags?.length || 0,
+    });
   } catch (parseError) {
-    console.error('Failed to parse OpenAI response:', content);
-    throw new Error(`Failed to parse OpenAI JSON response: ${parseError}`);
+    console.info(`❌ Failed to parse OpenAI response as JSON`, {
+      parseError: parseError instanceof Error ? parseError.message : String(parseError),
+      contentPreview: cleanContent.substring(0, 200),
+      contentLength: cleanContent.length,
+    });
+    throw new Error(
+      `Failed to parse OpenAI JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+    );
   }
 
   if (!parsed.title || !parsed.description || !parsed.content || !parsed.tags || parsed.tags.length === 0) {
+    console.info(`❌ Generated article missing required fields`, {
+      hasTitle: !!parsed.title,
+      hasDescription: !!parsed.description,
+      hasContent: !!parsed.content,
+      hasTags: !!parsed.tags,
+      tagsLength: parsed.tags?.length || 0,
+    });
     throw new Error('Generated article missing required fields');
   }
+
+  console.info(`✅ Article validation passed`, {
+    title: parsed.title.substring(0, 50),
+    descriptionLength: parsed.description.length,
+    contentLength: parsed.content.length,
+    tagsCount: parsed.tags.length,
+  });
 
   return {
     ...parsed,
@@ -549,7 +654,7 @@ const sendExecutionReport = async (report: ExecutionReport): Promise<void> => {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🐾 ${report.website_name} - 自動文章生成報告</h1>
+            <h1>🐾 ${siteName} - 自動文章生成報告</h1>
             <p>執行時間：${report.execution_time}</p>
         </div>
 
