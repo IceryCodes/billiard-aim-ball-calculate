@@ -70,13 +70,7 @@ const Header = ({ children }: { children: ReactNode }) => {
 
                 if (pageType === PageType.LOGIN || pageType === PageType.REGISTER) if (isAuthenticated) return;
                 if (pageType === PageType.PROFILE && !isAuthenticated) return;
-                if (
-                  pageType === PageType.HOME ||
-                  pageType === PageType.VERIFY ||
-                  pageType === PageType.ADMIN ||
-                  pageType === PageType.ARTICLES
-                )
-                  return;
+                if (pageType === PageType.HOME || pageType === PageType.VERIFY || pageType === PageType.ADMIN) return;
 
                 return (
                   <Link key={key} href={`/${key.toLowerCase()}`} className={linkStyle} onClick={() => setMenuOpen(false)}>
