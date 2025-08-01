@@ -402,13 +402,13 @@ const TournamentBoard = ({ tournamentData, refetch }: TournamentBoardProps): Rea
             <section className="mb-4">
               <div className="bg-gray-800 rounded-lg p-3 flex justify-center">
                 <Image
-                  src={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${currentTournament.featuredImg}`}
+                  src={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${currentTournament.featuredImg}`}
                   alt={currentTournament.title}
                   width={512}
                   height={288}
                   className="w-fit h-full max-h-[600px] object-cover transition-transform duration-300 group-hover:scale-105 rounded-lg"
                   placeholder="blur"
-                  blurDataURL={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${currentTournament.featuredImg}`}
+                  blurDataURL={`${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${currentTournament.featuredImg}`}
                 />
               </div>
             </section>
