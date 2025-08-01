@@ -134,18 +134,22 @@ const TournamentBoard = ({ tournamentData, refetch }: TournamentBoardProps): Rea
                   {currentTournament.tournament.gameType}
                 </span>
               </div>
-              <h1 className="text-xl font-bold text-white mb-1">{currentTournament.title}</h1>
-              <ManagerCourtProtected pageId={currentTournament.customLink}>
-                <TournamentFormButton mode={TournamentFormMode.Edit} tournament={currentTournament} onSuccess={refetch} />
-                <DeleteTournamentContent
-                  _id={currentTournament._id}
-                  tournamentTitle={currentTournament.title}
-                  onSuccess={redirectToCourt}
-                />
-              </ManagerCourtProtected>
+              <div className="flex flex-row items-center gap-4">
+                <h1 className="text-xl font-bold text-white mb-1">{currentTournament.title}</h1>
+                <ManagerCourtProtected pageId={currentTournament.customLink}>
+                  <TournamentFormButton mode={TournamentFormMode.Edit} tournament={currentTournament} onSuccess={refetch} />
+                  <DeleteTournamentContent
+                    _id={currentTournament._id}
+                    tournamentTitle={currentTournament.title}
+                    onSuccess={redirectToCourt}
+                  />
+                </ManagerCourtProtected>
+              </div>
 
               <div className="flex items-center gap-4 text-sm text-gray-400">
-                <span>{currentTournament.courtTitle}</span>
+                <Link href={`${getPageUrlByType(PageType.COURTS)}/${currentTournament.courtCustomLink}`}>
+                  {currentTournament.courtTitle}
+                </Link>
                 <span>•</span>
                 <time dateTime={moment(currentTournament.tournament.tournamentDate).toISOString()}>
                   {moment(currentTournament.tournament.tournamentDate).format('YYYY/MM/DD')}

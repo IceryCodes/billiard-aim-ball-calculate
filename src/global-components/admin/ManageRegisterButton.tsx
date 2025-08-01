@@ -23,7 +23,11 @@ const ManageRegisterButton = ({ title }: ManageRegisterButtonProps) => {
   const [display, setDisplay] = useState<boolean>(false);
 
   const onSubmit = useCallback(async () => {
+    const contactConfirm = window.confirm('拍謝還沒做這個功能，要不你直接跟我聯絡我開權限給你XD?');
+    if (!contactConfirm) return;
+    window.open('https://www.instagram.com/icery.tw', '_blank');
     showToast({ message: '尚未開放此功能', toastStyle: ToastStyleType.Warning });
+
     setDisplay(false);
   }, [showToast]);
 
