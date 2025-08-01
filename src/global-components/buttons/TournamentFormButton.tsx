@@ -220,12 +220,12 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess: refet
           </div>
 
           <div className="flex flex-col col-span-6">
-            <label>預覽圖</label>
+            <label>比賽海報</label>
             <ImageUpload
               control={control}
               defaultImage={
                 tournament?.featuredImg
-                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${tournament?.featuredImg}`
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${tournament?.featuredImg}`
                   : process.env.NEXT_PUBLIC_FEATURED_IMAGE
               }
             />
