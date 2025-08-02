@@ -53,6 +53,7 @@ interface RulesProps {
   district: MixedSchema<DistrictType, AnyObject>;
   address: StringSchema<string, AnyObject>;
   title: StringSchema<string, AnyObject>;
+  titleCourt: StringSchema<string, AnyObject>;
   excerpt: StringSchema<string | undefined, AnyObject>;
   content: StringSchema<string | undefined, AnyObject>;
   keywords: ArraySchema<string[] | undefined, AnyObject, '', ''>;
@@ -220,6 +221,7 @@ const rules: RulesProps = {
     .min(2, '標題至少需要2個字')
     .matches(/^[^#!@*()\\"';/%^=_$`,.?:]+$/, '標題不能包含空格或特殊字符')
     .required('名稱是必填項目'),
+  titleCourt: string().min(2, '標題至少需要2個字').required('名稱是必填項目'),
   excerpt: string(),
   content: string(),
   keywords: array()
@@ -378,7 +380,7 @@ export const courtValidationSchema: ObjectSchema<UpdateCourtProps, AnyObject> = 
   county: rules.county,
   district: rules.district,
   address: rules.address,
-  title: rules.title.default(''),
+  title: rules.titleCourt.default(''),
   excerpt: rules.excerpt.default(''),
   content: rules.content.default(''),
   keywords: rules.keywords.default([]),

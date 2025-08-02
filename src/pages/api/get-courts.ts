@@ -56,7 +56,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtsReturn
 
     const courts: WithId<CourtDBProps>[] = await courtsCollection
       .find(mongoQuery)
-      .sort({ partner: -1, viewed: -1, title: 1, _id: 1 })
+      .sort({ partner: -1, viewed: -1, featuredImg: 1, title: 1, _id: 1 })
       .skip(pageSize ? (currentPage - 1) * pageSize : 0)
       .limit(pageSize ?? total)
       .toArray();
