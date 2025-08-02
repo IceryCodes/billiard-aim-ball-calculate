@@ -40,18 +40,18 @@ const GoogleMarker = ({ position, court, selectedCourt, setSelectedCourt }: Goog
           <Image
             src={
               court.featuredImg
-                ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${court.featuredImg}`
+                ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${court.featuredImg}`
                 : process.env.NEXT_PUBLIC_FEATURED_IMAGE
             }
             alt={court.title}
             width={128}
             height={72}
-            className={`absolute top-0 rounded transition-all duration-200 ease-in-out ${!hovered ? 'opacity-0' : ''}`}
+            className={`absolute top-0 rounded transition-all duration-200 ease-in-out object-cover w-[128px] h-[72px] ${!hovered ? 'opacity-0' : ''}`}
             style={{ transform: 'translateY(-45px)' }}
             placeholder="blur"
             blurDataURL={
               court.featuredImg
-                ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${court.featuredImg}`
+                ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${court.featuredImg}`
                 : process.env.NEXT_PUBLIC_FEATURED_IMAGE
             }
           />

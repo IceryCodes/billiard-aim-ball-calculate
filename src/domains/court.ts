@@ -2,6 +2,11 @@ import { ObjectId } from 'mongodb';
 
 import { CountyType, GenderType } from '@/domains/interface';
 
+export interface LocationProps {
+  type: string;
+  coordinates: number[];
+}
+
 export interface CourtProps {
   _id: string;
   partner: boolean;
@@ -24,10 +29,7 @@ export interface CourtProps {
   openTime: string;
   closeTime: string;
   fullDay: boolean;
-  location: {
-    type: 'Point';
-    coordinates: [number, number];
-  };
+  location: LocationProps;
   status: boolean;
   customLink: string;
   googleTitle: string;
@@ -58,11 +60,12 @@ export interface GetCourtsDto {
   limit?: number;
 }
 
-export type UpdateCourtProps = Omit<CourtProps, '_id' | 'createdAt' | 'updatedAt' | 'fullDay' | 'location'>;
+export type UpdateCourtProps = Omit<CourtProps, '_id' | 'createdAt' | 'updatedAt' | 'fullDay'>;
 export interface UpdateCourtDto extends UpdateCourtProps, Pick<CourtProps, '_id'> {}
 export type CreateCourtDto = UpdateCourtProps;
 export type DeleteCourtDto = Pick<CourtProps, '_id'>;
 export type UpdateCourtViewDto = Pick<CourtProps, '_id'>;
+export type GeocodeAddressDto = { fullAddress: string };
 
 export interface CourtDBProps extends Omit<CourtProps, '_id'> {
   _id: ObjectId;

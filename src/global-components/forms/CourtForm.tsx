@@ -1,6 +1,30 @@
 'use client';
 
-import { CourtProps } from '@/domains/court';
+import { ChangeEvent, ReactNode, useCallback, useMemo, useState } from 'react';
+
+import { yupResolver } from '@hookform/resolvers/yup';
+import { Controller, FieldValues, useForm, UseFormSetValue } from 'react-hook-form';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
+import { CourtProps, UpdateCourtProps } from '@/domains/court';
+import { CountyType, districtOptions, GenderType } from '@/domains/interface';
+import { useCreateCourtMutation } from '@/features/courts/hooks/useCreateCourtMutation';
+import { useGeocodeAddressMutation } from '@/features/courts/hooks/useGeocodeAddressMutation';
+import { useUpdateCourtMutation } from '@/features/courts/hooks/useUpdateCourtMutation';
+import { useGetMeMutation } from '@/features/user/hooks/useGetMeMutation';
+import AdminProtected from '@/hooks/utils/protections/components/useAdminProtected';
+import { courtValidationSchema } from '@/lib/validation';
+
+import { Button, defaultButtonStyle } from '../buttons/Button';
+import FieldErrorlabel from '../FieldErrorlabel';
+import { FormField } from '../formFields/FormFields';
+import { ImageUpload } from '../images/ImageUpload';
+import { AutoCompleteType, Input, InputStyleType } from '../inputs/Input';
+import Popup from '../Popup';
+import { Select } from '../selects/Select';
+import { TagGroup } from '../tags/TagGroup';
+import { TextArea } from '../textareas/TextArea';
 
 export enum CourtFormMode {
   Create = 'create',
@@ -13,375 +37,454 @@ interface CourtFormProps {
   onSuccess?: () => void;
 }
 
-// const defaultCourt: UpdateCourtProps = {
-//   partner: false,
-//   orgCode: '',
-//   owner: '',
-//   gender: GenderType.None,
-//   websiteUrl: '',
-//   email: '',
-//   phone: '',
-//   county: '' as CountyType,
-//   district: '',
-//   address: '',
-//   title: '',
-//   excerpt: '',
-//   content: '',
-//   keywords: [],
-//   featuredImg: '',
-//   openTime: '',
-//   closeTime: '',
-//   status: false,
-//   customLink: '',
-//   googleTitle: '',
-//   smoke: false,
-//   coachs: [],
-//   companyName: '',
-// };
+const defaultCourt: UpdateCourtProps = {
+  partner: false,
+  orgCode: '',
+  owner: '',
+  gender: GenderType.None,
+  websiteUrl: '',
+  email: '',
+  phone: '',
+  county: CountyType.TaipeiCity,
+  district: '',
+  address: '',
+  title: '',
+  excerpt: '',
+  content: '',
+  smoke: false,
+  coachs: [],
+  keywords: [],
+  featuredImg: '',
+  openTime: '',
+  closeTime: '',
+  status: false,
+  customLink: '',
+  googleTitle: '',
+  companyName: '',
+  location: { type: 'Point', coordinates: [0, 0] },
+};
 
-export const CourtForm = ({ mode }: CourtFormProps) => {
-  if (!mode) return <></>;
-  // const { user, login } = useAuth();
-  // const { showToast } = useToast();
+export const CourtForm = ({ mode, court, onSuccess }: CourtFormProps) => {
+  const { user, login } = useAuth();
+  const { showToast } = useToast();
 
-  // const { mutateAsync: createCourt, isLoading: isCreateLoading } = useCreateCourtMutation();
-  // const { mutateAsync: updateCourt, isLoading: isUpdateLoading } = useUpdateCourtMutation({
-  //   onSuccess,
-  // });
-  // const { mutateAsync: getMe } = useGetMeMutation();
+  const { mutateAsync: geocodeAddress } = useGeocodeAddressMutation();
+  const { mutateAsync: createCourt, isLoading: isCreateLoading } = useCreateCourtMutation();
+  const { mutateAsync: updateCourt, isLoading: isUpdateLoading } = useUpdateCourtMutation({
+    onSuccess,
+  });
+  const { mutateAsync: getMe } = useGetMeMutation();
 
-  // const [display, setDisplay] = useState<boolean>(false);
-  // const [expand, setExpand] = useState<boolean>(false);
+  const [display, setDisplay] = useState<boolean>(false);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState<boolean>(false); // 新增
 
-  // const {
-  //   control,
-  //   handleSubmit,
-  //   reset,
-  //   watch,
-  //   setValue,
-  //   formState: { isDirty, errors },
-  // } = useForm<UpdateCourtProps>({
-  //   resolver: yupResolver(courtValidationSchema),
-  //   defaultValues: mode === CourtFormMode.Create ? defaultCourt : court,
-  // });
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { isDirty, errors },
+  } = useForm<UpdateCourtProps>({
+    resolver: yupResolver(courtValidationSchema),
+    defaultValues: mode === CourtFormMode.Create ? defaultCourt : court,
+  });
 
-  // const messageArray = useMemo((): string[] => {
-  //   return Object.values(errors).flatMap((error) => (Array.isArray(error) ? error.map((e) => e.message) : [error.message]));
-  // }, [errors]);
+  const messageArray = useMemo((): string[] => {
+    return Object.values(errors)
+      .flatMap((error) => {
+        if (Array.isArray(error)) {
+          return error.map((e) => e?.message).filter(Boolean);
+        }
+        return error?.message ? [error.message] : [];
+      })
+      .filter(Boolean);
+  }, [errors]);
 
-  // const county = watch('county');
+  const county = watch('county');
 
-  // const onSubmit = useCallback(
-  //   async (data: UpdateCourtProps) => {
-  //     const action = mode === CourtFormMode.Create ? '新增' : '更新';
-  //     const confirmed = window.confirm(`您確定要${action}${data.title}嗎?`);
-  //     if (!confirmed || !user) return;
+  const onSubmit = useCallback(
+    async (data: UpdateCourtProps) => {
+      const action = mode === CourtFormMode.Create ? '新增' : '更新';
+      const confirmed = window.confirm(`您確定要${action}${data.title}嗎?`);
+      if (!confirmed || !user) return;
 
-  //     try {
-  //       const processedData = {
-  //         ...data,
-  //         address: data.address.replaceAll(data.county, '').replaceAll(data.district, ''),
-  //       };
+      try {
+        let processedData = {
+          ...data,
+          address: data.address.replaceAll(data.county, '').replaceAll(data.district, ''),
+        };
 
-  //       const result =
-  //         mode === CourtFormMode.Create
-  //           ? await createCourt(processedData)
-  //           : court?._id &&
-  //             (await updateCourt({
-  //               _id: court._id,
-  //               ...processedData,
-  //             }));
+        // 只有在創建模式時才需要地址轉座標
+        if (mode === CourtFormMode.Create) {
+          setIsGeocodingLoading(true);
 
-  //       if (typeof result === 'string' || !result) throw new Error(result);
+          // 組成完整地址
+          const fullAddress = `台灣${data.county}${data.district}${data.address}`;
 
-  //       const { message } = result;
-  //       if (message) showToast({ message });
+          // 顯示轉換中的提示
+          showToast({ message: '正在轉換地址為座標...' });
 
-  //       reset(data);
-  //       setDisplay(false);
+          // 地址轉座標
+          const { coordinates } = await geocodeAddress({ fullAddress });
 
-  //       // 如果是新增模式且有 user，更新用戶資訊
-  //       if (mode === CourtFormMode.Create && user) {
-  //         const { token } = await getMe({ _id: user._id });
-  //         if (token) login({ token });
-  //       }
+          setIsGeocodingLoading(false);
 
-  //       // 如果是編輯模式且有 onSuccess callback，執行它
-  //       else if (mode === CourtFormMode.Edit && onSuccess) {
-  //         onSuccess();
-  //       }
-  //     } catch (error) {
-  //       console.error(`${mode} error:`, error);
-  //     }
-  //   },
-  //   [mode, createCourt, updateCourt, court, user, getMe, login, reset, showToast, onSuccess]
-  // );
+          if (!coordinates) {
+            alert(
+              `地址轉換失敗！\n\n` +
+                `無法將 "${fullAddress}" 轉換為座標\n\n` +
+                `可能原因：\n` +
+                `• 地址格式不正確\n` +
+                `• 地址不存在\n` +
+                `• 網路連接問題\n\n` +
+                `請檢查地址是否正確後重試`
+            );
+            return; // 不繼續執行API呼叫
+          }
 
-  // const form = useMemo(
-  //   (): ReactNode => (
-  //     <Popup
-  //       title={mode === CourtFormMode.Create ? '新增撞球場地' : '編輯撞球場地'}
-  //       display={display}
-  //       onClose={() => setDisplay(false)}
-  //     >
-  //       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-6 gap-4 w-[500px]">
-  //         <div className="flex flex-col col-span-3 justify-center">
-  //           {messageArray.length > 0 &&
-  //             messageArray.map((message, index) => (
-  //               <label key={index} className="text-red-500 text-[12px]">
-  //                 {message}
-  //               </label>
-  //             ))}
-  //         </div>
+          // 將座標添加到數據中
+          processedData = {
+            ...processedData,
+            location: {
+              type: 'Point',
+              coordinates,
+            },
+          };
 
-  //         <div className="flex justify-end col-span-3 items-center">
-  //           <Button
-  //             type="submit"
-  //             text={mode === CourtFormMode.Create ? '新增' : '更新'}
-  //             disabled={!isDirty || isCreateLoading || isUpdateLoading}
-  //           />
-  //         </div>
+          showToast({ message: '地址轉換成功！' });
+        }
 
-  //         <div className="flex flex-col col-span-6">
-  //           <label>預覽圖</label>
-  //           <ImageUpload
-  //             control={control}
-  //             defaultImage={
-  //               court?.featuredImg
-  //                 ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${court?.featuredImg}`
-  //                 : process.env.NEXT_PUBLIC_FEATURED_IMAGE
-  //             }
-  //           />
-  //         </div>
+        const result =
+          mode === CourtFormMode.Create
+            ? await createCourt(processedData)
+            : court?._id &&
+              (await updateCourt({
+                _id: court._id,
+                ...processedData,
+              }));
 
-  //         <FormField control={control} titleText="撞球場地" fieldName="title" placeholder="撞球場地名稱" col={6} />
-  //         <FormField control={control} titleText="Google名稱" fieldName="googleTitle" placeholder="Google登記名稱" col={6} />
+        if (typeof result === 'string' || !result) throw new Error(result);
 
-  //         <Controller
-  //           name="partner"
-  //           control={control}
-  //           render={({ field: { onChange, value } }) => (
-  //             <div className="flex items-center col-span-3">
-  //               <Input type={InputStyleType.Checkbox} checked={value} onChange={(e) => onChange(e.target.checked)} />
-  //               <label className="text-sm">{`${process.env.NEXT_PUBLIC_SITENAME}合作夥伴`}</label>
-  //             </div>
-  //           )}
-  //         />
+        const { message } = result;
+        if (message) showToast({ message });
 
-  //         <Controller
-  //           name="status"
-  //           control={control}
-  //           render={({ field: { onChange, value } }) => (
-  //             <div className="flex items-center col-span-3">
-  //               <Input type={InputStyleType.Checkbox} checked={value} onChange={(e) => onChange(e.target.checked)} />
-  //               <label className="text-sm">開業狀態</label>
-  //             </div>
-  //           )}
-  //         />
+        reset(data);
+        setDisplay(false);
 
-  //         <FormField control={control} titleText="機構代碼" fieldName="orgCode" placeholder="機構代碼" col={3} />
+        // 如果是新增模式且有 user，更新用戶資訊
+        if (mode === CourtFormMode.Create && user) {
+          const { token } = await getMe({ _id: user._id });
+          if (token) login({ token });
+        }
 
-  //         <div className="flex flex-col col-span-3">
-  //           <label>縣市</label>
-  //           <Controller
-  //             name="county"
-  //             control={control}
-  //             render={({ field, fieldState: { error } }) => (
-  //               <>
-  //                 <Select {...field} defaultValue="所有縣市" options={Object.values(CountyType)} />
-  //                 <FieldErrorlabel error={error} />
-  //               </>
-  //             )}
-  //           />
-  //         </div>
+        // 如果是編輯模式且有 onSuccess callback，執行它
+        else if (mode === CourtFormMode.Edit && onSuccess) {
+          onSuccess();
+        }
+      } catch (error) {
+        console.error(`${mode} error:`, error);
 
-  //         <div className="flex flex-col col-span-3">
-  //           <label>地區</label>
-  //           <Controller
-  //             name="district"
-  //             control={control}
-  //             render={({ field, fieldState: { error } }) => (
-  //               <>
-  //                 <Select {...field} defaultValue="所有地區" options={Object.values(districtOptions[county] ?? {})} />
-  //                 <FieldErrorlabel error={error} />
-  //               </>
-  //             )}
-  //           />
-  //         </div>
+        // 處理特定錯誤
+        let errorMessage = '操作失敗，請稍後再試';
 
-  //         <FormField
-  //           control={control}
-  //           titleText="地址"
-  //           fieldName="address"
-  //           placeholder="完整地址(無需包含縣市及地址)"
-  //           col={3}
-  //         />
+        if (error instanceof Error) {
+          if (error.message.includes('網址名稱') || error.message.includes('customLink')) {
+            errorMessage = '網址名稱已存在，請修改撞球場地名稱';
+          } else if (error.message.includes('duplicate')) {
+            errorMessage = '資料重複，請檢查輸入內容';
+          } else {
+            errorMessage = error.message;
+          }
+        }
 
-  //         <FormField
-  //           control={control}
-  //           type={InputStyleType.Tel}
-  //           titleText="電話"
-  //           fieldName="phone"
-  //           placeholder="聯絡電話"
-  //           col={3}
-  //         />
+        showToast({ message: errorMessage });
+      } finally {
+        setIsGeocodingLoading(false);
+      }
+    },
+    [mode, user, createCourt, court?._id, updateCourt, showToast, reset, onSuccess, geocodeAddress, getMe, login]
+  );
 
-  //         <FormField
-  //           control={control}
-  //           type={InputStyleType.Email}
-  //           titleText="信箱"
-  //           fieldName="email"
-  //           placeholder="聯絡信箱"
-  //           col={3}
-  //           autoComplete={AutoCompleteType.Email}
-  //         />
+  const form = useMemo(
+    (): ReactNode => (
+      <Popup
+        title={mode === CourtFormMode.Create ? '新增撞球場地' : '編輯撞球場地'}
+        display={display}
+        onClose={() => setDisplay(false)}
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-6 gap-4 w-[500px]">
+          <div className="flex flex-col col-span-3 justify-center">
+            {messageArray.length > 0 &&
+              messageArray.map((message, index) => (
+                <label key={index} className="text-red-500 text-[12px]">
+                  {message}
+                </label>
+              ))}
+          </div>
 
-  //         <FormField
-  //           control={control}
-  //           titleText="負責人"
-  //           fieldName="owner"
-  //           placeholder="負責人姓名"
-  //           col={3}
-  //           autoComplete={AutoCompleteType.GivenName}
-  //         />
+          <div className="flex justify-end col-span-3 items-center">
+            <Button
+              type="submit"
+              text={isGeocodingLoading ? '轉換地址中...' : mode === CourtFormMode.Create ? '新增' : '更新'}
+              disabled={!isDirty || isCreateLoading || isUpdateLoading || isGeocodingLoading}
+            />
+          </div>
 
-  //         <div className="flex flex-col col-span-3">
-  //           <label>負責人性別</label>
-  //           <Controller
-  //             name="gender"
-  //             control={control}
-  //             render={({ field, fieldState: { error } }) => (
-  //               <div>
-  //                 <div className="flex justify-around gap-x-2">
-  //                   <Button
-  //                     element={<>男</>}
-  //                     onClick={() => field.onChange(GenderType.Male)}
-  //                     className={`${defaultButtonStyle} w-full p-2 border rounded-md ${
-  //                       field.value === GenderType.Male ? 'bg-link text-background' : 'bg-backgroundLight'
-  //                     }`}
-  //                   />
-  //                   <Button
-  //                     element={<>女</>}
-  //                     onClick={() => field.onChange(GenderType.Female)}
-  //                     className={`${defaultButtonStyle} w-full p-2 border rounded-md ${
-  //                       field.value === GenderType.Female ? 'bg-link text-background' : 'bg-backgroundLight'
-  //                     }`}
-  //                   />
-  //                 </div>
-  //                 <FieldErrorlabel error={error} />
-  //               </div>
-  //             )}
-  //           />
-  //         </div>
+          <div className="flex flex-col col-span-6">
+            <label>預覽圖</label>
+            <ImageUpload
+              control={control}
+              folder={process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}
+              defaultImage={
+                court?.featuredImg
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${court?.featuredImg}`
+                  : process.env.NEXT_PUBLIC_FEATURED_IMAGE
+              }
+            />
+          </div>
 
-  //         <FormField
-  //           control={control}
-  //           type={InputStyleType.Time}
-  //           titleText="營業時間"
-  //           fieldName="openTime"
-  //           placeholder="營業時間"
-  //           col={3}
-  //         />
-  //         <FormField
-  //           control={control}
-  //           type={InputStyleType.Time}
-  //           titleText="休息時間"
-  //           fieldName="closeTime"
-  //           placeholder="休息時間"
-  //           col={3}
-  //         />
+          <FormField control={control} titleText="撞球場地" fieldName="title" placeholder="撞球場地名稱" col={6} />
+          <FormField
+            control={control}
+            titleText="Google map名稱"
+            fieldName="googleTitle"
+            placeholder="Google登記名稱"
+            col={6}
+          />
 
-  //         <FormField control={control} titleText="自訂網址名稱" fieldName="customLink" placeholder="網址名稱" col={3} />
+          <AdminProtected>
+            <Controller
+              name="partner"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <div className="flex items-center col-span-3">
+                  <Input type={InputStyleType.Checkbox} checked={value} onChange={(e) => onChange(e.target.checked)} />
+                  <label className="text-sm">{`${process.env.NEXT_PUBLIC_SITENAME}合作夥伴`}</label>
+                </div>
+              )}
+            />
 
-  //         <div className="flex flex-col col-span-3">
-  //           <label>關鍵字</label>
-  //           <Controller
-  //             name="keywords"
-  //             control={control}
-  //             render={({ field, fieldState: { error } }) => (
-  //               <>
-  //                 <Input
-  //                   {...field}
-  //                   value={Array.isArray(field.value) ? field.value.join(',') : ''}
-  //                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
-  //                     field.onChange(event.target.value ? event.target.value.split(',') : [])
-  //                   }
-  //                   placeholder="關鍵字 (多個用半形逗號分隔)"
-  //                 />
-  //                 <TagGroup
-  //                   tags={field.value}
-  //                   fieldName="keywords"
-  //                   setValue={setValue as unknown as UseFormSetValue<FieldValues>}
-  //                 />
-  //                 <FieldErrorlabel error={error} />
-  //               </>
-  //             )}
-  //           />
-  //         </div>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <div className="flex items-center col-span-3">
+                  <Input type={InputStyleType.Checkbox} checked={value} onChange={(e) => onChange(e.target.checked)} />
+                  <label className="text-sm">開業狀態</label>
+                </div>
+              )}
+            />
 
-  //         <FormField
-  //           control={control}
-  //           type={InputStyleType.Url}
-  //           titleText="網站網址"
-  //           fieldName="websiteUrl"
-  //           placeholder={process.env.NEXT_PUBLIC_BASE_URL}
-  //           col={3}
-  //         />
+            <FormField control={control} titleText="機構代碼" fieldName="orgCode" placeholder="機構代碼" col={3} />
 
-  //         <FormField
-  //           control={control}
-  //           type={InputStyleType.Url}
-  //           titleText="預覽圖網址"
-  //           fieldName="featuredImg"
-  //           placeholder="上傳圖片後會自生成網址"
-  //           col={3}
-  //           disabled
-  //         />
+            <div className="flex flex-col col-span-3">
+              <label>縣市</label>
+              <Controller
+                name="county"
+                control={control}
+                render={({ field, fieldState: { error } }) => (
+                  <>
+                    <Select {...field} defaultValue="所有縣市" options={Object.values(CountyType)} />
+                    <FieldErrorlabel error={error} />
+                  </>
+                )}
+              />
+            </div>
 
-  //         <FormField control={control} titleText="簡述" fieldName="excerpt" placeholder="醫療機構的簡述" col={6} />
+            <div className="flex flex-col col-span-3">
+              <label>地區</label>
+              <Controller
+                name="district"
+                control={control}
+                render={({ field, fieldState: { error } }) => (
+                  <>
+                    <Select {...field} defaultValue="所有地區" options={Object.values(districtOptions[county] ?? {})} />
+                    <FieldErrorlabel error={error} />
+                  </>
+                )}
+              />
+            </div>
 
-  //         <div className="flex flex-col col-span-6">
-  //           <label>內容</label>
-  //           <Controller
-  //             name="content"
-  //             control={control}
-  //             render={({ field, fieldState: { error } }) => (
-  //               <>
-  //                 <TextArea {...field} placeholder="醫療機構的詳細內容" />
-  //                 <FieldErrorlabel error={error} />
-  //               </>
-  //             )}
-  //           />
-  //         </div>
+            <FormField
+              control={control}
+              titleText="地址"
+              fieldName="address"
+              placeholder="完整地址(無需包含縣市及地址)"
+              col={3}
+            />
+          </AdminProtected>
 
-  //         <div className="col-span-6">
-  //           <Button type="button" text="詳細內容" onClick={() => setExpand(!expand)} />
-  //         </div>
-  //       </form>
-  //     </Popup>
-  //   ),
-  //   [
-  //     mode,
-  //     display,
-  //     handleSubmit,
-  //     onSubmit,
-  //     messageArray,
-  //     isDirty,
-  //     isCreateLoading,
-  //     isUpdateLoading,
-  //     control,
-  //     court?.featuredImg,
-  //     expand,
-  //     county,
-  //     setValue,
-  //   ]
-  // );
+          <FormField
+            control={control}
+            type={InputStyleType.Tel}
+            titleText="電話"
+            fieldName="phone"
+            placeholder="聯絡電話"
+            col={3}
+          />
 
-  // const onClick = () => setDisplay(true);
+          <FormField
+            control={control}
+            type={InputStyleType.Email}
+            titleText="信箱"
+            fieldName="email"
+            placeholder="聯絡信箱"
+            col={3}
+            autoComplete={AutoCompleteType.Email}
+          />
+
+          <AdminProtected>
+            <FormField
+              control={control}
+              titleText="負責人"
+              fieldName="owner"
+              placeholder="負責人姓名"
+              col={3}
+              autoComplete={AutoCompleteType.GivenName}
+            />
+
+            <div className="flex flex-col col-span-3">
+              <label>負責人性別</label>
+              <Controller
+                name="gender"
+                control={control}
+                render={({ field, fieldState: { error } }) => (
+                  <div>
+                    <div className="flex justify-around gap-x-2">
+                      <Button
+                        element={<>男</>}
+                        onClick={() => field.onChange(GenderType.Male)}
+                        className={`${defaultButtonStyle} w-full p-2 border rounded-md ${
+                          field.value === GenderType.Male ? 'bg-link text-background' : 'bg-backgroundLight'
+                        }`}
+                      />
+                      <Button
+                        element={<>女</>}
+                        onClick={() => field.onChange(GenderType.Female)}
+                        className={`${defaultButtonStyle} w-full p-2 border rounded-md ${
+                          field.value === GenderType.Female ? 'bg-link text-background' : 'bg-backgroundLight'
+                        }`}
+                      />
+                    </div>
+                    <FieldErrorlabel error={error} />
+                  </div>
+                )}
+              />
+            </div>
+          </AdminProtected>
+
+          <FormField
+            control={control}
+            type={InputStyleType.Time}
+            titleText="營業時間"
+            fieldName="openTime"
+            placeholder="營業時間"
+            col={3}
+          />
+          <FormField
+            control={control}
+            type={InputStyleType.Time}
+            titleText="休息時間"
+            fieldName="closeTime"
+            placeholder="休息時間"
+            col={3}
+          />
+
+          <FormField
+            control={control}
+            titleText="自訂網址名稱"
+            fieldName="customLink"
+            placeholder="網址名稱"
+            col={3}
+            disabled={mode === CourtFormMode.Edit}
+          />
+
+          <div className="flex flex-col col-span-3">
+            <label>關鍵字</label>
+            <Controller
+              name="keywords"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <Input
+                    {...field}
+                    value={Array.isArray(field.value) ? field.value.join(',') : ''}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      field.onChange(event.target.value ? event.target.value.split(',') : [])
+                    }
+                    placeholder="關鍵字 (多個用半形逗號分隔)"
+                  />
+                  <TagGroup
+                    tags={field.value}
+                    fieldName="keywords"
+                    setValue={setValue as unknown as UseFormSetValue<FieldValues>}
+                  />
+                  <FieldErrorlabel error={error} />
+                </>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={control}
+            type={InputStyleType.Url}
+            titleText="網站網址"
+            fieldName="websiteUrl"
+            placeholder={process.env.NEXT_PUBLIC_BASE_URL}
+            col={3}
+          />
+
+          <FormField
+            control={control}
+            type={InputStyleType.Url}
+            titleText="預覽圖網址"
+            fieldName="featuredImg"
+            placeholder="上傳圖片後會自生成網址"
+            col={3}
+            disabled
+          />
+
+          <FormField control={control} titleText="簡述" fieldName="excerpt" placeholder="撞球場地的簡述" col={6} />
+
+          <div className="flex flex-col col-span-6">
+            <label>內容</label>
+            <Controller
+              name="content"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <TextArea {...field} placeholder="撞球場地的詳細內容" />
+                  <FieldErrorlabel error={error} />
+                </>
+              )}
+            />
+          </div>
+        </form>
+      </Popup>
+    ),
+    [
+      mode,
+      display,
+      handleSubmit,
+      onSubmit,
+      messageArray,
+      isDirty,
+      isCreateLoading,
+      isUpdateLoading,
+      isGeocodingLoading,
+      control,
+      court?.featuredImg,
+      county,
+      setValue,
+    ]
+  );
+
+  const onClick = useCallback(() => setDisplay(true), []);
 
   return (
     <>
-      {/* <svg
+      <svg
         onClick={onClick}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -400,7 +503,7 @@ export const CourtForm = ({ mode }: CourtFormProps) => {
           <path d="M3 17.25V21h3.75l11.39-11.39-3.75-3.75L3 17.25zM16 3l5 5-2 2-5-5 2-2z" />
         )}
       </svg>
-      {form} */}
+      {form}
     </>
   );
 };

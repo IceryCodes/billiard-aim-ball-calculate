@@ -5,6 +5,7 @@ import { CourtDBProps } from '@/domains/court';
 import { getCourtsCollection } from '@/lib/mongodb';
 import { CourtUpdateReturnType } from '@/services/interfaces';
 import { HttpStatus } from '@/utils/api';
+import { generateUniqueCustomLink } from '@/utils/apiFunctions';
 import { isAdminToken } from '@/utils/token';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<CourtUpdateReturnType>) => {
@@ -31,6 +32,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<CourtUpdateRetu
 
     const newCourt: CourtDBProps = {
       ...req.body,
+      customLink: await generateUniqueCustomLink(req.body.title, courtsCollection),
       createdAt: new Date(),
       updatedAt: new Date(),
     };

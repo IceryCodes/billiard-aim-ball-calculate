@@ -127,3 +127,27 @@ export const updatePaymentOrder: string[] = [
   'remark',
   'time',
 ];
+
+export const generateUniqueCustomLink = async (
+  title: string,
+  courtsCollection: Collection<CourtDBProps>
+): Promise<string> => {
+  // 生成基礎 customLink
+  const baseCustomLink = title
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[/?#[\]@!$&'()*:+,;="%<>`{}|^\\]/g, '')
+    .trim();
+
+  let customLink = baseCustomLink;
+  let counter = 1;
+
+  // 檢查是否重複，如果重複就加數字
+  while (await courtsCollection.findOne({ customLink })) {
+    customLink = `${baseCustomLink}${counter}`;
+    counter++;
+  }
+
+  return customLink;
+};

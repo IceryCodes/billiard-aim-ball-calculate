@@ -12,10 +12,12 @@ import {
   number,
   NumberSchema,
   object,
+  ObjectSchema,
   string,
   StringSchema,
 } from 'yup';
 
+import { LocationProps, UpdateCourtProps } from '@/domains/court';
 import {
   CountyType,
   districtOptions,
@@ -39,6 +41,7 @@ interface RulesProps {
   // court
   partner: BooleanSchema<boolean, AnyObject>;
   orgCode: StringSchema<string, AnyObject>;
+  orgCodeOptional: StringSchema<string | undefined, AnyObject>;
   owner: StringSchema<string | undefined, AnyObject>;
   genderOptional: MixedSchema<GenderType | undefined, AnyObject, undefined, ''>;
   gameTypes: ArraySchema<GameTypesType[], AnyObject, '', ''>;
@@ -61,7 +64,8 @@ interface RulesProps {
   googleTitle: StringSchema<string, AnyObject>;
   smoke: BooleanSchema<boolean, AnyObject>;
   coachs: ArraySchema<string[] | undefined, AnyObject, '', ''>;
-  companyName: StringSchema<string, AnyObject>;
+  companyName: StringSchema<string | undefined, AnyObject>;
+  location: ObjectSchema<LocationProps, AnyObject>;
 
   // tournament
   tournamentTitle: StringSchema<string, AnyObject>;
@@ -138,6 +142,9 @@ const rules: RulesProps = {
   orgCode: string()
     .required('機構代碼是必填項目')
     .matches(/^[^\s#!@*()\\"';/%^=_$`,.?:+]+$/, '機構代碼不能包含空格或特殊字符'),
+  orgCodeOptional: string().test('is-orgCodeOptional-or-empty', '無效的機構代碼格式', (value) => {
+    return !value || value === '' || /^[^\s#!@*()\\"';/%^=_$`,.?:+]+$/.test(value);
+  }),
   owner: string().test('is-owner-or-empty', '負責人名稱不能包含特殊字符', (value) => {
     if (!value || value === '') return true;
     return value.length >= 1;
@@ -228,7 +235,7 @@ const rules: RulesProps = {
   closeTime: string(),
   status: boolean().required('開業狀態是必填項目'),
   customLink: string(),
-  googleTitle: string().required('Google名稱是必填項目'),
+  googleTitle: string().required('Google map名稱是必填項目'),
   smoke: boolean().required('必須選擇是否為無菸球場'),
   coachs: array()
     .of(
@@ -238,7 +245,11 @@ const rules: RulesProps = {
         .required('駐場教練名稱是必填項目')
     )
     .required('駐場教練名稱是必填項目'),
-  companyName: string().required('Google名稱是必填項目'),
+  companyName: string().optional(),
+  location: object({
+    type: string().required('位置類型是必填項目'),
+    coordinates: array().of(number().required('座標必須是數字')).required('座標是必填項目'),
+  }).required('位置是必填項目'),
 
   // tournament
   tournamentTitle: string()
@@ -356,9 +367,9 @@ export const profileValidationSchema = object({
   gender: rules.gender.default(GenderType.None),
 }).required();
 
-export const courtValidationSchema = object({
+export const courtValidationSchema: ObjectSchema<UpdateCourtProps, AnyObject> = object({
   partner: rules.partner.default(false),
-  orgCode: rules.orgCode.default(''),
+  orgCode: rules.orgCodeOptional.default(''),
   owner: rules.owner.default(''),
   gender: rules.genderOptional.default(GenderType.None),
   websiteUrl: rules.websiteUrl.default(''),
@@ -376,10 +387,11 @@ export const courtValidationSchema = object({
   closeTime: rules.closeTime.default(''),
   status: rules.status.default(false),
   customLink: rules.customLink.default(''),
-  googleTitle: rules.title.default(''),
+  googleTitle: rules.googleTitle.default(''),
   smoke: rules.smoke.default(false),
   coachs: rules.coachs.default([]),
   companyName: rules.companyName.default(''),
+  location: rules.location.default({ type: 'Point', coordinates: [0, 0] }),
 }).required();
 
 export const tournamentValidationSchema = object({

@@ -15,6 +15,7 @@ import ManageRegisterButton from '@/global-components/admin/ManageRegisterButton
 import Breadcrumb from '@/global-components/Breadcrumb';
 import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
 import Card from '@/global-components/Card';
+import { CourtForm, CourtFormMode } from '@/global-components/forms/CourtForm';
 import GoogleMapComponentNew from '@/global-components/google-map/GoogleMapComponentNew';
 import GooglePhotoCarousel from '@/global-components/GooglePhotoCarousel';
 import GoogleReviews from '@/global-components/GoogleReviews';
@@ -32,7 +33,7 @@ const CourtContent = (): ReactNode => {
   const courtCustomLink: string = params?.courtCustomLink as string;
   const router = useRouter();
 
-  const { data: { court, manage } = {}, isLoading, isError } = useCourtQuery({ customLink: courtCustomLink });
+  const { data: { court, manage } = {}, isLoading, isError, refetch } = useCourtQuery({ customLink: courtCustomLink });
   const { mutateAsync: updateCourtView } = useUpdateCourtViewMutation();
 
   const { data: googleInfo, mutateAsync: fetchGoogleInfo } = useGoogleInfosMutation();
@@ -128,17 +129,17 @@ const CourtContent = (): ReactNode => {
             <Image
               src={
                 featuredImg
-                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${featuredImg}`
                   : process.env.NEXT_PUBLIC_FEATURED_IMAGE
               }
               alt={title}
-              width={720}
-              height={480}
-              className="rounded-xl w-auto h-auto"
+              width={1080}
+              height={607.5}
+              className="rounded-xl object-cover w-[1080px] h-[607.5px]"
               placeholder="blur"
               blurDataURL={
                 featuredImg
-                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${featuredImg}`
                   : process.env.NEXT_PUBLIC_FEATURED_IMAGE
               }
             />
@@ -155,6 +156,7 @@ const CourtContent = (): ReactNode => {
                 </AdminProtected>
 
                 <ManagerCourtProtected pageId={_id}>
+                  <CourtForm mode={CourtFormMode.Edit} court={court} onSuccess={refetch} />
                   <TournamentFormButton mode={TournamentFormMode.Create} />
                 </ManagerCourtProtected>
               </div>
@@ -258,7 +260,16 @@ const CourtContent = (): ReactNode => {
             <Card>
               <>
                 <h2 className="text-xl font-bold">關於{title}</h2>
-                <p>{content ? content : `尚無關於${title}的相關資訊，歡迎撞球場地提供補充!`}</p>
+                <p>
+                  {content
+                    ? content.split('\n').map((line, index, array) => (
+                        <span key={index}>
+                          {line}
+                          {index < array.length - 1 && <br />}
+                        </span>
+                      ))
+                    : `尚無關於${title}的相關資訊，歡迎撞球場地提供補充!`}
+                </p>
               </>
             </Card>
 

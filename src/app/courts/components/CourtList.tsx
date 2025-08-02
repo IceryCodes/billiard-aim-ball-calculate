@@ -7,10 +7,12 @@ import { CourtProps, GetCourtsDto } from '@/domains/court';
 import { CountyType, PageType } from '@/domains/interface';
 import { useCourtsQuery } from '@/features/courts/hooks/useCourtsQuery';
 import { Button } from '@/global-components/buttons/Button';
+import { CourtForm, CourtFormMode } from '@/global-components/forms/CourtForm';
 import GoogleMapComponentNew from '@/global-components/google-map/GoogleMapComponentNew';
 import { Input, InputStyleType } from '@/global-components/inputs/Input';
 import Pagination from '@/global-components/Pagination';
 import { Select } from '@/global-components/selects/Select';
+import AdminProtected from '@/hooks/utils/protections/components/useAdminProtected';
 
 import CourtListItemCard from './CourtListItemCard';
 
@@ -68,6 +70,10 @@ const CourtList = ({ switchMode }: CourtListProps): ReactNode => {
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
         <h1 className="text-2xl font-bold">{PageType.COURTS}</h1>
         <Button text="切換地圖模式" onClick={switchMode} />
+
+        <AdminProtected>
+          <CourtForm mode={CourtFormMode.Create} onSuccess={refetch} />
+        </AdminProtected>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex gap-6">

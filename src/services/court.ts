@@ -1,6 +1,7 @@
 import {
   CreateCourtDto,
   DeleteCourtDto,
+  GeocodeAddressDto,
   GetCourtDto,
   GetCourtsDto,
   GetCourtsMapDto,
@@ -9,11 +10,12 @@ import {
 } from '@/domains/court';
 import { apiOrigin, logApiError } from '@/utils/api';
 
-import { CourtUpdateReturnType, GetCourtReturnType, GetCourtsReturnType } from './interfaces';
+import { CourtUpdateReturnType, GeocodeAddressReturnType, GetCourtReturnType, GetCourtsReturnType } from './interfaces';
 
 export const courtQueryKeys = {
   getCourt: 'getCourt',
   getCourts: 'getCourts',
+  geocodeAddress: 'geocodeAddress',
 } as const;
 
 export const getCourt = async ({ customLink }: GetCourtDto): Promise<GetCourtReturnType> => {
@@ -141,6 +143,25 @@ export const deleteCourt = async ({ _id }: DeleteCourtDto): Promise<CourtUpdateR
     };
   } catch (error) {
     const message = '刪除撞球場地失敗!';
+    logApiError({ error, message });
+
+    return {
+      message,
+    };
+  }
+};
+
+export const geocodeAddress = async ({ fullAddress }: GeocodeAddressDto): Promise<GeocodeAddressReturnType> => {
+  try {
+    const { data } = await apiOrigin.post('/geocode-address', { fullAddress });
+
+    return {
+      coordinates: data.coordinates,
+      formatted_address: data.formatted_address,
+      message: data.message,
+    };
+  } catch (error) {
+    const message = '轉換地址失敗!';
     logApiError({ error, message });
 
     return {
