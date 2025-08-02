@@ -365,7 +365,7 @@ const CourtMapNew = ({ switchMode }: CourtMapProps): ReactNode => {
                     court={court}
                     image={
                       court.featuredImg
-                        ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${court.featuredImg}`
+                        ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${court.featuredImg}`
                         : process.env.NEXT_PUBLIC_FEATURED_IMAGE
                     }
                     title={court.title}

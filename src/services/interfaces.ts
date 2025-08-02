@@ -31,6 +31,12 @@ export interface CourtUpdateReturnType {
   message: string;
 }
 
+export interface GeocodeAddressReturnType {
+  message: string;
+  coordinates?: [number, number]; // [經度, 緯度]
+  formatted_address?: string;
+}
+
 export interface TournamentUpdateReturnType {
   message: string;
 }

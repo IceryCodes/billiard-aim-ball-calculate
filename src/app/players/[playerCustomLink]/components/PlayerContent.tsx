@@ -94,7 +94,7 @@ const PlayerContent = (): ReactNode => {
                   <Image
                     src={
                       featuredImg
-                        ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
+                        ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_PLAYER_FEATURED_FOLDER}/${featuredImg}`
                         : process.env.NEXT_PUBLIC_FEATURED_IMAGE
                     }
                     alt={title}
@@ -103,7 +103,7 @@ const PlayerContent = (): ReactNode => {
                     placeholder="blur"
                     blurDataURL={
                       featuredImg
-                        ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${featuredImg}`
+                        ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_PLAYER_FEATURED_FOLDER}/${featuredImg}`
                         : process.env.NEXT_PUBLIC_FEATURED_IMAGE
                     }
                   />

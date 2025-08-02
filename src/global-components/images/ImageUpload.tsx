@@ -7,6 +7,7 @@ import { useImageUploadMutation } from '@/features/useImageUploadMutation';
 
 interface ImageUploadProps<T extends FieldValues> {
   control: Control<T>;
+  folder: string;
   defaultImage?: string;
   fieldName?: Path<T>;
 }
@@ -24,6 +25,7 @@ interface ImageCompressionResult {
 
 export const ImageUpload = <T extends FieldValues>({
   control,
+  folder,
   defaultImage,
   fieldName = 'featuredImg' as Path<T>,
 }: ImageUploadProps<T>) => {
@@ -141,7 +143,7 @@ export const ImageUpload = <T extends FieldValues>({
         reader.onerror = () => reject(new Error('檔案讀取失敗'));
       });
 
-      const response = await uploadImageMutation({ folder: process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER, base64Image });
+      const response = await uploadImageMutation({ folder, base64Image });
 
       if (response.success && response.filename) {
         const url = response.imageUrl ?? '';
@@ -198,7 +200,7 @@ export const ImageUpload = <T extends FieldValues>({
                   src={preview}
                   blurDataURL={preview}
                   alt="Preview"
-                  className="object-cover rounded-lg"
+                  className="rounded-lg object-cover w-[480px] h-[320px]"
                   width={720}
                   height={480}
                   placeholder="blur"

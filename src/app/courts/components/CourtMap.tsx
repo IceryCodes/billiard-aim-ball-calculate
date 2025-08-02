@@ -315,7 +315,7 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
             <Image
               src={
                 selectedCourt.featuredImg
-                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${selectedCourt.featuredImg}`
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${selectedCourt.featuredImg}`
                   : process.env.NEXT_PUBLIC_FEATURED_IMAGE
               }
               alt={selectedCourt.title}
@@ -325,7 +325,7 @@ const CourtMap = ({ switchMode }: CourtMapProps): ReactNode => {
               placeholder="blur"
               blurDataURL={
                 selectedCourt.featuredImg
-                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_FEATURED_IMAGE_FOLDER}/${selectedCourt.featuredImg}`
+                  ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_COURT_FEATURED_FOLDER}/${selectedCourt.featuredImg}`
                   : process.env.NEXT_PUBLIC_FEATURED_IMAGE
               }
             />

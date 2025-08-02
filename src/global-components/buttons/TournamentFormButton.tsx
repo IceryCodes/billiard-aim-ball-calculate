@@ -223,6 +223,7 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess: refet
             <label>比賽海報</label>
             <ImageUpload
               control={control}
+              folder={process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}
               defaultImage={
                 tournament?.featuredImg
                   ? `${process.env.NEXT_PUBLIC_FEATURED_IMAGE_URL}/${process.env.NEXT_PUBLIC_TOURNAMENT_FEATURED_FOLDER}/${tournament?.featuredImg}`
