@@ -122,24 +122,14 @@ export const CourtForm = ({ mode, court, onSuccess }: CourtFormProps) => {
           // 組成完整地址
           const fullAddress = `台灣${data.county}${data.district}${data.address}`;
 
-          // 顯示轉換中的提示
-          showToast({ message: '正在轉換地址為座標...' });
-
           // 地址轉座標
           const { coordinates } = await geocodeAddress({ fullAddress });
 
           setIsGeocodingLoading(false);
 
           if (!coordinates) {
-            alert(
-              `地址轉換失敗！\n\n` +
-                `無法將 "${fullAddress}" 轉換為座標\n\n` +
-                `可能原因：\n` +
-                `• 地址格式不正確\n` +
-                `• 地址不存在\n` +
-                `• 網路連接問題\n\n` +
-                `請檢查地址是否正確後重試`
-            );
+            // Google 金鑰已撤銷,geocode-address 固定回 410 → 新增撞球場地暫停
+            alert('地址自動定位已停用，目前無法新增撞球場地。');
             return; // 不繼續執行API呼叫
           }
 

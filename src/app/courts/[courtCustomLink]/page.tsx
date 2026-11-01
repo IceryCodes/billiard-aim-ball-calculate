@@ -13,6 +13,12 @@ import CourtContent from './components/CourtContent';
 
 type Params = Promise<{ courtCustomLink: string }>;
 
+// ISR:第一次被請求時產生、之後快取 1 天(球場資料幾乎不會變)。
+// generateStaticParams 回空陣列 = build 時不預先產生,但讓這個動態路由走 ISR 而不是每次都重跑。
+export const revalidate = 86400;
+export const maxDuration = 10;
+export const generateStaticParams = async (): Promise<{ courtCustomLink: string }[]> => [];
+
 export const generateMetadata = async (props: { params: Params }): Promise<Metadata> => {
   const params = await props.params;
   const { courtCustomLink } = params;

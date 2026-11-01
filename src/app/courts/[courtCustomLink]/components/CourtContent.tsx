@@ -1,5 +1,5 @@
 'use client';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 
 import Image from 'next/image';
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -9,24 +9,18 @@ import { getPageUrlByType, PageType } from '@/domains/interface';
 import { defaultCourtExcerpt } from '@/domains/metadatas';
 import { useCourtQuery } from '@/features/courts/hooks/useCourtQuery';
 import { useUpdateCourtViewMutation } from '@/features/courts/hooks/useUpdateCourtViewMutation';
-import { useGoogleInfosMutation } from '@/features/google/hooks/useGoogleInfosMutation';
 import DeleteCourtContent from '@/global-components/admin/DeleteCourtContent';
 import ManageRegisterButton from '@/global-components/admin/ManageRegisterButton';
 import Breadcrumb from '@/global-components/Breadcrumb';
 import { TournamentFormButton, TournamentFormMode } from '@/global-components/buttons/TournamentFormButton';
 import Card from '@/global-components/Card';
 import { CourtForm, CourtFormMode } from '@/global-components/forms/CourtForm';
-import GoogleMapComponentNew from '@/global-components/google-map/GoogleMapComponentNew';
-import GooglePhotoCarousel from '@/global-components/GooglePhotoCarousel';
-import GoogleReviews from '@/global-components/GoogleReviews';
 import Tab from '@/global-components/tabs/Tab';
 import Tag from '@/global-components/tags/Tag';
 import ManagerCourtProtected from '@/hooks/utils/protections/components/ManagerCourtProtected';
 import AdminProtected from '@/hooks/utils/protections/components/useAdminProtected';
-import ConvertLink, { LinkType } from '@/utils/links';
 
 import BasicInfos from './BasicInfos';
-import GoogleInfos from './GoogleInfos';
 
 const CourtContent = (): ReactNode => {
   const params = useParams();
@@ -35,28 +29,6 @@ const CourtContent = (): ReactNode => {
 
   const { data: { court, manage } = {}, isLoading, isError, refetch } = useCourtQuery({ customLink: courtCustomLink });
   const { mutateAsync: updateCourtView } = useUpdateCourtViewMutation();
-
-  const { data: googleInfo, mutateAsync: fetchGoogleInfo } = useGoogleInfosMutation();
-
-  const [isAddressChecked, setIsAddressChecked] = useState<boolean>(false);
-
-  useEffect(() => {
-    const checkAndFetchGoogleData = async () => {
-      if (isLoading || isError || !court) return;
-
-      const googleTitle = court.title;
-      const googleAddress = `${court.county}${court.district}${court.address}`;
-
-      if (!isAddressChecked && googleTitle) {
-        const { formatted_address } = await fetchGoogleInfo({ query: googleTitle, byTitle: true });
-
-        if (!formatted_address?.includes('號')) await fetchGoogleInfo({ query: googleAddress, byTitle: false });
-        setIsAddressChecked(true);
-      }
-    };
-
-    checkAndFetchGoogleData();
-  }, [isLoading, isError, court, isAddressChecked, fetchGoogleInfo]);
 
   useEffect(() => {
     if (!isLoading && !court && !isError) notFound();
@@ -99,27 +71,9 @@ const CourtContent = (): ReactNode => {
     status,
     createdAt,
     updatedAt,
-    location: { coordinates },
   } = court;
 
-  const {
-    business_status,
-    formatted_address,
-    formatted_phone_number,
-    international_phone_number,
-    opening_hours,
-    website,
-    rating,
-    user_ratings_total,
-    icon,
-    icon_background_color,
-    name,
-    reviews,
-    photos,
-  } = googleInfo || {};
-
   const usedExcerpt: string = excerpt ? excerpt : defaultCourtExcerpt(court);
-  const hasGoogleInfo: boolean = !!icon && !icon?.includes('geocode-71.png');
 
   return (
     <div className="container mx-auto p-6">
@@ -161,28 +115,10 @@ const CourtContent = (): ReactNode => {
                 </ManagerCourtProtected>
               </div>
               <div className="flex items-center">
-                {
-                  <div
-                    className="flex items-center justify-center mr-4"
-                    style={{ backgroundColor: hasGoogleInfo ? icon_background_color : '' }}
-                  >
-                    <Image
-                      src={hasGoogleInfo && icon ? icon : '/assets/icon.png'}
-                      alt={`${name}圖標`}
-                      width={hasGoogleInfo && icon ? 40 : 35}
-                      height={hasGoogleInfo && icon ? 40 : 35}
-                      blurDataURL={hasGoogleInfo && icon ? icon : '/assets/icon.png'}
-                    />
-                  </div>
-                }
-                <div>
-                  <h1 className="text-4xl font-bold">{title}</h1>
-                  {!!hasGoogleInfo && name && (
-                    <span className="text-sm">
-                      Google資料來源: {ConvertLink({ text: name, type: LinkType.GoogleMapSearch })}
-                    </span>
-                  )}
+                <div className="flex items-center justify-center mr-4">
+                  <Image src="/assets/icon.png" alt={`${title}圖標`} width={35} height={35} />
                 </div>
+                <h1 className="text-4xl font-bold">{title}</h1>
               </div>
               {partner && <Tag text={`${process.env.NEXT_PUBLIC_SITENAME}合作夥伴`} />}
             </div>
@@ -227,24 +163,6 @@ const CourtContent = (): ReactNode => {
                     />
                   ),
                 },
-                hasGoogleInfo
-                  ? {
-                      title: 'Google資料',
-                      content: (
-                        <GoogleInfos
-                          title={title}
-                          rating={rating}
-                          user_ratings_total={user_ratings_total}
-                          business_status={business_status}
-                          formatted_address={formatted_address}
-                          website={website}
-                          international_phone_number={international_phone_number}
-                          formatted_phone_number={formatted_phone_number}
-                          opening_hours={opening_hours}
-                        />
-                      ),
-                    }
-                  : undefined,
               ]}
               otherButton={[
                 {
@@ -289,19 +207,6 @@ const CourtContent = (): ReactNode => {
                 </>
               </Card>
             )}
-
-            <Card>
-              <GoogleMapComponentNew
-                key={court._id.toString()}
-                locationData={[court]}
-                lat={coordinates[1]}
-                lng={coordinates[0]}
-              />
-            </Card>
-
-            {hasGoogleInfo && photos?.length && <GooglePhotoCarousel title={title} photos={photos} />}
-
-            {hasGoogleInfo && reviews && <GoogleReviews reviews={reviews} />}
           </div>
         </SidebarLayout>
       </div>

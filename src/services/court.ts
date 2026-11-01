@@ -4,7 +4,6 @@ import {
   GeocodeAddressDto,
   GetCourtDto,
   GetCourtsDto,
-  GetCourtsMapDto,
   UpdateCourtDto,
   UpdateCourtViewDto,
 } from '@/domains/court';
@@ -54,23 +53,6 @@ export const getCourts = async ({
       total: data.total ? data.total : 0,
       message: 'Success',
     };
-  } catch (error) {
-    const message = '搜尋撞球場地失敗!';
-    logApiError({ error, message });
-
-    return {
-      message,
-    };
-  }
-};
-
-export const getCourtsMap = async ({ lat, lng, fullDay, partner }: GetCourtsMapDto): Promise<GetCourtReturnType> => {
-  try {
-    const { data } = await apiOrigin.get('/get-courts-map', {
-      params: { lat, lng, fullDay, partner },
-    });
-
-    return data;
   } catch (error) {
     const message = '搜尋撞球場地失敗!';
     logApiError({ error, message });

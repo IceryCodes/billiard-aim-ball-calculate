@@ -49,23 +49,6 @@ export const getCourtsCollection = async (): Promise<Collection<CourtDBProps>> =
   return database.collection<CourtDBProps>('courts');
 };
 
-// Function to get the courts collection with geospatial index
-export const getCourtsMapCollection = async (): Promise<Collection<CourtDBProps>> => {
-  const client = await connectToDatabase();
-  const database = client.db('billiards');
-  const collection = database.collection<CourtDBProps>('courts');
-
-  await collection.createIndex(
-    { location: '2dsphere' },
-    {
-      background: true, // 背景建立索引
-      sparse: true, // 只索引有 location 欄位的文檔
-    }
-  );
-
-  return collection;
-};
-
 // Function to get the court manages collection
 export const getCourtManagesCollection = async (): Promise<Collection<ManageDBProps>> => {
   const client = await connectToDatabase();

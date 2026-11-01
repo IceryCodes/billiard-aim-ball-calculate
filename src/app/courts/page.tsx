@@ -5,7 +5,7 @@ import { Metadata } from 'next';
 import { getPageUrlByType, PageType } from '@/domains/interface';
 import { metadataInfo } from '@/domains/metadatas';
 
-import CourtListMap from './components/CourtListMap';
+import CourtList from './components/CourtList';
 
 export const generateMetadata = async (): Promise<Metadata> => {
   return metadataInfo({
@@ -15,7 +15,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
 };
 
 const Page = (): ReactNode => {
-  return <CourtListMap />;
+  return <CourtList />;
 };
 
 export default Page;

@@ -42,13 +42,6 @@ export interface GetCourtDto {
   customLink: string;
 }
 
-export interface GetCourtsMapDto {
-  lat: number;
-  lng: number;
-  fullDay: boolean;
-  partner: boolean;
-}
-
 export interface GetCourtsDto {
   query: string;
   county: string;

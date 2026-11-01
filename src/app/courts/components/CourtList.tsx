@@ -8,7 +8,6 @@ import { CountyType, PageType } from '@/domains/interface';
 import { useCourtsQuery } from '@/features/courts/hooks/useCourtsQuery';
 import { Button } from '@/global-components/buttons/Button';
 import { CourtForm, CourtFormMode } from '@/global-components/forms/CourtForm';
-import GoogleMapComponentNew from '@/global-components/google-map/GoogleMapComponentNew';
 import { Input, InputStyleType } from '@/global-components/inputs/Input';
 import Pagination from '@/global-components/Pagination';
 import { Select } from '@/global-components/selects/Select';
@@ -18,11 +17,7 @@ import CourtListItemCard from './CourtListItemCard';
 
 const limit = 12;
 
-interface CourtListProps {
-  switchMode: () => void;
-}
-
-const CourtList = ({ switchMode }: CourtListProps): ReactNode => {
+const CourtList = (): ReactNode => {
   const { control, handleSubmit, getValues, reset } = useForm<GetCourtsDto>({
     defaultValues: {
       query: '',
@@ -69,7 +64,6 @@ const CourtList = ({ switchMode }: CourtListProps): ReactNode => {
     <div className="container mx-auto p-6 flex flex-col gap-y-4">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
         <h1 className="text-2xl font-bold">{PageType.COURTS}</h1>
-        <Button text="切換地圖模式" onClick={switchMode} />
 
         <AdminProtected>
           <CourtForm mode={CourtFormMode.Create} onSuccess={refetch} />
@@ -117,8 +111,6 @@ const CourtList = ({ switchMode }: CourtListProps): ReactNode => {
           <Button text="搜尋" type="submit" className="w-full" />
         </div>
       </form>
-
-      <GoogleMapComponentNew key={courts?.length} locationData={courts} />
 
       {/* Loading overlay */}
       <div className="relative w-full min-h-[400px]">

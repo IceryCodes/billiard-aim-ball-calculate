@@ -5,6 +5,9 @@ import { CourtDBProps } from '@/domains/court';
 import { getCourtsCollection } from '@/lib/mongodb';
 import { HttpStatus } from '@/utils/api';
 
+// 每次看球場頁都會打一次,只是一筆 DB 更新 → 卡住就快速失敗,不要等到平台預設上限。
+export const config = { maxDuration: 10 };
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') return res.status(HttpStatus.MethodNotAllowed).end();
 
