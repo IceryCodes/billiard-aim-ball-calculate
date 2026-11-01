@@ -173,7 +173,7 @@ export const validateEdges = (edges: TournamentEdge[], nodes: TournamentNode[]):
 export const safeGenerateNodeId = (type: string, round?: number, matchIndex?: number): string => {
   try {
     return generateNodeId(type, round, matchIndex);
-  } catch (error) {
+  } catch {
     return `fallback-${type}-${Date.now()}-${Math.random()}`;
   }
 };

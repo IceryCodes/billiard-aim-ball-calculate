@@ -423,7 +423,7 @@ export async function middleware(req: NextRequest) {
       }
       try {
         await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
-      } catch (error) {
+      } catch {
         return NextResponse.json(
           { message: 'Token expired', expired: true },
           { status: HttpStatus.Unauthorized, headers: securityHeaders }

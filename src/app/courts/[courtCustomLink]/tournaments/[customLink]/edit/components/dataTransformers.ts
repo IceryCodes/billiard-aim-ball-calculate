@@ -158,7 +158,7 @@ export const matchesToNodes = (
     nodes.push(qrCodeNode);
 
     return nodes;
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -235,7 +235,7 @@ export const createTournamentEdges = (matches: Match[], gamers: Gamer[]): Tourna
     }
 
     return edges;
-  } catch (error) {
+  } catch {
     return [];
   }
 };

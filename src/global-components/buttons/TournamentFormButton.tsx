@@ -188,7 +188,8 @@ export const TournamentFormButton = ({ mode, title, tournament, onSuccess: refet
         console.error(`${mode} error:`, error);
       } finally {
         setDisplay(false);
-        mode === TournamentFormMode.Create ? reset() : reset(data);
+        if (mode === TournamentFormMode.Create) reset();
+        else reset(data);
       }
     },
     [mode, user, court, tournament, updateTournament, createTournament, showToast, reset]

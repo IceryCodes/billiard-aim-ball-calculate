@@ -198,7 +198,7 @@ const fetchRSSNewsOptimized = async (): Promise<RSSItem[]> => {
               };
             })
             .filter((item): item is RSSItem => item !== null);
-        } catch (rssError) {
+        } catch {
           console.error(`RSS parsing failed for ${rssUrl}, skipping HTML parsing to save time`);
           return [];
         }
