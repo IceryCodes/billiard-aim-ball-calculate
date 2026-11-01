@@ -116,7 +116,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error('Generate articles process failed:', error);
     return res.status(HttpStatus.InternalServerError).json({
-      message: `Server error: ${error}`,
+      message: '伺服器發生錯誤，請稍後再試。',
     });
   }
 };

@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   } catch (error) {
     console.error('Renew token error:', error);
     return res.status(HttpStatus.InternalServerError).json({
-      message: `Token renewal failed: ${error}`,
+      message: '登入狀態更新失敗，請重新登入。',
     });
   }
 }

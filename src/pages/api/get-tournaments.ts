@@ -75,7 +75,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentsR
     });
   } catch (error) {
     console.error('Error fetching tournaments:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

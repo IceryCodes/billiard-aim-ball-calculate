@@ -62,7 +62,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<PlayerUpdateRet
     res.status(HttpStatus.Ok).json({ message: `已更新${updateData.title}!` });
   } catch (error) {
     console.error('Error updating player:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

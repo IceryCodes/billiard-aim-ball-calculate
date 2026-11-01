@@ -128,7 +128,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error('RSS fetch failed:', error);
     return res.status(HttpStatus.InternalServerError).json({
-      message: `RSS fetch error: ${error}`,
+      message: 'RSS 抓取失敗，請稍後再試。',
       cachedCount: 0,
       executionTime: Date.now() - startTime,
       items: [],

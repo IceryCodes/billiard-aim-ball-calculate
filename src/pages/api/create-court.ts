@@ -46,7 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<CourtUpdateRetu
     }
   } catch (error) {
     console.error('Error creating court:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

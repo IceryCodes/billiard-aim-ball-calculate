@@ -68,7 +68,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetCourtsReturn
     });
   } catch (error) {
     console.error('Error fetching courts:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

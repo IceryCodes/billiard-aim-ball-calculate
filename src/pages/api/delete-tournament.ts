@@ -43,7 +43,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(HttpStatus.Ok).json({ message: `已刪除${tournament.title}!` });
   } catch (error) {
     console.error('Error soft deleting tournament:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

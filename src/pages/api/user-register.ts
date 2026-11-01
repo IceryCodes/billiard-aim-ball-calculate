@@ -70,7 +70,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UserLoginReturn
       return res.status(HttpStatus.BadRequest).json({ message: error.errors.join(', ') });
 
     console.error('Error register user details:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

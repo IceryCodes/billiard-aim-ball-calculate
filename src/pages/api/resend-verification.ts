@@ -40,7 +40,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UserResendVerif
     res.status(HttpStatus.Ok).json({ message: '已重新寄送驗證信件!' });
   } catch (error) {
     console.error('Error sending verification link:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

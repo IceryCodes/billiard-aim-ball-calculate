@@ -89,7 +89,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
     });
   } catch (error) {
     console.error('Error updating manage records:', error);
-    return res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    return res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

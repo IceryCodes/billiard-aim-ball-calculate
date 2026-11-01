@@ -59,7 +59,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetTournamentRe
     res.status(HttpStatus.Ok).json({ tournament: tournamentData, message: 'Success' });
   } catch (error) {
     console.error('Error fetching tournament by customLink:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

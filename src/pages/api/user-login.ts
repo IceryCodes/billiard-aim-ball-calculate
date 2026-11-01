@@ -49,7 +49,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UserLoginReturn
     if (error instanceof ValidationError)
       return res.status(HttpStatus.BadRequest).json({ message: error.errors.join(', ') });
     console.error('Error logging in:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

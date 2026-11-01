@@ -194,7 +194,8 @@ const getSecurityHeaders = () => {
       'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
     'Access-Control-Max-Age': '86400',
     // 在 Vercel 上放寬一些限制
-    'Strict-Transport-Security': isDev || isVercel ? '' : 'max-age=31536000; includeSubDomains; preload',
+    // Vercel 只走 HTTPS,HSTS 在 Vercel 上也安全;不加 preload(要另外去 hstspreload.org 登記才有意義)
+    'Strict-Transport-Security': isDev ? '' : 'max-age=31536000; includeSubDomains',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': isDev ? 'SAMEORIGIN' : 'DENY',
     'X-XSS-Protection': '1; mode=block',
@@ -204,9 +205,12 @@ const getSecurityHeaders = () => {
     'X-Download-Options': 'noopen',
     'X-Permitted-Cross-Domain-Policies': 'none',
     // 在 Vercel 上簡化 CSP
-    'Content-Security-Policy':
-      isDev || isVercel
-        ? ''
+    // Vercel 上原本完全沒有 CSP。完整 CSP 要逐頁驗證、對停止維護的專案不划算,
+    // 至少加「不會擋到任何既有功能」的三條:禁止被嵌入 iframe(點擊劫持)、禁 plugin、鎖 base。
+    'Content-Security-Policy': isDev
+      ? ''
+      : isVercel
+        ? "frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
         : [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-scripts.com https://*.googleapis.com https://*.gstatic.com https://*.google-analytics.com https://*.googletagmanager.com",
@@ -429,7 +433,8 @@ export async function middleware(req: NextRequest) {
   }
 
   // === 📊 系統監控端點 ===
-  if (pathname === '/api/system/stats' && (isDevelopmentEnv || process.env.ENABLE_SYSTEM_MONITORING === 'true')) {
+  // 記憶體 / 連線統計只在本機開發開放;production 不靠環境變數開關,避免誤開外露
+  if (pathname === '/api/system/stats' && isDevelopmentEnv) {
     return NextResponse.json(memoryMonitor.getStats());
   }
 

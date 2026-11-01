@@ -26,7 +26,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<UserVerifyRetur
     res.status(HttpStatus.Ok).json({ message: '驗證成功!' });
   } catch (error) {
     console.error('Error verifying email:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 

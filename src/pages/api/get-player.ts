@@ -34,7 +34,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<GetPlayerReturn
     res.status(HttpStatus.Ok).json({ player: playerData, manage, message: 'Success' });
   } catch (error) {
     console.error('Error fetching player by ID:', error);
-    res.status(HttpStatus.InternalServerError).json({ message: `Server error: ${error}` });
+    res.status(HttpStatus.InternalServerError).json({ message: '伺服器發生錯誤，請稍後再試。' });
   }
 };
 
