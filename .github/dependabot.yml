@@ -1,0 +1,10 @@
+# 專案已停止維護:關掉 Dependabot「版本更新」PR(open-pull-requests-limit: 0)。
+# 注意:這個檔只管「版本更新」。安全警告信 / 安全更新 PR 要到 GitHub repo 設定關,
+# 步驟見 SECURITY_LEGAL_BILLIARD_2026-11-01.md。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 0
